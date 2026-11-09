@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m clipper:*)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(ffprobe:*)",
+      "Bash(open jobs/:*)",
+      "Bash(open exports/:*)",
+      "Write(jobs/**)",
+      "Edit(jobs/**)"
+    ]
+  }
+}

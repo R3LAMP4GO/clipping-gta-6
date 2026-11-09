@@ -1,0 +1,66 @@
+# Clipper config: creators to watch, what counts as a highlight, and output style.
+asr: parakeet              # parakeet (NVIDIA Parakeet TDT 0.6B v3 via onnx-asr, CPU) or whisper (whisper.cpp)
+parakeet_model: nemo-parakeet-tdt-0.6b-v3
+parakeet_quantization: int8
+whisper_model: auto        # asr: whisper only. "auto" finds a local ggml-*.bin, or give a path
+whisper_model_fast: auto   # used with `analyze --fast`
+language: en
+
+# Clip length: "auto" uses the research profiles (reactions 9-35s aiming 22s, info 20-58s aiming 45s);
+# set numbers to force a length.
+target_seconds: auto
+min_seconds: auto
+max_seconds: auto
+max_candidates: auto       # auto = about one per 3 minutes of video (3-25)
+max_source_minutes: 240    # skip uploads longer than this in `watch`
+
+# How much each signal counts toward a second's score (sums to 1).
+weights:
+  loudness: 0.30     # peaks above the video's own normal level
+  jump: 0.20         # sudden rises vs the seconds before: screams/reactions (what 500k+ reaction Shorts open on)
+  heatmap: 0.20      # YouTube "Most replayed" graph, when YouTube provides it
+  keywords: 0.20     # hype words + sound events Whisper tags, e.g. (screaming)
+  speech_rate: 0.10  # fast talking usually means excitement
+
+hype_words: [no way, oh my god, omg, what the, wtf, let's go, lets go, holy, insane,
+  crazy, bro, dude, run, yo, wait, are you serious, shut up, unbelievable, clip that,
+  dead, help, leaked, confirmed]
+
+# A title matching any of these counts as on-topic for channels with match: keywords.
+keywords: [gta 6, gta vi, gta, grand theft auto, vice city, leonida, rockstar, nopixel,
+  rp, heist, trailer]
+
+hashtags: ["#gta6", "#gtavi", "#shorts"]
+
+# Only keep videos that are about GTA 6: the title must say so, or (if the title isn't
+# about another GTA) the description's opening or the tags must.
+require_gta6: true
+gta6_patterns: ["\\bgta ?(6|vi)\\b", "grand theft auto (6|vi)\\b", "#gta6", "#gtavi", "\\bleonida\\b"]
+exclude_title_patterns: ["\\bgta ?(5|v|iv|4)\\b", "gta online", "\\bgtao\\b", "red dead", "nopixel",
+  "(before|until|waiting for) gta ?(6|vi)\\b", "\\bmemes?\\b"]
+
+# Default caption look (picks can override): bold = Montserrat Black outline,
+# boxed = Bebas Neue on black (Kai Cenat Live style), comic = Luckiest Guy (Typical Gamer style).
+caption_style: bold
+
+# Speakers: Demucs splits voices from game audio, WhisperKit labels who is talking.
+separate_voices: true
+diarize: true
+whisperkit_model: auto     # or a path to a whisperkit-coreml model folder
+demucs_device: auto        # auto (Apple GPU on Mac, CUDA if NVIDIA, else CPU), mps, cuda or cpu
+game_volume: 0.7           # game/music level under the voices after separation
+
+# Voiceover: Fish Audio when FISH_API_KEY is set (env or .env), else macOS `say`.
+fish_model: s2.1-pro-free  # Fish Audio's free developer-tier model
+fish_voice_id: ""          # optional voice model id from fish.audio; empty = default voice
+voice: Samantha            # macOS `say` fallback voice
+
+# Creators live in creators.yaml: manage them with `python3 -m clipper creators add|remove|list`.
+
+# Extra YouTube searches `watch` runs to find GTA videos outside the watchlist.
+search: ["GTA 6 reaction", "GTA 6 gameplay funny"]
+
+# Live capture (clipper live): finished chunks are transcribed right away, at most live_workers at a time across all
+# recorders; `clipper bench` measures what this machine can keep up with and suggests a value.
+live_workers: auto          # auto = one per ~4 CPU cores, or a number
+live_fast: true             # asr: whisper only: live chunks use the fast model (base.en)

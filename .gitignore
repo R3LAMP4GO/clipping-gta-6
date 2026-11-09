@@ -1,0 +1,11 @@
+jobs/
+__pycache__/
+.env
+exports/
+logs/
+# Your own posts' performance data (written by your posting setup; read by `clipper simulate`)
+research/own-uploads.json
+.venv/
+*.pyc
+.DS_Store
+.pytest_cache/

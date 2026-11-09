@@ -1,0 +1,13 @@
+[project]
+name = "clipping-gta-6"
+version = "0.1.0"
+description = "Finds the best moments in GTA 6 videos and renders captioned 9:16 shorts"
+readme = "README.md"
+requires-python = ">=3.10"
+# Mirrors PIP in clipper/setup.py; system tools (ffmpeg, yt-dlp, whisper.cpp, demucs) stay with `clipper setup --install`.
+dependencies = [
+    "numpy",
+    "onnx-asr[cpu,hub]==0.12.0",
+    "pillow",
+    "pyyaml",
+]

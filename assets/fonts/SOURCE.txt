@@ -1,0 +1,2 @@
+Fonts from github.com/google/fonts @ 5bb28733cec313b63fbd415b574b5ae35c8aa8b8 (OFL / Apache-2.0).
+Picked by studying viral GTA Shorts: see research/viral-gta-shorts.md#fonts

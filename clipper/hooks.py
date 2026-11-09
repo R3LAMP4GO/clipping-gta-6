@@ -1,0 +1,176 @@
+"""Hook and title rules derived from 28 GTA Shorts with 500k+ views (research/viral-gta-shorts.md).
+
+Every structure below appeared on a 500k+ video; a hook passes if it uses at least one. Labels pass with a note
+(they only worked as a creator's series tag, with the spoken first line carrying the loop)."""
+import re
+
+STRUCTURES = [
+    # name, pattern, sample it came from
+    ("question", r"\?|^(why|how|what|who|which|where|did you|have you|do you|would you|can you|will i)\b",
+     "What Happens If You Shoot The Moon In GTA 6? (1.7M)"),
+    ("tease", r"\.\.\.|…|\b(this|these|wait|watch|until|guess|happens|the reason|here'?s why)\b",
+     "I Can't Believe It's Real... (1.3M)"),
+    ("withheld / negation", r"\b(can'?t|won'?t|didn'?t|couldn'?t|wasn'?t|isn'?t|not|never|nobody|no one|only)\b",
+     "KIDS CAN'T PLAY GTA 6 (51M)"),
+    ("number promise", r"^\s*(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(\w+\s+){0,2}"
+                       r"(things|features|reasons|ways|secrets|details|clips|facts|changes|mistakes|easter eggs)\b",
+     "4 NEW FEATURES COMING IN GTA 6 (10M)"),
+    ("shock fact", r"\b\d+[\d,.]*\s*(x|%|years?|hours?|minutes?|days?|million|billion|k|times|miles?|dollars?)\b|\$\d",
+     "HE'S 72 YEARS OLD (1M)"),
+    ("first-person claim", r"^(i|i'm|im|i'll|i've|we|we're)\b", "I'M GONNA PLAY GTA 6! (2M)"),
+    ("relatable situation", r"^(me|us|my|when|whenever|pov|how|that moment|every|you|your)\b|"
+                            r"\b(my|your|his|her) (mom|mum|dad|parents?|girlfriend|gf|boyfriend|wife|brother|sister|"
+                            r"teacher|boss|friends?)\b|\bin the room\b|\bwalks? in\b",
+     "How Playing GTA 6 Is Gonna Be 😂 (5M)"),
+]
+# A short "who does what" premise with one shouted twist word: the creators' own titles do this
+# ("xQc FORCES Weazel News Ron Otterman to Rob a Bank", "Kids WON'T Be Able To Play GTA 6!").
+CAPS_TWIST = re.compile(r"\b(?!(?:GTA|RP|VI|POV|NPC|I|OK)\b)[A-Z][A-Z']+\b")
+STRUCTURES = [(n, re.compile(p, re.I), ex) for n, p, ex in STRUCTURES]
+STRUCTURES.append(("premise + twist", CAPS_TWIST, "xQc FORCES Weazel News Ron Otterman to Rob a Bank (source title)"))
+STRUCTURES.append(("superlative", re.compile(r"\b(best|fastest|worst|biggest|craziest|smartest|most|first ever|"
+                                           r"world'?s|#1|ever)\b", re.I), "World's Best Sniper in Black Ops 7"))
+# Words that describe the clip instead of teasing it; fine inside a tease ("Wait for his reaction...").
+SPOILERS = re.compile(r"\b(reaction|compilation|highlights?|recap|full video|part \d+|episode)\b", re.I)
+# Spoken first lines the viral clips opened on (cold opens), vs filler that loses the swipe.
+OPENING_TYPES = [
+    ("action cold open", re.compile(r"!|^(go|run|look|wait|watch|stop|no|yo|oh|bro|so i|get)\b", re.I)),
+    # dropped straight into the scene: interjections, sound effects, someone mid-conversation
+    ("in-scene cold open", re.compile(r"^(\*|\[|ooh|ah+|oh|hey|sir|ma'?am|bro|dude|take|i'?m (ready|gonna|going)|"
+                                      r"i'?m about to|let'?s)\b|^\*", re.I)),
+    ("question", re.compile(r"\?|^(did you|have you|do you|what|why|how|will|would|can)\b", re.I)),
+    ("number promise", STRUCTURES[3][1]),
+    ("claim / news", re.compile(r"^(this is|it looks like|it doesn'?t|sorry|we know|according|breaking|"
+                                r"there'?s only|nobody|the \w+ of|\w+ fans)\b", re.I)),
+    ("setup tease", re.compile(r"^(if you|you want to see|you won'?t believe|imagine|picture this)\b", re.I)),
+]
+FILLER_OPEN = re.compile(r"^(um+|uh+|so yeah|anyway|okay so|alright so|like,|hey guys|what'?s up guys|welcome back|"
+                         r"first of all|before we|(chat|chap|guys),? before|alright chat|okay chat|let'?s go ahead|"
+                         r"in today'?s video)\b", re.I)
+
+
+STOP = set("the a an in on of to and for is are you your this that these with at it be was just my i me we so he she "
+           "his her they them him its im i'm it's what why how who when wait watch end guys nobody expected did does "
+           "do can will would gta rp vi pov mid really actually".split())
+
+
+def content_words(text):
+    """Words that say what's happening; "Wait for the harmony..." has one, "Why are the hostages singing?" two."""
+    return [w for w in re.findall(r"[a-z0-9']+", plain(text).lower()) if w not in STOP and len(w) > 2]
+
+
+def plain(text):
+    return re.sub(r"\*", "", text or "").strip()
+
+
+def structures(hook):
+    text = plain(hook)
+    return [name for name, pat, _ in STRUCTURES if pat.search(text) and (name != "premise + twist" or
+                                                                       len(text.split()) >= 3 and re.search("[a-z]", text))]
+
+
+def check_hook(hook):
+    """(fails, notes): fails break a rule every 500k+ hook followed; notes are judgment calls."""
+    text = plain(hook)
+    words = re.sub(r"\bgta (6|vi)\b", "GTA6", text, flags=re.I).split()  # "GTA 6" reads as one word
+    found = structures(hook)
+    fails, notes = [], []
+    limit = 9 if "relatable situation" in found else 8  # a relatable scene needs a few more words
+    if not 2 <= len(words) <= limit:
+        fails.append(f"{len(words)} words (keep hooks 2-6, max {limit})")
+    if found and len(content_words(text)) <= 1:  # bare labels get their own note below
+        fails.append("vague: say what's happening (who/what), e.g. \"Why are the hostages singing?\" not \"Wait for the "
+                     "harmony...\" (vague hooks got 0.67x views on GTA Shorts)")
+    if "first-person claim" in found and len(found) == 1:
+        notes.append("first-person claims measured 0.94x on 3,481 gaming Shorts: add a number, question or negation")
+    if found == ["premise + twist"]:
+        notes.append("a CAPS word alone measured 0.97x: the premise works when it names the streamer "
+                     "(\"xQc forces the hostages to *SING*\", 1.21x) or adds a question/negation")
+    if (hook or "").count("*") not in (0, 2):
+        fails.append("unbalanced *keyword* markup")
+    if not found:
+        if SPOILERS.search(text):
+            fails.append("labels the clip instead of teasing it (drop 'reaction'/'highlights'/…)")
+        elif len(words) <= 4:
+            fails.append("topic label (no structure measured 0.88x on GTA Shorts): turn it into a question, number, "
+                         "negation or relatable line (\"GTA 6 GRAPHICS\" -> \"Are these *GTA 6* graphics real?\")")
+        else:
+            fails.append("plain statement: use a structure (question, tease, withheld/negation, number promise, "
+                         "shock fact, first-person claim, relatable situation)")
+    return fails, notes
+
+
+def check_title(title, hashtags=()):
+    fails, notes = [], []
+    if len(title) > 100:
+        fails.append(f"{len(title)} chars (max 100)")
+    caps = [w for w in re.findall(r"[A-Za-z']+", title) if len(w) > 1 and w.isupper() and w not in ("GTA", "POV", "VI")]
+    if len(caps) > 2:
+        fails.append(f"{len(caps)} CAPS words: emphasise 1-2 (\"Cost HOW MUCH!?\")")
+    if re.search("[A-Z]", title) and not re.search("[a-z]", title):
+        fails.append("all-caps title (0.90x on 3,481 gaming Shorts, 0.68x on GTA): capitalise 1-2 words")
+    if re.search(r"\b(update|announce\w*|explained|patch|now live|available now)\b", title, re.I):
+        notes.append("announcement wording measured 0.85x: lead with what changed (\"GTA 6 Map Is 2x BIGGER\")")
+    tagged = any(re.search(r"gta ?(6|vi)", h, re.I) for h in hashtags)
+    if not re.search(r"\bgta ?(6|vi)\b|grand theft auto (6|vi)", title, re.I):
+        (notes if tagged or re.search(r"\bgta\b|grand theft auto", title, re.I) else fails).append(
+            "no 'GTA 6' in the title: fine for a joke title if #gta6 is in the hashtags (RDCworld1, 5M)")
+    return fails, notes
+
+
+def opening_type(first_line):
+    line = (first_line or "").strip()
+    if FILLER_OPEN.match(line):
+        return "filler (trim the start)"
+    for name, pat in OPENING_TYPES:
+        if pat.search(line):
+            return name
+    return "statement"
+
+
+def check_picks(picks):
+    """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title."""
+    report = {}
+    for n, pick in enumerate(picks, 1):
+        entry = {}
+        for h in pick.get("hooks") or [pick.get("hook", "")]:
+            f, nt = check_hook(h)
+            if f or nt:
+                entry.setdefault("hooks", {})[h] = {"fails": f, "notes": nt} if nt else {"fails": f}
+        tags = pick.get("hashtags") or []
+        for t in pick.get("titles") or []:
+            f, nt = check_title(t, tags)
+            if f or nt:
+                entry.setdefault("titles", {})[t] = {"fails": f, "notes": nt} if nt else {"fails": f}
+        hs, ts = pick.get("hooks") or [], pick.get("titles") or []
+        if hs and len(ts) == len(hs):
+            for h, t in zip(hs, ts):
+                if structures(h) and not set(structures(h)) & set(structures(t)):
+                    entry.setdefault("pairing", []).append(
+                        f"title \"{t}\" doesn't use its hook's type ({', '.join(structures(h))})")
+        used = {s for h in pick.get("hooks") or [] for s in structures(h)}
+        kind = pick.get("clip_type")
+        if kind:
+            from .playbook import PLAYBOOK
+            play = PLAYBOOK.get(kind)
+            if not play:
+                entry["clip_type"] = f"unknown clip_type '{kind}' (use {', '.join(PLAYBOOK)})"
+            else:
+                missing = [s for s in play["hooks"][:2] if s not in used]
+                if missing:
+                    entry.setdefault("playbook", []).append(
+                        f"{kind} clips win with {play['hooks'][:2]}; missing {missing} (e.g. \"{play['examples'][0]}\")")
+                for key in ("hook_style", "caption_style"):
+                    if pick.get(key) and pick[key] != play[key]:
+                        entry.setdefault("playbook", []).append(
+                            f"{key} '{pick[key]}' differs from the {kind} default '{play[key]}': keep it only on purpose")
+        if len(pick.get("hooks") or []) >= 3 and len(used) < 3:
+            entry["variety"] = f"hooks only use {sorted(used)}: give each variant a different structure to A/B test"
+        if entry:
+            report[f"video {n}"] = entry
+    return report
+
+
+def has_fails(report):
+    return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
+        or any("variety" in e for e in report.values())
