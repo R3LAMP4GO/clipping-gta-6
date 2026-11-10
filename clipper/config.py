@@ -13,13 +13,11 @@ PROFILE = DEFAULT_PROFILE  # the active profile, set by load()
 
 IS_MAC = sys.platform == "darwin"
 MODEL_SEARCH = [
-    "~/Library/Application Support/vape-n-vibe/models/ggml-large-v3-turbo-q5_0.bin",
     "/opt/homebrew/share/whisper-cpp/ggml-large-v3-turbo-q5_0.bin",
     "~/.cache/whisper/ggml-large-v3-turbo-q5_0.bin",
     "~/.cache/whisper/ggml-base.en.bin",
     "~/.cache/whisper/ggml-small.en.bin",
     "/opt/homebrew/share/whisper-cpp/ggml-base.en.bin",
-    "~/Library/Application Support/supahscreenrecordah/whisper/ggml-base.bin",
 ]
 FAST_MODEL_SEARCH = [p for p in MODEL_SEARCH if "base" in p] + MODEL_SEARCH
 

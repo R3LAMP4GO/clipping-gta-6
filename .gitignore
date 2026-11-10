@@ -4,8 +4,10 @@ __pycache__/
 exports/
 logs/
 # Your own posts' performance data (written by your posting setup; read by `clipper simulate`)
-research/own-uploads.json
+research/own-uploads*.json
 .venv/
 *.pyc
 .DS_Store
 .pytest_cache/
+# local agent workspace: screenshots, plans, uploads
+.gg/
