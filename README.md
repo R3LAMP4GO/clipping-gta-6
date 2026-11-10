@@ -19,7 +19,7 @@
   <a href="https://whop.com/opsyscollective/products"><img src="https://img.shields.io/badge/Whop-The%20Collective-b0b6ff?style=for-the-badge" alt="The Collective on Whop"></a>
 </p>
 
-GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. You run it from Claude Code or Codex. It finds the moments worth clipping and writes a hook for every type that fits. It ranks those hooks against what moved views on **3,481 real gaming Shorts**, then renders one captioned 9:16 MP4 per hook so you can A/B test them.
+GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. You run it from Claude Code or Codex. It finds the moments worth clipping and writes a hook for every type that fits. It ranks those hooks against what moved views on **3,481 real gaming Shorts**, then renders one captioned 9:16 MP4 per hook so you can A/B test them. And it records streams **while they're live**, so your clips are ready before other clippers have even opened the VOD.
 
 > [!TIP]
 > **Stop prompting randomly. Start building with a system.** Learn how I build tools like this one in **THE COLLECTIVE**: **[whop.com/opsyscollective/products](https://whop.com/opsyscollective/products)**
@@ -28,9 +28,9 @@ GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. 
 
 ## Why this clipper
 
+- **Get the clips before anyone else.** Most clippers wait for the stream to end and scrub the VOD. This records your Twitch, Kick and YouTube creators the moment they go live on GTA 6, in gapless 30-minute chunks, and clips each finished chunk within about two hours. Your Shorts can be up while the stream is still going.
 - **Hooks backed by data, not vibes.** Every hook is checked against rules from 28 GTA Shorts with 500k–51M views, then ranked by its measured effect on 3,481 gaming Shorts. Weak hooks never ship: `clipper check` fails vague ones (0.67x), bare labels (0.88x) and spoilers.
 - **It finds the moments for you.** Volume jumps, screams, hype words, laughter and YouTube's most-replayed data score every second, so a 3-hour stream turns into a short list of clip candidates.
-- **Live streams too.** Point it at Twitch, Kick or YouTube creators. It records them in gapless 30-minute chunks while they're live on GTA 6, and clips the finished chunks every 2 hours.
 - **Runs inside your AI agent.** Claude Code or Codex does the judgment calls (which moment, which hook, which layout). Everything else runs locally and free: download, transcription, voice separation, speaker labels, captions and rendering.
 - **More than one niche.** Profiles keep each niche's creators, topic filter and hashtags apart. `gta6` and `gta-rp` (NoPixel) are included.
 
