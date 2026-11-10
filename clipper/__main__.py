@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 
 from . import analyze as analyze_mod
 from . import config, hooks, library, render as render_mod, schedule, simulate, sources, voice_setup
@@ -45,7 +46,16 @@ def daily(cfg, limit=None):
             "skipped_off_topic": skipped, "errors": errors}
 
 
+def tools_on_path():
+    """yt-dlp and other pip-installed tools sit next to the interpreter (a .venv's bin/); find them even when that
+    folder isn't on PATH, e.g. when an agent runs `.venv/bin/python -m clipper` from its own shell."""
+    here = str(Path(sys.executable).parent)
+    if here not in os.environ.get("PATH", "").split(os.pathsep):
+        os.environ["PATH"] = here + os.pathsep + os.environ.get("PATH", "")
+
+
 def main(argv=None):
+    tools_on_path()
     p = argparse.ArgumentParser(prog="clipper", description="Find, review and render short clips.")
     p.add_argument("--config")
     p.add_argument("--profile", help="niche profile in profiles/ (default: $CLIPPER_PROFILE or gta6)")
@@ -103,6 +113,8 @@ def main(argv=None):
     sc.add_argument("--every", type=int, default=2, help="live: hours between live clip runs")
     sc.add_argument("--watch-only", action="store_true", help="live: only the stream watcher (clip from your app's own "
                                                                  "scheduled task)")
+    sc.add_argument("--clip-cmd", help="live: shell command that clips the waiting chunks instead of `claude -p "
+                                       "'/clip-daily live'` (e.g. your own agent runner); still only runs when chunks wait")
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
@@ -209,7 +221,7 @@ def main(argv=None):
         elif args.action == "live":
             if not live_mod.load_streams():
                 raise SystemExit("no live streams in this profile's live.yaml (add some with `clipper live add`)")
-            print(schedule.install_live(args.every, watch_only=args.watch_only))
+            print(schedule.install_live(args.every, watch_only=args.watch_only, clip_cmd=args.clip_cmd))
         else:
             print(schedule.remove() if args.action == "remove" else schedule.status())
     elif args.cmd == "voice-setup":

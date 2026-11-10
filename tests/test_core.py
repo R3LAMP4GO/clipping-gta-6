@@ -564,6 +564,24 @@ class LinuxPortTests(unittest.TestCase):
             ids = {live.make_job(Path(d) / "seg.ts", "xqc", "u", "t", 1794321600 + s) for s in (0, 20)}
         self.assertEqual(len(ids), 2)
 
+    def test_live_clip_cmd_replaces_claude(self):
+        from clipper import schedule
+        jobs = schedule.live_jobs(None, clip_cmd="/venv/bin/python /ops/autopilot.py live")
+        self.assertEqual(jobs["live-clip"][0][2].split("; then ")[1], "/venv/bin/python /ops/autopilot.py live; fi")
+        self.assertIn("live pending", jobs["live-clip"][0][2])
+        self.assertNotIn("live-clip", schedule.live_jobs(None))  # no claude and no command: watcher only
+
+    def test_interpreter_folder_joins_path(self):
+        import os
+        import sys
+        from pathlib import Path
+        from unittest import mock
+        from clipper import __main__ as cli
+        with mock.patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}):
+            cli.tools_on_path()
+            cli.tools_on_path()  # idempotent
+            self.assertEqual(os.environ["PATH"], f"{Path(sys.executable).parent}:/usr/bin:/bin")
+
     def test_live_pending_exit_code(self):
         from unittest import mock
         from clipper import __main__ as cli

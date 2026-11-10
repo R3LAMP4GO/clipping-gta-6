@@ -31,15 +31,15 @@ def _live_names():
     return "" if p == config.DEFAULT_PROFILE else f"-{p}"
 
 
-def live_jobs(claude, every_hours=2, watch_minutes=5, watch_only=False):
+def live_jobs(claude, every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None):
     """{name: (argv, interval seconds, keep children)}: the watcher starts recorders (no AI, so it can run every few
     minutes and catch streams as they go live); the clip run starts Claude only when analyzed chunks are waiting."""
     py, sfx = sys.executable, _live_names()
     jobs = {f"live-watch{sfx}": ([py, "-m", "clipper", "live", "watch"], watch_minutes * 60, True)}
-    if claude and not watch_only:
+    run = clip_cmd or (claude and shlex.join(_claude_cmd(claude, "/clip-daily live")))
+    if run and not watch_only:
         gate = shlex.join([py, "-m", "clipper", "live", "pending"])
-        jobs[f"live-clip{sfx}"] = (["/bin/sh", "-c", f"if {gate}; then {shlex.join(_claude_cmd(claude, '/clip-daily live'))}; fi"],
-                                   every_hours * 3600, False)
+        jobs[f"live-clip{sfx}"] = (["/bin/sh", "-c", f"if {gate}; then {run}; fi"], every_hours * 3600, False)
     return jobs
 
 
@@ -52,9 +52,9 @@ def _live_env(claude):
     return {"PATH": path, "CLIPPER_PROFILE": config.PROFILE}
 
 
-def install_live(every_hours=2, watch_minutes=5, watch_only=False):
+def install_live(every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None):
     claude = shutil.which("claude")
-    jobs = live_jobs(claude, every_hours, watch_minutes, watch_only)
+    jobs = live_jobs(claude, every_hours, watch_minutes, watch_only, clip_cmd)
     env = _live_env(claude)
     logs = ROOT / "logs"
     logs.mkdir(exist_ok=True)
@@ -102,7 +102,8 @@ WantedBy=timers.target
             subprocess.run(["systemctl", "--user", "enable", "--now", f"{unit}.timer"], check=True)
     out = f"live watch every {watch_minutes} min"
     if f"live-clip{_live_names()}" in jobs:
-        out += f"; live clip run (/clip-daily live) every {every_hours} h, only when chunks are ready"
+        out += (f"; live clip run ({'your --clip-cmd' if clip_cmd else '/clip-daily live'}) every {every_hours} h, "
+                "only when chunks are ready")
     elif not watch_only:
         out += "; claude CLI not found, so chunks are clipped by the daily run (/clip-daily step 0)"
     return out + "; logs in logs/live-*.log"
