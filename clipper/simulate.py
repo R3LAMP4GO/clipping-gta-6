@@ -20,7 +20,7 @@ GENERIC_TAGS = {"shorts", "gta6", "gtavi", "gtarp", "nopixel", "gta", "funny", "
 
 
 def own_data(profile=None):
-    """Our posted clips' views, written by the autopilot per profile (gta6 keeps the original file name)."""
+    """Our posted clips' views, written by your posting setup per profile (gta6 keeps the original file name)."""
     profile = profile or config.PROFILE
     name = "own-uploads.json" if profile == config.DEFAULT_PROFILE else f"own-uploads-{profile}.json"
     return ROOT / "research" / name

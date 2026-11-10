@@ -21,8 +21,11 @@ ALLOWED = ["Bash(python3 -m clipper:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "B
            "Write(jobs/**)", "Edit(jobs/**)", "Write(exports/**)", "Edit(exports/**)"]
 
 
+MODEL = "sonnet"  # good judgment on picks and hooks at a fraction of Opus's usage
+
+
 def _claude_cmd(claude, prompt="/clip-daily"):
-    return [claude, "-p", prompt, "--permission-mode", "dontAsk", "--allowedTools", *ALLOWED]
+    return [claude, "-p", prompt, "--model", MODEL, "--permission-mode", "dontAsk", "--allowedTools", *ALLOWED]
 
 
 def _live_names():

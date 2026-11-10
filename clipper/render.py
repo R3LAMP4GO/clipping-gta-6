@@ -164,7 +164,7 @@ def upload_manifest(pick, meta, cfg, variants, titles):
 
 
 def export_dir(cfg, day=None):
-    """exports/<profile>/<date>: the autopilot posts each profile's folder to that profile's accounts."""
+    """exports/<profile>/<date>: each profile's clips stay separate, so each can post to its own accounts."""
     return EXPORTS / cfg.get("profile", config.PROFILE) / (day or date.today()).isoformat()
 
 

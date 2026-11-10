@@ -508,6 +508,7 @@ class LinuxPortTests(unittest.TestCase):
             service = (Path(d) / "clipper-gta6-daily.service").read_text()
         self.assertIn("OnCalendar=*-*-* 09:30:00", timer)
         self.assertIn("/usr/bin/claude -p /clip-daily", service)
+        self.assertIn("--model sonnet", service)  # unattended runs never default to the priciest model
 
     def test_unattended_run_may_write_its_report(self):
         import json
