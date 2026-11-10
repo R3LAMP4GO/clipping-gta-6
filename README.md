@@ -13,6 +13,8 @@
   <img src="https://img.shields.io/badge/Claude%20Code-ready-d97757?style=for-the-badge" alt="Works in Claude Code">
   <img src="https://img.shields.io/badge/Codex-ready-10a37f?style=for-the-badge" alt="Works in Codex">
   <img src="https://img.shields.io/badge/macOS%20%7C%20Linux-local%20%26%20free-555?style=for-the-badge" alt="macOS and Linux, runs locally">
+  <a href="https://www.youtube.com/@Isaiah.Morgan"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"></a>
+  <a href="https://www.tiktok.com/@isaiahmorgan_"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok"></a>
   <a href="https://www.instagram.com/the_collective.exe/"><img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"></a>
   <a href="https://whop.com/opsyscollective/products"><img src="https://img.shields.io/badge/Whop-The%20Collective-b0b6ff?style=for-the-badge" alt="The Collective on Whop"></a>
 </p>
@@ -142,7 +144,7 @@ Want to build tools like this yourself? Join **THE COLLECTIVE**: **[whop.com/ops
 
 Stop prompting randomly. Start building with a system.
 
-Follow along on Instagram: **[@the_collective.exe](https://www.instagram.com/the_collective.exe/)**
+Follow along: **[YouTube](https://www.youtube.com/@Isaiah.Morgan)** · **[TikTok](https://www.tiktok.com/@isaiahmorgan_)** · **[Instagram](https://www.instagram.com/the_collective.exe/)**
 
 ---
 
