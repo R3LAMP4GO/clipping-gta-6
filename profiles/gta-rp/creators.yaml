@@ -1,0 +1,6 @@
+# Managed by `python3 -m clipper creators`. Every upload is still checked against the profile's topic.
+creators:
+- name: xQc
+  url: https://www.youtube.com/@xQcOW/videos
+- name: Kai Cenat
+  url: https://www.youtube.com/@KaiCenat/videos

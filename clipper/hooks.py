@@ -69,10 +69,27 @@ def structures(hook):
                                                                        len(text.split()) >= 3 and re.search("[a-z]", text))]
 
 
-def check_hook(hook):
+# The title must name the topic, or (as a note) carry its hashtag or a looser mention. Profiles set `title_topic`.
+GTA6_TITLE = {"pattern": r"\bgta ?(6|vi)\b|grand theft auto (6|vi)", "loose": r"\bgta\b|grand theft auto",
+              "hashtag": r"gta ?(6|vi)",
+              "note": "no 'GTA 6' in the title: fine for a joke title if #gta6 is in the hashtags (RDCworld1, 5M)"}
+
+
+def is_gta(cfg):
+    """GTA research rules apply: no cfg means the original GTA 6 behaviour."""
+    return cfg is None or cfg.get("research") == "gta"
+
+
+def title_topic(cfg):
+    if cfg is None:
+        return GTA6_TITLE
+    return cfg.get("title_topic") or (GTA6_TITLE if is_gta(cfg) else None)
+
+
+def check_hook(hook, gta=True):
     """(fails, notes): fails break a rule every 500k+ hook followed; notes are judgment calls."""
     text = plain(hook)
-    words = re.sub(r"\bgta (6|vi)\b", "GTA6", text, flags=re.I).split()  # "GTA 6" reads as one word
+    words = (re.sub(r"\bgta (6|vi)\b", "GTA6", text, flags=re.I) if gta else text).split()  # "GTA 6" is one word
     found = structures(hook)
     fails, notes = [], []
     limit = 9 if "relatable situation" in found else 8  # a relatable scene needs a few more words
@@ -100,7 +117,7 @@ def check_hook(hook):
     return fails, notes
 
 
-def check_title(title, hashtags=()):
+def check_title(title, hashtags=(), topic=GTA6_TITLE):
     fails, notes = [], []
     if len(title) > 100:
         fails.append(f"{len(title)} chars (max 100)")
@@ -111,10 +128,10 @@ def check_title(title, hashtags=()):
         fails.append("all-caps title (0.90x on 3,481 gaming Shorts, 0.68x on GTA): capitalise 1-2 words")
     if re.search(r"\b(update|announce\w*|explained|patch|now live|available now)\b", title, re.I):
         notes.append("announcement wording measured 0.85x: lead with what changed (\"GTA 6 Map Is 2x BIGGER\")")
-    tagged = any(re.search(r"gta ?(6|vi)", h, re.I) for h in hashtags)
-    if not re.search(r"\bgta ?(6|vi)\b|grand theft auto (6|vi)", title, re.I):
-        (notes if tagged or re.search(r"\bgta\b|grand theft auto", title, re.I) else fails).append(
-            "no 'GTA 6' in the title: fine for a joke title if #gta6 is in the hashtags (RDCworld1, 5M)")
+    if topic and not re.search(topic["pattern"], title, re.I):
+        tagged = any(re.search(topic["hashtag"], h, re.I) for h in hashtags)
+        loose = topic.get("loose") and re.search(topic["loose"], title, re.I)
+        (notes if tagged or loose else fails).append(topic["note"])
     return fails, notes
 
 
@@ -128,18 +145,20 @@ def opening_type(first_line):
     return "statement"
 
 
-def check_picks(picks):
+def check_picks(picks, cfg=None):
     """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title."""
+    from .playbook import for_profile
+    gta, topic, playbook = is_gta(cfg), title_topic(cfg), for_profile(cfg)
     report = {}
     for n, pick in enumerate(picks, 1):
         entry = {}
         for h in pick.get("hooks") or [pick.get("hook", "")]:
-            f, nt = check_hook(h)
+            f, nt = check_hook(h, gta)
             if f or nt:
                 entry.setdefault("hooks", {})[h] = {"fails": f, "notes": nt} if nt else {"fails": f}
         tags = pick.get("hashtags") or []
         for t in pick.get("titles") or []:
-            f, nt = check_title(t, tags)
+            f, nt = check_title(t, tags, topic)
             if f or nt:
                 entry.setdefault("titles", {})[t] = {"fails": f, "notes": nt} if nt else {"fails": f}
         hs, ts = pick.get("hooks") or [], pick.get("titles") or []
@@ -151,10 +170,9 @@ def check_picks(picks):
         used = {s for h in pick.get("hooks") or [] for s in structures(h)}
         kind = pick.get("clip_type")
         if kind:
-            from .playbook import PLAYBOOK
-            play = PLAYBOOK.get(kind)
+            play = playbook.get(kind)
             if not play:
-                entry["clip_type"] = f"unknown clip_type '{kind}' (use {', '.join(PLAYBOOK)})"
+                entry["clip_type"] = f"unknown clip_type '{kind}' (use {', '.join(playbook)})"
             else:
                 missing = [s for s in play["hooks"][:2] if s not in used]
                 if missing:

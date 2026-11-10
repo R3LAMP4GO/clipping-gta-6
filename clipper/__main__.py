@@ -42,12 +42,13 @@ def daily(cfg, limit=None):
     total = (min(sum(j["recommended"] for j in jobs), int(prefs.get("max_videos_per_run", 10)))
              if want == "auto" else int(want))
     return {"prefs": prefs, "new_videos": len(fresh), "analyzed": jobs, "videos_to_export": total,
-            "skipped_not_gta6": skipped, "errors": errors}
+            "skipped_off_topic": skipped, "errors": errors}
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(prog="clipper", description="Find, review and render short clips.")
     p.add_argument("--config")
+    p.add_argument("--profile", help="niche profile in profiles/ (default: $CLIPPER_PROFILE or gta6)")
     sub = p.add_subparsers(dest="cmd", required=True)
     w = sub.add_parser("watch", help="list new on-topic videos from the watchlist")
     w.add_argument("--per-channel", type=int, default=8)
@@ -68,7 +69,7 @@ def main(argv=None):
     g.add_argument("--picks", help="JSON list of {start,end,title,hook,description,hashtags,voiceover}")
     g.add_argument("--ids", help="candidate ids, e.g. 1,3")
     r.add_argument("--first-hook-only", action="store_true", help="render one variant per clip (quick check)")
-    r.add_argument("--out", help="output folder (default exports/<today>; numbering continues)")
+    r.add_argument("--out", help="output folder (default exports/<profile>/<today>; numbering continues)")
     r.add_argument("--allow-say", action="store_true", help="use the system voice (macOS say / espeak-ng) if no Fish Audio key is saved")
     sub.add_parser("voice-setup", help="open Fish Audio + a TextEdit note to paste and save your API key")
     ck = sub.add_parser("check", help="check picks.json hooks/titles against the viral research rules")
@@ -85,7 +86,7 @@ def main(argv=None):
     lv.add_argument("refs", nargs="*", help="add: twitch:NAME | kick:NAME | youtube:@NAME | URL; record: NAME URL; "
                                              "done: JOB")
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
-    lv.add_argument("--any-title", action="store_true", help="add: record even if the title doesn't say GTA 6")
+    lv.add_argument("--any-title", action="store_true", help="add: record even if the title isn't on the profile's topic")
     bn = sub.add_parser("bench", help="measure this machine and how many live creators it can keep up with")
     bn.add_argument("--seconds", type=int, default=60)
     cr = sub.add_parser("creators", help="list / add / remove watched creators")
@@ -104,14 +105,14 @@ def main(argv=None):
     fr.add_argument("seconds", type=float)
     args = p.parse_args(argv)
     config.load_env()
-    cfg = config.load(args.config)
+    cfg = config.load(args.config, args.profile)
 
     if args.cmd == "watch":
         searches = [] if args.no_search else None
         if args.search:
             searches = (searches if searches is not None else cfg.get("search", [])) + args.search
         found, errors, skipped = sources.watch(cfg, args.per_channel, searches)
-        json.dump({"videos": found, "skipped_not_gta6": skipped, "errors": errors}, sys.stdout, indent=2)
+        json.dump({"videos": found, "skipped_off_topic": skipped, "errors": errors}, sys.stdout, indent=2)
     elif args.cmd in ("fetch", "run"):
         job, meta = sources.fetch(args.video, args.section)
         if args.cmd == "run":
@@ -125,7 +126,7 @@ def main(argv=None):
         job = config.job_dir(args.job)
         picks = (json.loads(open(args.picks, encoding="utf-8").read()) if args.picks
                  else _picks_from_ids(job, args.ids))
-        problems = hooks.check_picks(picks)
+        problems = hooks.check_picks(picks, cfg)
         if hooks.has_fails(problems):
             print("[check] hooks/titles that break the research rules (rendering anyway):\n"
                   + json.dumps(problems, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -138,7 +139,7 @@ def main(argv=None):
                 sys.exit(3)
         print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out), indent=2))
     elif args.cmd == "check":
-        report = hooks.check_picks(json.loads(open(args.picks, encoding="utf-8").read()))
+        report = hooks.check_picks(json.loads(open(args.picks, encoding="utf-8").read()), cfg)
         failing = hooks.has_fails(report)
         if report:
             print(json.dumps(report, indent=2, ensure_ascii=False))
@@ -150,14 +151,14 @@ def main(argv=None):
             print(simulate.strategies_report(args.uploads))
         else:
             print(simulate.report(json.loads(open(args.picks, encoding="utf-8").read()),
-                                  keep=library.hooks_per_video()) if args.picks
-                  else simulate.effects_report())
+                                  keep=library.hooks_per_video(), **simulate.profile_kw(cfg)) if args.picks
+                  else simulate.effects_report(simulate.niche_for(cfg)))
     elif args.cmd == "setup":
         print(setup_mod.run(args.install, args.dry_run))
     elif args.cmd == "live":
         a, refs = args.action, args.refs
         if a == "add":
-            print(json.dumps([live_mod.add(r, gta_only=not args.any_title) for r in refs], indent=2))
+            print(json.dumps([live_mod.add(r, topic_only=not args.any_title) for r in refs], indent=2))
         elif a == "remove":
             print(f"removed {sum(live_mod.remove(r) for r in refs)}")
         elif a == "list":

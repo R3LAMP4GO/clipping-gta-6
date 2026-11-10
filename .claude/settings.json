@@ -8,7 +8,11 @@
       "Bash(open jobs/:*)",
       "Bash(open exports/:*)",
       "Write(jobs/**)",
-      "Edit(jobs/**)"
+      "Edit(jobs/**)",
+      "Glob",
+      "Grep",
+      "Write(exports/**)",
+      "Edit(exports/**)"
     ]
   }
 }

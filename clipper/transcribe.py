@@ -49,8 +49,10 @@ def parakeet_model(name, quantization):
         import onnxruntime as ort
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = asr_threads()
-        model = onnx_asr.load_model(name, quantization=quantization, sess_options=opts)
-        _PARAKEET[key] = model.with_vad(onnx_asr.load_vad("silero")).with_timestamps()
+        # CPU only: onnxruntime picks CoreML first on Macs, and it leaks memory until macOS kills the process
+        cpu = ["CPUExecutionProvider"]
+        model = onnx_asr.load_model(name, quantization=quantization, sess_options=opts, providers=cpu)
+        _PARAKEET[key] = model.with_vad(onnx_asr.load_vad("silero", providers=cpu)).with_timestamps()
     return _PARAKEET[key]
 
 

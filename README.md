@@ -13,10 +13,12 @@ Agent commands (Claude Code: `.claude/commands/`, Codex: copy `.codex/prompts/*.
 
 Runs on macOS and Ubuntu/Debian (CPU-only is fine; `clipper bench` sizes it). `clipper setup --install` installs everything for either.
 
-Output: `exports/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<date>/index.md` listing everything.
+Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
+
+**Profiles** (niches) live in `profiles/<name>/`: `profile.yaml` (topic patterns, keywords, hashtags, searches; merged over `watchlist.yaml`), `creators.yaml` and `live.yaml`, plus an optional `prefs.yaml` (else the root one is shared). Pick one with `--profile <name>` before the command (`python3 -m clipper --profile gta-rp watch`) or `CLIPPER_PROFILE`; the default is `gta6`.
 
 ```
-python3 -m clipper watch                       # new GTA 6 uploads from creators.yaml + searches
+python3 -m clipper watch                       # new on-topic uploads from the profile's creators + searches
 python3 -m clipper run <url>                   # download + transcribe + score -> jobs/<id>/candidates.md
 python3 -m clipper frame <id> 100              # gridded frame to locate a facecam (split layout)
 python3 -m clipper voice-setup                 # save a Fish Audio key (macOS: key page + TextEdit note; Linux: hidden prompt)
@@ -24,7 +26,7 @@ python3 -m clipper creators add @KaiCenat       # or: list / remove
 python3 -m clipper prefs set voice=auto videos_per_run=3 hooks_per_video=4
 python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
-python3 -m clipper render <id> --picks picks.json   # exports/<date>/video N/<hook>.mp4
+python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper live add twitch:xqc kick:xqc youtube:@KaiCenat   # streams to record while they play GTA 6
 python3 -m clipper live watch                  # start recorders for live GTA 6 streams (run every few minutes)
@@ -34,4 +36,4 @@ python3 -m clipper setup [--install]           # check/install dependencies + gl
 python3 -m unittest discover -s tests
 ```
 
-Creators live in `creators.yaml`, saved choices in `prefs.yaml`, and GTA 6 filters, signal weights and clip length in `watchlist.yaml`.
+Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights and clip length in `watchlist.yaml`.

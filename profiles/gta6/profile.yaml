@@ -1,0 +1,20 @@
+# GTA 6 profile: merged over watchlist.yaml. Creators in creators.yaml, live streams in live.yaml (this folder).
+
+# Hooks, titles and the clip-type playbook follow the GTA research (research/viral-gta-shorts.md).
+research: gta
+
+# A title matching any of these counts as on-topic for channels with match: keywords.
+keywords: [gta 6, gta vi, gta, grand theft auto, vice city, leonida, rockstar, nopixel,
+  rp, heist, trailer]
+
+hashtags: ["#gta6", "#gtavi", "#shorts"]
+
+# Only keep videos that are about GTA 6: the title must say so, or (if the title isn't
+# about another GTA) the description's opening or the tags must.
+require_topic: true
+topic_patterns: ["\\bgta ?(6|vi)\\b", "grand theft auto (6|vi)\\b", "#gta6", "#gtavi", "\\bleonida\\b"]
+exclude_title_patterns: ["\\bgta ?(5|v|iv|4)\\b", "gta online", "\\bgtao\\b", "red dead", "nopixel",
+  "(before|until|waiting for) gta ?(6|vi)\\b", "\\bmemes?\\b"]
+
+# Extra YouTube searches `watch` runs to find GTA videos outside the watchlist.
+search: ["GTA 6 reaction", "GTA 6 gameplay funny"]

@@ -8,6 +8,7 @@ from pathlib import Path
 from . import captions, signals, speakers, transcribe, tts
 from .analyze import fmt
 from . import config
+from . import config
 from .config import ROOT
 
 EXPORTS = ROOT / "exports"
@@ -58,9 +59,11 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
     silent = bool(stems) and (signals.integrated_loudness(stems[0]) or -99) < cfg.get("speech_floor_lufs", -40)
     words = [] if silent else speakers.diarized_words(stems[0] if stems else clip_wav, tmp / "wk", cfg)
     source = "no speech (captions off)" if silent else "whisperkit+diarization"
-    if not words and not silent:
-        words = [dict(w, s=w["s"] - s, e=w["e"] - s, spk=0) for w in fallback_words if s <= w["s"] < e]
-        source = "whisper.cpp"
+    heard = [dict(w, s=w["s"] - s, e=w["e"] - s, spk=0) for w in fallback_words if s <= w["s"] < e]
+    # WhisperKit on separated vocals sometimes drops most of the speech (4 of 54 words, one held for 8s)
+    if not silent and len(words) < len(heard) / 2:
+        words = heard
+        source = "source transcript"
     bed = clip_wav
     if stems:
         bed = tmp / "bed.wav"
@@ -160,6 +163,11 @@ def upload_manifest(pick, meta, cfg, variants, titles):
     return out
 
 
+def export_dir(cfg, day=None):
+    """exports/<profile>/<date>: the autopilot posts each profile's folder to that profile's accounts."""
+    return EXPORTS / cfg.get("profile", config.PROFILE) / (day or date.today()).isoformat()
+
+
 def next_video_number(out_dir):
     nums = [int(m.group(1)) for p in out_dir.glob("video *") if (m := re.fullmatch(r"video (\d+)", p.name))]
     return max(nums, default=0) + 1
@@ -168,7 +176,7 @@ def next_video_number(out_dir):
 def render(job, picks, cfg, first_hook_only=False, out_dir=None):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     fallback = transcribe.drop_repeats(json.loads((job / "transcript.json").read_text(encoding="utf-8"))["words"])
-    out_dir = Path(out_dir) if out_dir else EXPORTS / date.today().isoformat()
+    out_dir = Path(out_dir) if out_dir else export_dir(cfg)
     out_dir.mkdir(parents=True, exist_ok=True)
     first = next_video_number(out_dir)
     results = []
@@ -194,9 +202,13 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None):
                                                        ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep), encoding="utf-8")
-        with open(out_dir / "index.md", "a", encoding="utf-8") as idx:
-            idx.write(f"- **video {n}**: {titles[0]} · {meta['channel']} · {len(variants)} hooks · "
-                      f"voiceover: {prep['vo']['provider'] if prep['vo'] else 'none'}\n")
+        index = out_dir / "index.md"
+        # a re-render of a deleted video N replaces its line instead of listing it twice
+        lines = [x for x in (index.read_text(encoding="utf-8").splitlines(keepends=True) if index.exists() else [])
+                 if not x.startswith(f"- **video {n}**:")]
+        lines.append(f"- **video {n}**: {titles[0]} · {meta['channel']} · {len(variants)} hooks · "
+                     f"voiceover: {prep['vo']['provider'] if prep['vo'] else 'none'}\n")
+        index.write_text("".join(lines), encoding="utf-8")
         results.append({"video": n, "folder": str(folder), "titles": titles, "metadata": str(md), "speakers": prep["speakers"],
                         "transcript": prep["transcript"], "voiceover": prep["vo"]["provider"] if prep["vo"] else None,
                         "variants": variants})

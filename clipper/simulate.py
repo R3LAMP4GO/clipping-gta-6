@@ -12,17 +12,33 @@ import re
 import statistics as st
 from functools import lru_cache
 
-from . import hooks
+from . import config, hooks
 from .config import ROOT
 
 DATA = ROOT / "research" / "gaming-shorts-titles.json"
-OWN_DATA = ROOT / "research" / "own-uploads.json"  # our posted clips' views, written by the autopilot
+GENERIC_TAGS = {"shorts", "gta6", "gtavi", "gtarp", "nopixel", "gta", "funny", "gaming"}
+
+
+def own_data(profile=None):
+    """Our posted clips' views, written by the autopilot per profile (gta6 keeps the original file name)."""
+    profile = profile or config.PROFILE
+    name = "own-uploads.json" if profile == config.DEFAULT_PROFILE else f"own-uploads-{profile}.json"
+    return ROOT / "research" / name
+
+
+def niche_for(cfg):
+    """Dataset niche to fit hooks on: GTA research profiles use the GTA Shorts, others all gaming (or `sim_niche`)."""
+    return cfg.get("sim_niche") or ("gta" if hooks.is_gta(cfg) else None)
+
+
+def profile_kw(cfg):
+    return {"niche": niche_for(cfg), "generic_tags": tuple(t.lstrip("#").lower() for t in cfg.get("hashtags") or [])}
 STRATEGY = ROOT / "research" / "hook-strategy.json"
 
 
 def scope_chain(niche):
     """Our own uploads first once we have them, then the niche, then all gaming."""
-    return (["own"] if OWN_DATA.exists() else []) + [niche, None]
+    return (["own"] if own_data().exists() else []) + [niche, None]
 FAMOUS = re.compile(r"\b(xqc|kai|cenat|caseoh|tyler1|sketch|speed|ishowspeed|ninja|shroud|tim|timthetatman|nickmercs|"
                     r"swagg|jynxzi|drake|mrbeast|faze|pokimane|adin|duke dennis|fanum|druski|snoop|ed sheeran)\b", re.I)
 ANNOUNCE = re.compile(r"\b(update|announce\w*|explained|patch|season \d+|dlc|released?|coming soon|now live|"
@@ -52,8 +68,8 @@ def features(text, own=None, extra_names=()):
 @lru_cache(maxsize=None)
 def dataset(niche=None):
     rows = json.loads(DATA.read_text(encoding="utf-8"))
-    if OWN_DATA.exists():
-        rows += json.loads(OWN_DATA.read_text(encoding="utf-8"))
+    if own_data().exists():
+        rows += json.loads(own_data().read_text(encoding="utf-8"))
     return [(r["lift"], features(r["t"], OWN.get(r["ch"]))) for r in rows if niche in (None, r["niche"])]
 
 
@@ -109,11 +125,11 @@ def score(feats, effect):
     return (max(structs) if structs else 0.0) + sum(effect(k) for k in feats if k in MODIFIERS)
 
 
-def simulate(pick, runs=200, niche="gta", seed=7):
+def simulate(pick, runs=200, niche="gta", seed=7, generic_tags=()):
     rng = random.Random(seed)
     hs = pick.get("hooks") or []
     names = [t.lstrip("#").lower() for t in pick.get("hashtags") or []
-             if t.lstrip("#").lower() not in {"shorts", "gta6", "gtavi", "gtarp", "nopixel", "gta", "funny", "gaming"}]
+             if t.lstrip("#").lower() not in GENERIC_TAGS | set(generic_tags)]
     feats = {h: features(h, extra_names=names) for h in hs}
     pools = {s: dataset(s) for s in scope_chain(niche)}
     scope = scopes(niche)

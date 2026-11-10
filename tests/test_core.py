@@ -69,8 +69,8 @@ class Gta6FilterTests(unittest.TestCase):
     def setUp(self):
         from clipper import config
         self.cfg = config.load()
-        from clipper.sources import gta6_evidence
-        self.ev = gta6_evidence
+        from clipper.sources import topic_evidence
+        self.ev = topic_evidence
 
     def test_title_match(self):
         self.assertEqual(self.ev("Leonida Is MASSIVE...the GTA 6 Map", "", [], self.cfg), "title")
@@ -113,6 +113,46 @@ class HookTests(unittest.TestCase):
         self.assertEqual(captions.parse_markup("I Can Play *GTA 6 NOW*"),
                          [("I", False), ("Can", False), ("Play", False), ("GTA", True), ("6", True), ("NOW", True)])
         self.assertEqual(captions.parse_markup("*Kids* can't"), [("Kids", True), ("can't", False)])
+        self.assertEqual(captions.parse_markup("Why won't Kai watch *THIS*?"),
+                         [("Why", False), ("won't", False), ("Kai", False), ("watch", False), ("THIS?", True)])
+        self.assertEqual(captions.parse_markup("*Wait*, what"), [("Wait,", True), ("what", False)])
+
+    def test_captions_fall_back_when_whisperkit_misses_speech(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import render
+        said = [{"w": f"w{i}", "s": 100 + i * 0.2, "e": 100.2 + i * 0.2} for i in range(40)]
+        missed = [{"w": "I", "s": 0, "e": 1.4, "spk": 0}, {"w": "ain't", "s": 1.4, "e": 10, "spk": 0}]
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(render.subprocess, "run"), \
+                mock.patch.object(render.speakers, "diarized_words", return_value=missed), \
+                mock.patch.object(render.captions, "write_overlay", return_value="caps"):
+            prep = render.prepare_clip(Path(d), {"start": 100, "end": 110}, said, {"separate_voices": False}, Path(d))
+        self.assertEqual(len(prep["words"]), 40)
+        self.assertAlmostEqual(prep["words"][1]["s"], 0.2)
+        self.assertEqual(prep["transcript"], "source transcript")
+
+    def test_rerender_replaces_index_line(self):
+        import json
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import render
+        with tempfile.TemporaryDirectory() as d:
+            job, out = Path(d) / "job", Path(d) / "out"
+            job.mkdir()
+            (job / "job.json").write_text(json.dumps({"channel": "Kai Cenat Live", "url": "u", "title": "t"}))
+            (job / "transcript.json").write_text(json.dumps({"words": []}))
+            pick = {"start": 0, "end": 5, "hooks": ["a"], "titles": ["T"]}
+            with mock.patch.object(render, "prepare_clip", return_value={"vo": None, "speakers": 1, "transcript": ""}), \
+                    mock.patch.object(render, "encode_variant"), mock.patch.object(render, "probe", return_value={}), \
+                    mock.patch.object(render, "upload_manifest", return_value=[]), \
+                    mock.patch.object(render, "clip_markdown", return_value=""):
+                render.render(job, [pick], {}, out_dir=out)
+                shutil.rmtree(out / "video 1")
+                render.render(job, [pick], {}, out_dir=out)
+            self.assertEqual((out / "index.md").read_text().count("**video 1**"), 1)
 
 
 class WhisperKitParseTests(unittest.TestCase):
@@ -183,8 +223,8 @@ class LibraryTests(unittest.TestCase):
         self.lib = library
         self.tmp = tempfile.TemporaryDirectory()
         d = Path(self.tmp.name)
-        self.patches = [mock.patch.object(library, "CREATORS", d / "creators.yaml"),
-                        mock.patch.object(library, "PREFS", d / "prefs.yaml"),
+        self.patches = [mock.patch.object(library, "creators_path", return_value=d / "creators.yaml"),
+                        mock.patch.object(library, "prefs_path", return_value=d / "prefs.yaml"),
                         mock.patch.object(library, "lookup_channel", return_value="Kai Cenat")]
         for p in self.patches:
             p.start()
@@ -209,7 +249,7 @@ class LibraryTests(unittest.TestCase):
 
     def test_set_prefs_validates_and_keeps_comments(self):
         self.lib.set_prefs(["voice=off", "videos_per_run=3", "schedule_time=08:30"])
-        text = self.lib.PREFS.read_text()
+        text = self.lib.prefs_path().read_text()
         self.assertIn("voice: off            # off | all | auto", text)
         self.assertIn('schedule_time: "08:30"', text)
         self.assertEqual(self.lib.load_prefs()["videos_per_run"], 3)
@@ -469,6 +509,28 @@ class LinuxPortTests(unittest.TestCase):
         self.assertIn("OnCalendar=*-*-* 09:30:00", timer)
         self.assertIn("/usr/bin/claude -p /clip-daily", service)
 
+    def test_unattended_run_may_write_its_report(self):
+        import json
+        from pathlib import Path
+        from clipper import schedule
+        # /clip-daily appends its report to exports/<profile>/<date>/index.md; dontAsk mode refuses unlisted tools
+        project = json.loads(Path(".claude/settings.json").read_text())["permissions"]["allow"]
+        for allowed in (schedule.ALLOWED, project):
+            self.assertIn("Write(exports/**)", allowed)
+            self.assertIn("Edit(exports/**)", allowed)
+        for prompt in (".claude/commands/clip-daily.md", ".codex/prompts/clip-daily.md"):
+            self.assertIn("no `cd`", Path(prompt).read_text())
+
+    def test_parakeet_runs_on_cpu_not_coreml(self):
+        import sys
+        from unittest import mock
+        from clipper import transcribe
+        fake = mock.MagicMock()
+        with mock.patch.dict(sys.modules, {"onnx_asr": fake}), mock.patch.dict(transcribe._PARAKEET, clear=True):
+            transcribe.parakeet_model("nemo-parakeet-tdt-0.6b-v3", "int8")
+        self.assertEqual(fake.load_model.call_args.kwargs["providers"], ["CPUExecutionProvider"])
+        self.assertEqual(fake.load_vad.call_args.kwargs["providers"], ["CPUExecutionProvider"])
+
     def test_demucs_device_auto(self):
         from unittest import mock
         from clipper import config
@@ -494,3 +556,99 @@ class ParakeetTests(unittest.TestCase):
         self.assertEqual(words[5]["s"], 10.48)
         self.assertEqual(words[5]["e"], 10.64)   # ends where "this." starts
         self.assertEqual(words[-1]["e"], 11.0)   # last word ends with its segment
+
+
+class ProfileTests(unittest.TestCase):
+    def tearDown(self):
+        from clipper import config
+        config.load()
+
+    def test_default_profile_reproduces_gta6_config(self):
+        from clipper import config
+        cfg = config.load()
+        self.assertEqual(cfg["profile"], "gta6")
+        self.assertEqual(config.load(profile="gta6"), cfg)
+        self.assertEqual(cfg["hashtags"], ["#gta6", "#gtavi", "#shorts"])
+        self.assertIn("\\bgta ?(6|vi)\\b", cfg["topic_patterns"])
+        self.assertIn("nopixel", cfg["exclude_title_patterns"])
+        self.assertEqual(cfg["search"], ["GTA 6 reaction", "GTA 6 gameplay funny"])
+        self.assertIn("xQc", [c["name"] for c in cfg["channels"]])
+        self.assertEqual(cfg["weights"]["loudness"], 0.30)
+
+    def test_env_picks_profile_and_unknown_profile_fails(self):
+        import os
+        from unittest import mock
+        from clipper import config
+        with mock.patch.dict(os.environ, {"CLIPPER_PROFILE": "no-such-profile"}):
+            with self.assertRaises(SystemExit):
+                config.load()
+
+    def test_profile_files_fall_back_to_root_only_for_default(self):
+        from clipper import config
+        self.assertEqual(config.profile_file("creators.yaml", "gta6"), config.PROFILES / "gta6" / "creators.yaml")
+        self.assertEqual(config.profile_file("creators.yaml", "other"), config.PROFILES / "other" / "creators.yaml")
+        self.assertEqual(config.prefs_file("other"), config.ROOT / "prefs.yaml")
+
+    def test_live_jobs_belong_to_their_profile(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import config, live
+        with tempfile.TemporaryDirectory() as d:
+            for jid, prof in (("live-a", None), ("live-b", "gta-rp")):
+                (Path(d) / jid).mkdir()
+                (Path(d) / jid / "live_ready").write_text("x")
+                (Path(d) / jid / "job.json").write_text(json.dumps({"profile": prof} if prof else {}))
+            with mock.patch.object(live, "JOBS", Path(d)):
+                self.assertEqual(live.ready_jobs(), ["live-a"])
+                with mock.patch.object(config, "PROFILE", "gta-rp"):
+                    self.assertEqual(live.ready_jobs(), ["live-b"])
+
+    def test_gta6_keys_still_work_as_aliases(self):
+        from clipper import live, sources
+        old = {"gta6_patterns": ["\\bgta ?6\\b"], "require_gta6": False}
+        self.assertEqual(sources.topic_evidence("GTA 6 trailer", "", [], old), "title")
+        self.assertFalse(sources.require_topic(old))
+        self.assertTrue(sources.require_topic({}))
+        self.assertFalse(live.topic_only({"gta_only": False}))
+        self.assertTrue(live.topic_only({}))
+
+    def test_export_path_includes_profile(self):
+        from datetime import date
+        from clipper import render
+        self.assertEqual(render.export_dir({"profile": "gta-rp"}, date(2026, 11, 9)),
+                         render.EXPORTS / "gta-rp" / "2026-11-09")
+
+    def test_gta_checks_only_for_gta_research_profiles(self):
+        from clipper import hooks, playbook, simulate
+        gta, other = {"research": "gta"}, {"hashtags": ["#minecraft"]}
+        self.assertTrue(hooks.check_picks([{"hooks": ["Why is Kai shaking?"], "titles": ["Why Is Kai Shaking?"]}], gta))
+        self.assertEqual(hooks.check_picks([{"hooks": ["Why is Kai shaking?"], "titles": ["Why Is Kai Shaking?"]}],
+                                           other), {})
+        self.assertEqual(playbook.for_profile(gta), playbook.PLAYBOOK)
+        generic = playbook.for_profile({**other, "playbook": {"comedy": {"caption_style": "boxed"}}})
+        self.assertEqual(generic["comedy"]["caption_style"], "boxed")
+        for play in generic.values():
+            for ex in play["examples"]:
+                self.assertNotIn("GTA", ex)
+                self.assertEqual(hooks.check_hook(ex, gta=False)[0], [], ex)
+        self.assertEqual(simulate.niche_for(gta), "gta")
+        self.assertIsNone(simulate.niche_for(other))
+        self.assertEqual(simulate.profile_kw(other)["generic_tags"], ("minecraft",))
+
+    def test_gta_rp_keeps_nopixel_titles_gta6_rejects(self):
+        from clipper import config, hooks, playbook
+        from clipper.sources import topic_evidence
+        title = "The Casino Heist | GTA RP Nopixel V"
+        self.assertIsNone(topic_evidence(title, "", [], config.load(profile="gta6")))
+        rp = config.load(profile="gta-rp")
+        self.assertEqual(rp["profile"], "gta-rp")
+        self.assertEqual(topic_evidence(title, "", [], rp), "title")
+        self.assertEqual(topic_evidence("xQc becomes a cop on NoPixel 4.0", "", [], rp), "title")
+        self.assertIsNone(topic_evidence("Kai Cenat Reacts To GTA 6 Trailer", "", [], rp))
+        self.assertIsNone(topic_evidence("Fortnite tournament", "", [], rp))
+        self.assertEqual(hooks.check_title("xQc Robs the Bank in GTA RP", ["#gtarp"], hooks.title_topic(rp)), ([], []))
+        for play in playbook.for_profile(rp).values():
+            for ex in play["examples"]:
+                self.assertEqual(hooks.check_hook(ex)[0], [], ex)

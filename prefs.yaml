@@ -2,7 +2,7 @@
 voice: auto            # off | all | auto (the agent decides per video)
 videos_per_run: auto   # auto = as many as are worth taking (analysis recommends per source), or a number
 max_videos_per_run: 10 # cap for auto
-hooks_per_video: auto
+hooks_per_video: 5
 sources_per_day: 2     # new GTA 6 uploads a daily run analyzes
 daily_max_minutes: 90  # only the first N minutes of long streams are analyzed
 schedule_time: "09:00"

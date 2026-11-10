@@ -1,4 +1,6 @@
-# Clipper config: creators to watch, what counts as a highlight, and output style.
+# Clipper config shared by every profile: what counts as a highlight and output style.
+# Topic filters, keywords, hashtags and searches live in profiles/<name>/profile.yaml (merged over this file);
+# pick one with --profile NAME or CLIPPER_PROFILE (default gta6).
 asr: parakeet              # parakeet (NVIDIA Parakeet TDT 0.6B v3 via onnx-asr, CPU) or whisper (whisper.cpp)
 parakeet_model: nemo-parakeet-tdt-0.6b-v3
 parakeet_quantization: int8
@@ -26,19 +28,6 @@ hype_words: [no way, oh my god, omg, what the, wtf, let's go, lets go, holy, ins
   crazy, bro, dude, run, yo, wait, are you serious, shut up, unbelievable, clip that,
   dead, help, leaked, confirmed]
 
-# A title matching any of these counts as on-topic for channels with match: keywords.
-keywords: [gta 6, gta vi, gta, grand theft auto, vice city, leonida, rockstar, nopixel,
-  rp, heist, trailer]
-
-hashtags: ["#gta6", "#gtavi", "#shorts"]
-
-# Only keep videos that are about GTA 6: the title must say so, or (if the title isn't
-# about another GTA) the description's opening or the tags must.
-require_gta6: true
-gta6_patterns: ["\\bgta ?(6|vi)\\b", "grand theft auto (6|vi)\\b", "#gta6", "#gtavi", "\\bleonida\\b"]
-exclude_title_patterns: ["\\bgta ?(5|v|iv|4)\\b", "gta online", "\\bgtao\\b", "red dead", "nopixel",
-  "(before|until|waiting for) gta ?(6|vi)\\b", "\\bmemes?\\b"]
-
 # Default caption look (picks can override): bold = Montserrat Black outline,
 # boxed = Bebas Neue on black (Kai Cenat Live style), comic = Luckiest Guy (Typical Gamer style).
 caption_style: bold
@@ -54,11 +43,6 @@ game_volume: 0.7           # game/music level under the voices after separation
 fish_model: s2.1-pro-free  # Fish Audio's free developer-tier model
 fish_voice_id: ""          # optional voice model id from fish.audio; empty = default voice
 voice: Samantha            # macOS `say` fallback voice
-
-# Creators live in creators.yaml: manage them with `python3 -m clipper creators add|remove|list`.
-
-# Extra YouTube searches `watch` runs to find GTA videos outside the watchlist.
-search: ["GTA 6 reaction", "GTA 6 gameplay funny"]
 
 # Live capture (clipper live): finished chunks are transcribed right away, at most live_workers at a time across all
 # recorders; `clipper bench` measures what this machine can keep up with and suggests a value.

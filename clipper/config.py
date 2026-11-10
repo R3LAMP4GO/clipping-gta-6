@@ -7,6 +7,9 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 JOBS = ROOT / "jobs"
+PROFILES = ROOT / "profiles"
+DEFAULT_PROFILE = "gta6"
+PROFILE = DEFAULT_PROFILE  # the active profile, set by load()
 
 IS_MAC = sys.platform == "darwin"
 MODEL_SEARCH = [
@@ -48,11 +51,38 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip("'\""))
 
 
-def load(path=None):
+def profile_file(name, profile=None):
+    """profiles/<profile>/<name>; the default profile falls back to the pre-profile file at the repo root."""
+    profile = profile or PROFILE
+    f = PROFILES / profile / name
+    if not f.exists() and profile == DEFAULT_PROFILE and (ROOT / name).exists():
+        return ROOT / name
+    return f
+
+
+def prefs_file(profile=None):
+    """A profile's own prefs.yaml if it has one, else the shared root prefs.yaml."""
+    f = PROFILES / (profile or PROFILE) / "prefs.yaml"
+    return f if f.exists() else ROOT / "prefs.yaml"
+
+
+def load(path=None, profile=None):
+    """watchlist.yaml with profiles/<profile>/profile.yaml merged over it (dicts like `weights` merge per key)."""
+    global PROFILE
+    profile = profile or os.environ.get("CLIPPER_PROFILE") or DEFAULT_PROFILE
+    if not (PROFILES / profile).is_dir() and profile != DEFAULT_PROFILE:
+        names = sorted(p.name for p in PROFILES.iterdir() if p.is_dir()) if PROFILES.is_dir() else []
+        raise SystemExit(f"no profile '{profile}' (have: {', '.join(names) or 'none'})")
+    PROFILE = profile
     path = Path(path) if path else ROOT / "watchlist.yaml"
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
-    creators = ROOT / "creators.yaml"
+    over = PROFILES / profile / "profile.yaml"
+    if over.exists():
+        for k, v in (yaml.safe_load(over.read_text(encoding="utf-8")) or {}).items():
+            cfg[k] = {**cfg[k], **v} if isinstance(v, dict) and isinstance(cfg.get(k), dict) else v
+    cfg["profile"] = profile
+    creators = profile_file("creators.yaml")
     if "channels" not in cfg and creators.exists():
         cfg["channels"] = (yaml.safe_load(creators.read_text(encoding="utf-8")) or {}).get("creators") or []
     return cfg

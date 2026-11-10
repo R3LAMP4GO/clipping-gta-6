@@ -166,12 +166,13 @@ def parse_markup(text):
     """'I Can Play *GTA 6 NOW*' -> [(word, highlighted)]."""
     out, on = [], False
     for tok in text.split():
-        if tok.startswith("*"):
+        body = tok.rstrip("?!.,;:…")  # "*THIS*?": the marker closes before trailing punctuation
+        if body.startswith("*"):
             on = True
-        clean = tok.strip("*")
+        clean = body.strip("*") + tok[len(body):]
         if clean:
             out.append((clean, on))
-        if tok.endswith("*") and (len(tok) > 1 or not tok.startswith("*")):
+        if body.endswith("*") and (len(body) > 1 or not body.startswith("*")):
             on = False
     return out
 

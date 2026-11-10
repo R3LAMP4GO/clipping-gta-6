@@ -124,7 +124,7 @@ def analyze(job, cfg, fast=False, force=False):
     clip_type = playbook.guess_type(meta.get("title", ""), profile, len(words) / max(1.0, duration / 60), loud_events)
     result = {"video": meta, "weights": {k: round(v, 3) for k, v in w.items()}, "has_heatmap": bool(heat.any()),
               "profile": profile, "loudness_spread_lu": spread, "clip_length": lengths,
-              "recommended": recommended, "clip_type": clip_type, "hook_plan": playbook.plan_text(clip_type),
+              "recommended": recommended, "clip_type": clip_type, "hook_plan": playbook.plan_text(clip_type, playbook.for_profile(cfg)),
               "candidates": out}
     (job / "candidates.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     (job / "candidates.md").write_text(to_markdown(result), encoding="utf-8")

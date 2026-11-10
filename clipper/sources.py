@@ -25,9 +25,17 @@ def _full_meta(vid):
     return json.loads(res.stdout) if res.returncode == 0 and res.stdout.strip() else None
 
 
-def gta6_evidence(title, description, tags, cfg):
-    """Where the video proves it's about GTA 6 ('title'/'description'/'tags'), or None."""
-    pats = [re.compile(p, re.I) for p in cfg.get("gta6_patterns", [])]
+def topic_patterns(cfg):
+    return cfg.get("topic_patterns", cfg.get("gta6_patterns", []))  # gta6_* are the pre-profile names
+
+
+def require_topic(cfg):
+    return cfg.get("require_topic", cfg.get("require_gta6", True))
+
+
+def topic_evidence(title, description, tags, cfg):
+    """Where the video proves it's on the profile's topic ('title'/'description'/'tags'), or None."""
+    pats = [re.compile(p, re.I) for p in topic_patterns(cfg)]
     excl = [re.compile(p, re.I) for p in cfg.get("exclude_title_patterns", [])]
     if any(p.search(title) for p in excl):
         return None
@@ -68,15 +76,15 @@ def watch(cfg, per_channel=8, searches=None):
                 "url": f"https://www.youtube.com/watch?v={vid}",
                 "processed": (JOBS / vid / "candidates.json").exists(),
             })
-    if not cfg.get("require_gta6", True):
+    if not require_topic(cfg):
         return found, errors, 0
     with ThreadPoolExecutor(max_workers=6) as pool:
         metas = list(pool.map(_full_meta, [v["id"] for v in found]))
     kept = []
     for v, m in zip(found, metas):
-        ev = gta6_evidence(v["title"], (m or {}).get("description"), (m or {}).get("tags"), cfg)
+        ev = topic_evidence(v["title"], (m or {}).get("description"), (m or {}).get("tags"), cfg)
         if ev:
-            v["gta6_evidence"] = ev
+            v["topic_evidence"] = ev
             kept.append(v)
     return kept, errors, len(found) - len(kept)
 

@@ -1,0 +1,36 @@
+# GTA RP profile (NoPixel and other GTA 5 roleplay servers): merged over watchlist.yaml.
+# Creators in creators.yaml, live streams in live.yaml (this folder). Posts to its own accounts (see the ops repo).
+
+# GTA research rules for hooks and titles, with RP examples below.
+research: gta
+
+keywords: [gta rp, gtarp, nopixel, no pixel, roleplay, rp, gta, heist, cops, server]
+
+hashtags: ["#gtarp", "#nopixel", "#shorts"]
+
+# On topic when the title (or the description's opening, or the tags) says it's GTA roleplay.
+# GTA 5 isn't excluded here: RP servers run on it.
+require_topic: true
+topic_patterns: ["\\bgta ?(5|v)? ?rp\\b", "\\bgtarp\\b", "\\bno ?pixel\\b", "\\bgta\\b.*\\b(rp|roleplay)\\b",
+  "\\b(rp|roleplay)\\b.*\\bgta\\b", "#gtarp", "#nopixel"]
+exclude_title_patterns: ["red dead", "\\brdr ?2?\\b", "\\bmemes?\\b", "\\bgta ?(6|vi)\\b(?!.*\\b(rp|roleplay|nopixel)\\b)"]
+
+search: ["GTA RP NoPixel funny", "NoPixel 4.0 xQc", "GTA RP Kai Cenat"]
+
+# Titles should say GTA RP / NoPixel; a joke title is fine with #gtarp or #nopixel in the hashtags.
+title_topic:
+  pattern: "\\bgta ?(5|v)? ?rp\\b|\\bno ?pixel\\b|roleplay"
+  loose: "\\bgta\\b|\\brp\\b"
+  hashtag: "gtarp|nopixel"
+  note: "no 'GTA RP' or 'NoPixel' in the title: fine for a joke title if #gtarp is in the hashtags"
+
+# RP clips are mostly comedy: examples without GTA 6.
+playbook:
+  comedy:
+    what: "an absurd RP scene with several players (heists, cops, court, hostages); the situation is the joke"
+    examples: ["POV: you're the hostage in *NoPixel*", "Nobody expected the hostages to *SING*",
+               "Why are the hostages singing?", "Wait until the hostages start singing..."]
+  reaction:
+    what: "a streamer reacting in character to another player; their face and voice are the payoff"
+    examples: ["Me explaining RP to my mom", "xQc was NOT ready for *this*",
+               "Why couldn't xQc stop laughing?", "Wait for xQc's face at the end..."]

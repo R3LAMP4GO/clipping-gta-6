@@ -14,8 +14,8 @@ UNIT = "clipper-gta6-daily"
 LABEL = "com.clipper.gta6.daily"
 PLIST = Path("~/Library/LaunchAgents").expanduser() / f"{LABEL}.plist"
 # Only what a clipping run needs, so the unattended agent can't wander.
-ALLOWED = ["Bash(python3 -m clipper:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "Bash(open:*)", "Read", "Write(jobs/**)",
-           "Edit(jobs/**)"]
+ALLOWED = ["Bash(python3 -m clipper:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "Bash(open:*)", "Read", "Glob", "Grep",
+           "Write(jobs/**)", "Edit(jobs/**)", "Write(exports/**)", "Edit(exports/**)"]
 
 
 def _claude_cmd(claude):

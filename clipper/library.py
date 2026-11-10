@@ -1,15 +1,13 @@
-"""Creators list and saved preferences (plain YAML files the CLI owns)."""
+"""Creators list and saved preferences (plain YAML files the CLI owns), per profile."""
 import json
 import re
 import subprocess
 
 import yaml
 
-from .config import ROOT
+from . import config
 
-CREATORS = ROOT / "creators.yaml"
-PREFS = ROOT / "prefs.yaml"
-CREATORS_HEADER = "# Managed by `python3 -m clipper creators`. Every upload is still checked for GTA 6.\n"
+CREATORS_HEADER = "# Managed by `python3 -m clipper creators`. Every upload is still checked against the profile's topic.\n"
 PREF_RULES = {
     "voice": ("off", "all", "auto"),
     "videos_per_run": ("auto", *range(1, 21)), "max_videos_per_run": range(1, 31), "hooks_per_video": ("auto", *range(1, 9)), "sources_per_day": range(1, 11),
@@ -17,14 +15,25 @@ PREF_RULES = {
 }
 
 
+def creators_path():
+    return config.profile_file("creators.yaml")
+
+
+def prefs_path():
+    return config.prefs_file()
+
+
 def load_creators():
-    if not CREATORS.exists():
+    path = creators_path()
+    if not path.exists():
         return []
-    return (yaml.safe_load(CREATORS.read_text(encoding="utf-8")) or {}).get("creators") or []
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("creators") or []
 
 
 def save_creators(creators):
-    CREATORS.write_text(CREATORS_HEADER + yaml.safe_dump({"creators": creators}, sort_keys=False, allow_unicode=True),
+    path = creators_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(CREATORS_HEADER + yaml.safe_dump({"creators": creators}, sort_keys=False, allow_unicode=True),
                         encoding="utf-8")
 
 
@@ -69,7 +78,8 @@ def remove_creator(ref):
 
 
 def load_prefs():
-    return yaml.safe_load(PREFS.read_text(encoding="utf-8")) if PREFS.exists() else {}
+    path = prefs_path()
+    return yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
 def hooks_per_video():
@@ -95,12 +105,13 @@ def set_prefs(pairs):
         if not ok:
             raise ValueError(f"bad value for {key}: {raw}")
         prefs[key] = val
-    text = PREFS.read_text(encoding="utf-8") if PREFS.exists() else ""
+    path = prefs_path()
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
     for key, val in prefs.items():
         line = f'{key}: "{val}"' if key == "schedule_time" else f"{key}: {val}"
         if re.search(rf"^{key}:.*$", text, re.M):
             text = re.sub(rf"^{key}:[^#\n]*?(\s*#.*)?$", lambda m: line + (m.group(1) or ""), text, flags=re.M)
         else:
             text += line + "\n"
-    PREFS.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding="utf-8")
     return prefs

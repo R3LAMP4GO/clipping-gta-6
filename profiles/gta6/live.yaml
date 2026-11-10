@@ -1,14 +1,14 @@
-# Live streams to record while they play GTA 6. Managed by `python3 -m clipper live add|remove`.
+# Live streams to record while they're on topic. Managed by `python3 -m clipper live add|remove`.
 streams:
 - name: xqc-twitch
   url: https://www.twitch.tv/xqc
-  gta_only: true
+  topic_only: true
 - name: xqc-kick
   url: https://kick.com/xqc
-  gta_only: true
+  topic_only: true
 - name: kaicenat-twitch
   url: https://www.twitch.tv/kaicenat
-  gta_only: true
+  topic_only: true
 - name: KaiCenat-youtube
   url: https://www.youtube.com/@KaiCenat/live
-  gta_only: true
+  topic_only: true

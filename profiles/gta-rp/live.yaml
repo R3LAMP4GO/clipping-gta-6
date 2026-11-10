@@ -1,0 +1,11 @@
+# Live streams to record while they're on topic. Managed by `python3 -m clipper live add|remove`.
+streams:
+- name: xqc-twitch
+  url: https://www.twitch.tv/xqc
+  topic_only: true
+- name: xqc-kick
+  url: https://kick.com/xqc
+  topic_only: true
+- name: kaicenat-twitch
+  url: https://www.twitch.tv/kaicenat
+  topic_only: true

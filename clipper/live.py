@@ -1,4 +1,4 @@
-"""Record GTA 6 live streams (Twitch, Kick, YouTube) while they're on, in gapless chunks that become normal jobs.
+"""Record live streams (Twitch, Kick, YouTube) while they're on, in gapless chunks that become normal jobs.
 
 A recorder per live stream runs ffmpeg's segment muxer on the stream's HLS URL, so there's no gap between chunks.
 Each finished chunk is remuxed into jobs/live-<name>-<time>/ with job.json + source.info.json, ready for
@@ -18,26 +18,38 @@ from pathlib import Path
 
 import yaml
 
+from . import config
 from .config import JOBS, ROOT
-from .sources import gta6_evidence
+from .sources import topic_evidence
 
-STREAMS = ROOT / "live.yaml"
-WORK = JOBS / "_live"
-HEADER = "# Live streams to record while they play GTA 6. Managed by `python3 -m clipper live add|remove`.\n"
+WORK = JOBS / "_live"  # shared by all profiles: one recorder per stream, one set of analysis slots
+HEADER = "# Live streams to record while they're on topic. Managed by `python3 -m clipper live add|remove`.\n"
 
 
 def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40]
 
 
+def streams_path():
+    return config.profile_file("live.yaml")
+
+
+def profile_env():
+    """Child processes (recorders, analysis) run under the same profile."""
+    return {**os.environ, "CLIPPER_PROFILE": config.PROFILE}
+
+
 def load_streams():
-    if not STREAMS.exists():
+    path = streams_path()
+    if not path.exists():
         return []
-    return (yaml.safe_load(STREAMS.read_text(encoding="utf-8")) or {}).get("streams") or []
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("streams") or []
 
 
 def save_streams(streams):
-    STREAMS.write_text(HEADER + yaml.safe_dump({"streams": streams}, sort_keys=False), encoding="utf-8")
+    path = streams_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(HEADER + yaml.safe_dump({"streams": streams}, sort_keys=False), encoding="utf-8")
 
 
 def stream_url(ref):
@@ -55,10 +67,14 @@ def stream_name(url):
     return f"{m.group(2)}-{m.group(1).split('.')[0]}" if m else slug(url)
 
 
-def add(ref, name=None, gta_only=True):
+def topic_only(stream):
+    return stream.get("topic_only", stream.get("gta_only", True))  # gta_only is the pre-profile name
+
+
+def add(ref, name=None, topic_only=True):
     streams = [s for s in load_streams() if s["url"] != stream_url(ref)]
     url = stream_url(ref)
-    streams.append({"name": name or stream_name(url), "url": url, "gta_only": gta_only})
+    streams.append({"name": name or stream_name(url), "url": url, "topic_only": topic_only})
     save_streams(streams)
     return streams[-1]
 
@@ -100,24 +116,24 @@ def status(cfg):
         probes = list(pool.map(lambda s: probe(s["url"]), streams))
     out = []
     for s, p in zip(streams, probes):
-        gta = bool(p.get("live")) and (not s.get("gta_only", True) or
-                                       gta6_evidence(p.get("title", ""), p.get("description"), p.get("tags"), cfg))
-        out.append({**s, "live": p.get("live", False), "title": p.get("title"), "gta6": bool(gta),
+        on = bool(p.get("live")) and (not topic_only(s) or
+                                      topic_evidence(p.get("title", ""), p.get("description"), p.get("tags"), cfg))
+        out.append({**s, "live": p.get("live", False), "title": p.get("title"), "on_topic": bool(on),
                     "recording": bool(_alive(WORK / slug(s["name"]) / "pid"))})
     return out
 
 
 def watch(cfg, chunk_minutes=30):
-    """Start a recorder for every live GTA stream that isn't being recorded yet."""
+    """Start a recorder for every live on-topic stream that isn't being recorded yet."""
     started = []
     for s in status(cfg):
-        if s["live"] and s["gta6"] and not s["recording"]:
+        if s["live"] and s["on_topic"] and not s["recording"]:
             d = WORK / slug(s["name"])
             d.mkdir(parents=True, exist_ok=True)
             log = open(d / "recorder.log", "a")
             proc = subprocess.Popen([sys.executable, "-m", "clipper", "live", "record", s["name"], s["url"],
                                      "--chunk", str(chunk_minutes)], cwd=ROOT, stdout=log, stderr=log,
-                                    start_new_session=True)
+                                    start_new_session=True, env=profile_env())
             (d / "pid").write_text(str(proc.pid))
             started.append(s["name"])
     return started
@@ -133,7 +149,7 @@ def make_job(segment, name, url, title, started_at):
     dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
                                 str(src)], capture_output=True, text=True).stdout.strip() or 0)
     meta = {"id": jid, "url": url, "title": title, "channel": name, "duration": round(dur), "offset": 0.0,
-            "live": True, "recorded_at": started_at}
+            "live": True, "recorded_at": started_at, "profile": config.PROFILE}
     (job / "job.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     (job / "source.info.json").write_text(json.dumps({"title": title, "channel": name, "is_live": True}),
                                           encoding="utf-8")
@@ -167,7 +183,7 @@ def analyze_queued(jid, cfg):
                 continue
             try:
                 cmd = [sys.executable, "-m", "clipper", "analyze", jid] + (["--fast"] if cfg.get("live_fast", True) else [])
-                subprocess.run(cmd, cwd=ROOT, env={**os.environ, "CLIPPER_ASR_THREADS": str(threads)},
+                subprocess.run(cmd, cwd=ROOT, env={**profile_env(), "CLIPPER_ASR_THREADS": str(threads)},
                                stdout=subprocess.DEVNULL)
                 print(f"[live] analyzed {jid}", flush=True)
             finally:
@@ -227,10 +243,18 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
     (d / "pid").unlink(missing_ok=True)
 
 
+def job_profile(job):
+    try:
+        return json.loads((job / "job.json").read_text(encoding="utf-8")).get("profile") or config.DEFAULT_PROFILE
+    except (OSError, ValueError):
+        return config.DEFAULT_PROFILE
+
+
 def ready_jobs(analyzed_only=False):
-    """Recorded chunks not clipped yet (with analyzed_only, only those already transcribed and scored)."""
+    """The active profile's recorded chunks not clipped yet (with analyzed_only, only those already scored)."""
     return sorted(p.parent.name for p in JOBS.glob("live-*/live_ready") if not (p.parent / "live_done").exists()
-                  and (not analyzed_only or (p.parent / "candidates.json").exists()))
+                  and (not analyzed_only or (p.parent / "candidates.json").exists())
+                  and job_profile(p.parent) == config.PROFILE)
 
 
 def mark_done(jid, drop_source=True):
