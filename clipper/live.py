@@ -140,7 +140,8 @@ def watch(cfg, chunk_minutes=30):
 
 
 def make_job(segment, name, url, title, started_at):
-    jid = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M}"
+    # seconds too: a stream that reconnects in the same minute must not overwrite an earlier chunk
+    jid = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M%S}"
     job = JOBS / jid
     job.mkdir(parents=True, exist_ok=True)
     src = job / "source.mp4"

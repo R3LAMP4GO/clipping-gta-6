@@ -2,10 +2,13 @@
 (Linux) running /clip-daily."""
 import os
 import plistlib
+import shlex
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
+from . import config
 from .config import IS_MAC, ROOT
 
 UNIT_DIR = Path("~/.config/systemd/user").expanduser()
@@ -18,8 +21,107 @@ ALLOWED = ["Bash(python3 -m clipper:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "B
            "Write(jobs/**)", "Edit(jobs/**)", "Write(exports/**)", "Edit(exports/**)"]
 
 
-def _claude_cmd(claude):
-    return [claude, "-p", "/clip-daily", "--permission-mode", "dontAsk", "--allowedTools", *ALLOWED]
+def _claude_cmd(claude, prompt="/clip-daily"):
+    return [claude, "-p", prompt, "--permission-mode", "dontAsk", "--allowedTools", *ALLOWED]
+
+
+def _live_names():
+    """(launchd label suffix / systemd unit suffix) per profile, so each profile's live jobs are separate."""
+    p = config.PROFILE
+    return "" if p == config.DEFAULT_PROFILE else f"-{p}"
+
+
+def live_jobs(claude, every_hours=2, watch_minutes=5, watch_only=False):
+    """{name: (argv, interval seconds, keep children)}: the watcher starts recorders (no AI, so it can run every few
+    minutes and catch streams as they go live); the clip run starts Claude only when analyzed chunks are waiting."""
+    py, sfx = sys.executable, _live_names()
+    jobs = {f"live-watch{sfx}": ([py, "-m", "clipper", "live", "watch"], watch_minutes * 60, True)}
+    if claude and not watch_only:
+        gate = shlex.join([py, "-m", "clipper", "live", "pending"])
+        jobs[f"live-clip{sfx}"] = (["/bin/sh", "-c", f"if {gate}; then {shlex.join(_claude_cmd(claude, '/clip-daily live'))}; fi"],
+                                   every_hours * 3600, False)
+    return jobs
+
+
+def _live_env(claude):
+    path = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+    if IS_MAC:
+        path = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:" + path
+    if claude:
+        path = str(Path(claude).parent) + ":" + path
+    return {"PATH": path, "CLIPPER_PROFILE": config.PROFILE}
+
+
+def install_live(every_hours=2, watch_minutes=5, watch_only=False):
+    claude = shutil.which("claude")
+    jobs = live_jobs(claude, every_hours, watch_minutes, watch_only)
+    env = _live_env(claude)
+    logs = ROOT / "logs"
+    logs.mkdir(exist_ok=True)
+    for name, (argv, interval, keep_children) in jobs.items():
+        log = logs / f"{name}.log"
+        if IS_MAC:
+            plist_path = PLIST.parent / f"{LABEL.rsplit('.', 1)[0]}.{name}.plist"
+            plist = {"Label": plist_path.stem, "ProgramArguments": argv, "WorkingDirectory": str(ROOT),
+                     "StartInterval": interval, "RunAtLoad": True, "EnvironmentVariables": env,
+                     "StandardOutPath": str(log), "StandardErrorPath": str(log),
+                     # recorders outlive the watcher; launchd would otherwise kill them when it exits
+                     "AbandonProcessGroup": keep_children}
+            plist_path.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
+            plist_path.write_bytes(plistlib.dumps(plist))
+            subprocess.run(["launchctl", "load", str(plist_path)], check=True)
+        else:
+            unit = f"{UNIT.rsplit('-', 1)[0]}-{name}"
+            UNIT_DIR.mkdir(parents=True, exist_ok=True)
+            envs = "\n".join(f"Environment={k}={v}" for k, v in env.items())
+            # KillMode=process: systemd would otherwise stop the recorders when the watcher exits
+            (UNIT_DIR / f"{unit}.service").write_text(f"""[Unit]
+Description=Clipper {name}
+
+[Service]
+Type=oneshot
+WorkingDirectory={ROOT}
+{envs}
+ExecStart={shlex.join(argv)}
+{"KillMode=process" if keep_children else ""}
+StandardOutput=append:{log}
+StandardError=append:{log}
+""", encoding="utf-8")
+            (UNIT_DIR / f"{unit}.timer").write_text(f"""[Unit]
+Description=Run clipper {name} every {interval // 60} minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec={interval}s
+
+[Install]
+WantedBy=timers.target
+""", encoding="utf-8")
+            subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+            subprocess.run(["systemctl", "--user", "enable", "--now", f"{unit}.timer"], check=True)
+    out = f"live watch every {watch_minutes} min"
+    if f"live-clip{_live_names()}" in jobs:
+        out += f"; live clip run (/clip-daily live) every {every_hours} h, only when chunks are ready"
+    elif not watch_only:
+        out += "; claude CLI not found, so chunks are clipped by the daily run (/clip-daily step 0)"
+    return out + "; logs in logs/live-*.log"
+
+
+def remove_live():
+    removed = []
+    if IS_MAC:
+        for f in PLIST.parent.glob(f"{LABEL.rsplit('.', 1)[0]}.live-*.plist"):
+            subprocess.run(["launchctl", "unload", str(f)], capture_output=True)
+            f.unlink()
+            removed.append(f.stem)
+    else:
+        for f in UNIT_DIR.glob(f"{UNIT.rsplit('-', 1)[0]}-live-*.timer"):
+            subprocess.run(["systemctl", "--user", "disable", "--now", f.name], capture_output=True)
+            f.unlink()
+            f.with_suffix(".service").unlink(missing_ok=True)
+            removed.append(f.stem)
+    return removed
 
 
 def _install_systemd(claude, time_str):
@@ -80,6 +182,12 @@ def install(time_str):
 
 
 def remove():
+    live = remove_live()
+    note = f" (and {', '.join(live)})" if live else ""
+    return _remove_daily() + note
+
+
+def _remove_daily():
     if not IS_MAC:
         subprocess.run(["systemctl", "--user", "disable", "--now", f"{UNIT}.timer"], capture_output=True)
         for ext in ("service", "timer"):
@@ -93,6 +201,12 @@ def remove():
 
 
 def status():
+    live = ([f.stem for f in PLIST.parent.glob(f"{LABEL.rsplit('.', 1)[0]}.live-*.plist")] if IS_MAC else
+            [f.stem for f in UNIT_DIR.glob(f"{UNIT.rsplit('-', 1)[0]}-live-*.timer")])
+    return _daily_status() + ("\nlive: " + ", ".join(sorted(live)) if live else "\nlive: not scheduled")
+
+
+def _daily_status():
     if not IS_MAC:
         if not (UNIT_DIR / f"{UNIT}.timer").exists():
             return "no systemd schedule (use `clipper schedule install`)"

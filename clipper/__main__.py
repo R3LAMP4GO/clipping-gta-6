@@ -82,7 +82,7 @@ def main(argv=None):
     st.add_argument("--install", action="store_true", help="brew/pip install what's missing + download the model")
     st.add_argument("--dry-run", action="store_true", help="show what would change without writing anything")
     lv = sub.add_parser("live", help="record GTA 6 live streams (Twitch/Kick/YouTube) in chunks while they're on")
-    lv.add_argument("action", choices=["list", "add", "remove", "status", "watch", "record", "jobs", "done"])
+    lv.add_argument("action", choices=["list", "add", "remove", "status", "watch", "record", "jobs", "pending", "done"])
     lv.add_argument("refs", nargs="*", help="add: twitch:NAME | kick:NAME | youtube:@NAME | URL; record: NAME URL; "
                                              "done: JOB")
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
@@ -98,8 +98,11 @@ def main(argv=None):
     dl = sub.add_parser("daily", help="find new GTA 6 uploads and analyze them (step 1 of /clip-daily)")
     dl.add_argument("--limit", type=int, help="override sources_per_day")
     sc = sub.add_parser("schedule", help="launchd fallback for Claude Code CLI users")
-    sc.add_argument("action", choices=["install", "remove", "status"])
+    sc.add_argument("action", choices=["install", "live", "remove", "status"])
     sc.add_argument("--time", help="HH:MM (default prefs schedule_time)")
+    sc.add_argument("--every", type=int, default=2, help="live: hours between live clip runs")
+    sc.add_argument("--watch-only", action="store_true", help="live: only the stream watcher (clip from your app's own "
+                                                                 "scheduled task)")
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
@@ -173,6 +176,10 @@ def main(argv=None):
             live_mod.record(refs[0], refs[1], args.chunk, cfg=cfg)
         elif a == "jobs":
             print(json.dumps(live_mod.ready_jobs(), indent=2))
+        elif a == "pending":  # exit 1 when nothing is ready, so a scheduled clip run doesn't start Claude for nothing
+            ready = live_mod.ready_jobs(True)
+            print(json.dumps(ready, indent=2))
+            sys.exit(0 if ready else 1)
         else:
             print(json.dumps([live_mod.mark_done(j) for j in refs]))
     elif args.cmd == "bench":
@@ -199,6 +206,10 @@ def main(argv=None):
     elif args.cmd == "schedule":
         if args.action == "install":
             print(schedule.install(args.time or str(library.load_prefs().get("schedule_time", "09:00"))))
+        elif args.action == "live":
+            if not live_mod.load_streams():
+                raise SystemExit("no live streams in this profile's live.yaml (add some with `clipper live add`)")
+            print(schedule.install_live(args.every, watch_only=args.watch_only))
         else:
             print(schedule.remove() if args.action == "remove" else schedule.status())
     elif args.cmd == "voice-setup":

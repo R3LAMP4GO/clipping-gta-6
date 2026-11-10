@@ -531,6 +531,48 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual(fake.load_model.call_args.kwargs["providers"], ["CPUExecutionProvider"])
         self.assertEqual(fake.load_vad.call_args.kwargs["providers"], ["CPUExecutionProvider"])
 
+    def test_live_schedule_keeps_recorders_and_gates_claude(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import schedule
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(schedule, "IS_MAC", False), \
+                mock.patch.object(schedule, "UNIT_DIR", Path(d)), mock.patch.object(schedule.subprocess, "run"), \
+                mock.patch.object(schedule.shutil, "which", return_value="/usr/bin/claude"):
+            out = schedule.install_live(every_hours=2)
+            watch = (Path(d) / "clipper-gta6-live-watch.service").read_text()
+            clip = (Path(d) / "clipper-gta6-live-clip.service").read_text()
+            clip_timer = (Path(d) / "clipper-gta6-live-clip.timer").read_text()
+            watch_timer = (Path(d) / "clipper-gta6-live-watch.timer").read_text()
+            self.assertEqual(sorted(schedule.remove_live()), ["clipper-gta6-live-clip", "clipper-gta6-live-watch"])
+            self.assertEqual(list(Path(d).iterdir()), [])
+        self.assertIn("KillMode=process", watch)  # recorders must outlive the watcher
+        self.assertNotIn("KillMode", clip)
+        self.assertIn("OnUnitActiveSec=300s", watch_timer)
+        self.assertIn("OnUnitActiveSec=7200s", clip_timer)
+        self.assertIn("live pending; then", clip)  # Claude only starts when chunks are waiting
+        self.assertIn("'/clip-daily live'", clip)
+        self.assertIn("every 2 h", out)
+
+    def test_live_chunks_in_the_same_minute_get_their_own_jobs(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "JOBS", Path(d)), \
+                mock.patch.object(live.subprocess, "run", return_value=mock.Mock(stdout="6")):
+            ids = {live.make_job(Path(d) / "seg.ts", "xqc", "u", "t", 1794321600 + s) for s in (0, 20)}
+        self.assertEqual(len(ids), 2)
+
+    def test_live_pending_exit_code(self):
+        from unittest import mock
+        from clipper import __main__ as cli
+        for ready, code in (([], 1), (["live-xqc-20261110-0900"], 0)):
+            with mock.patch.object(cli.live_mod, "ready_jobs", return_value=ready), \
+                    self.assertRaises(SystemExit) as e, mock.patch("builtins.print"):
+                cli.main(["live", "pending"])
+            self.assertEqual(e.exception.code, code)
+
     def test_demucs_device_auto(self):
         from unittest import mock
         from clipper import config
@@ -652,3 +694,23 @@ class ProfileTests(unittest.TestCase):
         for play in playbook.for_profile(rp).values():
             for ex in play["examples"]:
                 self.assertEqual(hooks.check_hook(ex)[0], [], ex)
+
+
+class LiveScheduleMacTests(unittest.TestCase):
+    def test_launchd_watcher_abandons_its_recorders(self):
+        import plistlib
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import schedule
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(schedule, "IS_MAC", True), \
+                mock.patch.object(schedule, "PLIST", Path(d) / "com.clipper.gta6.daily.plist"), \
+                mock.patch.object(schedule.subprocess, "run"), \
+                mock.patch.object(schedule.shutil, "which", return_value="/opt/homebrew/bin/claude"):
+            schedule.install_live(every_hours=2)
+            watch = plistlib.loads((Path(d) / "com.clipper.gta6.live-watch.plist").read_bytes())
+            clip = plistlib.loads((Path(d) / "com.clipper.gta6.live-clip.plist").read_bytes())
+        self.assertTrue(watch["AbandonProcessGroup"])
+        self.assertEqual((watch["StartInterval"], clip["StartInterval"]), (300, 7200))
+        self.assertEqual(watch["EnvironmentVariables"]["CLIPPER_PROFILE"], "gta6")
+        self.assertIn("/clip-daily live", clip["ProgramArguments"][2])

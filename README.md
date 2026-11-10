@@ -8,7 +8,7 @@ Agent commands (Claude Code: `.claude/commands/`, Codex: copy `.codex/prompts/*.
 - `/clip-setup`: installs the tools, the whisper model and these commands (globally, so they work from any folder)
 - `/clip [url | phrase]`: setup questions (voiceover off/all/auto, number of videos, hooks per video), then find → review → render
 - `/clip-creators [add @handle | remove name]`: manage the watched creators (`creators.yaml`)
-- `/clip-schedule [HH:MM]`: run daily via a Claude Code Desktop local task, a Codex app scheduled task, or launchd (CLI)
+- `/clip-schedule [HH:MM]`: run daily via a Claude Code Desktop local task, a Codex app scheduled task, or launchd (CLI); with live streams listed, it also records them as they go live and clips the chunks every 2 hours
 - `/clip-daily`: the unattended run a schedule calls; uses `prefs.yaml`
 
 Runs on macOS and Ubuntu/Debian (CPU-only is fine; `clipper bench` sizes it). `clipper setup --install` installs everything for either.
@@ -30,6 +30,7 @@ python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/v
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper live add twitch:xqc kick:xqc youtube:@KaiCenat   # streams to record while they play GTA 6
 python3 -m clipper live watch                  # start recorders for live GTA 6 streams (run every few minutes)
+python3 -m clipper schedule live               # watch streams every 5 min + clip finished chunks every 2 h (/clip-daily live)
 python3 -m clipper live jobs | done <job>      # finished 30-min chunks to clip / mark clipped (frees disk)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
