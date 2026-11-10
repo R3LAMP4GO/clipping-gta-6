@@ -733,3 +733,20 @@ class LiveScheduleMacTests(unittest.TestCase):
         self.assertEqual((watch["StartInterval"], clip["StartInterval"]), (300, 7200))
         self.assertEqual(watch["EnvironmentVariables"]["CLIPPER_PROFILE"], "gta6")
         self.assertIn("/clip-daily live", clip["ProgramArguments"][2])
+
+
+class ShippedProfilesTests(unittest.TestCase):
+    def test_every_profile_loads_and_its_example_hooks_pass_check(self):
+        from clipper import config, hooks, playbook
+        names = sorted(p.name for p in config.PROFILES.iterdir() if (p / "profile.yaml").exists())
+        self.assertIn("gta6", names)  # plus any private profiles linked into profiles/
+        try:
+            for name in names:
+                cfg = config.load(profile=name)
+                self.assertTrue(cfg.get("hashtags"), name)
+                gta = hooks.is_gta(cfg)
+                for kind, play in playbook.for_profile(cfg).items():
+                    for ex in play["examples"]:
+                        self.assertEqual(hooks.check_hook(ex, gta=gta)[0], [], f"{name}/{kind}: {ex}")
+        finally:
+            config.load()  # back to the default profile for the other tests
