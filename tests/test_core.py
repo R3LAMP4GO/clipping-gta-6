@@ -614,6 +614,15 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual(out, "Kai promises A1. #gta6 #KaiCenat\n\nClip from KaiCenat: L\n\n#shorts")
         self.assertTrue(render.post_description("d", {"channel": "c"}, "L", ["#gta6"]).endswith("L\n\n#gta6"))
 
+    def test_scenario_windows_open_on_a_curiosity_cue_and_end_on_a_pause(self):
+        from clipper import candidates as c
+        sents = [{"s": 0, "e": 3, "text": "Okay chat."}, {"s": 20, "e": 23, "text": "Yo I just invented a new move."},
+                 {"s": 24, "e": 30, "text": "Watch, you go left then jump."}, {"s": 31, "e": 38, "text": "No way!"},
+                 {"s": 50, "e": 52, "text": "Anyway."}]
+        out = c.scenario_windows(sents, 120)
+        self.assertEqual([(w["start"], w["end"], w["cue"]) for w in out], [(20, 38, "I just invented")])
+        self.assertEqual(c.scenario_windows(sents, 120, taken=[(19, 40)]), [])  # already a loudness pick
+
     def test_clips_are_capped_at_60s(self):
         from clipper import hooks
         base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 70}

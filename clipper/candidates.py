@@ -79,6 +79,39 @@ def snap_window(start, end, sentences, min_s, max_s, peak=None):
     return round(max(0.0, start), 2), round(end, 2)
 
 
+# Curiosity-gap openers: something new is made, found, tried or shown (a combo, trick, room, build, first try).
+SCENARIO_CUES = re.compile(
+    r"\b(let me show you|show you around|welcome to|this is my|check (this|it) out|watch this|look at (this|my)|"
+    r"(try|trying|taste|tasting|test|testing) (this|it)|first time|never (seen|done|tried)|guess what|"
+    r"i (just )?(bought|built|made|invented|got|found|discovered|unlocked|created)|"
+    r"(new|secret|hidden) (spot|room|car|move|trick|way|thing|recipe|combo|build|setup|house|crib)|"
+    r"(i'?m|we'?re) (about to|gonna) (try|make|build|cook|show|test)|let'?s (try|see|go inside)|tour|"
+    r"how (does|do) (this|it) work)\b", re.I)
+
+
+def scenario_windows(sentences, duration, taken=(), min_s=12, max_s=55, gap=6.0, limit=4):
+    """Windows that open on a scenario cue and run while the talk continues (a pause over `gap` s ends the
+    scenario), capped at max_s. Not loudness-ranked: the agent judges them from the transcript and contact sheet."""
+    out = []
+    for i, s in enumerate(sentences):
+        m = SCENARIO_CUES.search(s["text"])
+        if not m:
+            continue
+        start, end = s["s"], s["e"]
+        for nxt in sentences[i + 1:]:
+            if nxt["s"] - end > gap or nxt["e"] - start > max_s:
+                break
+            end = nxt["e"]
+        end = min(duration, max(end, start + min_s))
+        win = (round(start, 2), round(end, 2))
+        if any(overlap(win, t) > 0.5 for t in list(taken) + [(o["start"], o["end"]) for o in out]):
+            continue
+        out.append({"start": win[0], "end": win[1], "cue": m.group(0)})
+        if len(out) >= limit:
+            break
+    return out
+
+
 def overlap(a, b):
     inter = max(0.0, min(a[1], b[1]) - max(a[0], b[0]))
     return inter / min(a[1] - a[0], b[1] - b[0])

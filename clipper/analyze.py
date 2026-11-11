@@ -119,13 +119,25 @@ def analyze(job, cfg, fast=False, force=False):
             "transcript": " ".join(x["text"] for x in sents),
             "contact_sheet": str(sheet.relative_to(job)),
         })
+    scenarios = []
+    for i, c in enumerate(cand.scenario_windows(sentences, duration, [(o["start"], o["end"]) for o in out]), 1):
+        s, e = c["start"], c["end"]
+        sents = [x for x in sentences if x["e"] > s and x["s"] < e]
+        sheet = review / f"scen_{i:02d}.jpg"
+        contact_sheet(src, s, e, sheet)
+        abs_s = s + meta.get("offset", 0)
+        scenarios.append({"id": f"S{i}", "start": s, "end": e, "duration": round(e - s, 1), "cue": c["cue"],
+                          "timestamp": f"{fmt(abs_s)}-{fmt(e + meta.get('offset', 0))}",
+                          "link": config.timestamp_link(meta['url'], abs_s),
+                          "transcript": " ".join(x["text"] for x in sents),
+                          "contact_sheet": str(sheet.relative_to(job))})
     recommended = cand.recommend([c["tier"] for c in out], duration)
     loud_events = any(h.startswith("(") for sec in kw_hits for h in sec)
     clip_type = playbook.guess_type(meta.get("title", ""), profile, len(words) / max(1.0, duration / 60), loud_events)
     result = {"video": meta, "weights": {k: round(v, 3) for k, v in w.items()}, "has_heatmap": bool(heat.any()),
               "profile": profile, "loudness_spread_lu": spread, "clip_length": lengths,
               "recommended": recommended, "clip_type": clip_type, "hook_plan": playbook.plan_text(clip_type, playbook.for_profile(cfg)),
-              "candidates": out}
+              "candidates": out, "scenarios": scenarios}
     (job / "candidates.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     (job / "candidates.md").write_text(to_markdown(result), encoding="utf-8")
     return result
@@ -154,4 +166,12 @@ def to_markdown(r):
                   f"**Opens with:** {c.get('opens_with', '?')}: \"{c.get('first_line', '')}\"", "",
                   f"**Suggested hook:** {c['hook']}", "",
                   f"> {c['transcript'][:900]}"]
+    if r.get("scenarios"):
+        lines += ["", "## Scenario candidates (quiet premise → payoff; not loudness-ranked)",
+                  "Each opens on a cue that something new is being made, found, tried or shown. Take one only if it "
+                  "opens a curiosity gap (\"he made a new WHAT?\"), builds, and pays off with a reveal or a face; "
+                  "`clip_type: scenario`."]
+        for c in r["scenarios"]:
+            lines += ["", f"### {c['id']} · {c['timestamp']} · {c['duration']:.0f}s · cue \"{c['cue']}\"",
+                      f"Contact sheet: `{c['contact_sheet']}`", "", f"> {c['transcript'][:900]}"]
     return "\n".join(lines) + "\n"

@@ -43,6 +43,19 @@ PLAYBOOK = {
         "hook_style": "bold", "caption_style": "bold", "voiceover": True, "layout": "fit",
         "length": "20–45s", "evidence": "MrBossFTW 'GTA 6 GRAPHICS' 1.2M, Rockstar cover art 16M",
     },
+    "scenario": {
+        "what": "a curiosity gap: the streamer makes, finds, tries or shows something NEW (a combo, a trick, a room, "
+                "a build, a place, a first try) and the hook names that it exists but withholds what it is or how it "
+                "turns out, so the viewer stays to see it; beats escalate to a payoff (a reveal or a face); often "
+                "quiet, no scream needed",
+        "hooks": ["question", "withheld / negation", "tease", "relatable situation"],
+        "examples": ["What new *combo* did Kai just invent?", "Nobody's seen Kai's new *getaway car*",
+                     "Wait till you see the room Kai *built*...", "Me showing my friends my new *setup*"],
+        "hook_style": "bold", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
+        "length": "15–55s (cut on the reveal; 60s max)",
+        "evidence": "Mitro 'Kai Just Invented A New Sauce' 1.5M on 39.6k subs (18s, near silent); "
+                    "Kai Cenat Live 'Visits The AMP House In GTA RP' 3.7M (55s tour)",
+    },
 }
 # Non-GTA profiles: same structures and styles (they hold on 3,481 gaming Shorts), examples without GTA 6.
 GENERIC = {
@@ -59,6 +72,11 @@ GENERIC = {
                               "How did he survive that fall?", "Watch the cop car at the end..."]},
     "showcase": {"examples": ["They spent 10 years on *this*", "3 details you missed in the *trailer*",
                               "Are these graphics real?", "Look at the water physics..."]},
+    "scenario": {"what": "a curiosity gap: the streamer makes, finds, tries or shows something NEW and the hook "
+                         "names that it exists but withholds what it is or how it turns out; beats escalate to a "
+                         "payoff (a reveal or a face); often quiet",
+                 "examples": ["What new *combo* did he just invent?", "Nobody's seen his new *loadout*",
+                              "Wait till you see the room he *built*...", "Me showing my friends my new *setup*"]},
 }
 
 
