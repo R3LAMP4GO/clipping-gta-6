@@ -5,6 +5,7 @@ exports/
 logs/
 # Your own posts' performance data (written by your posting setup; read by `clipper simulate`)
 research/own-uploads*.json
+profiles/*/learned-weights.yaml
 .venv/
 *.pyc
 .DS_Store

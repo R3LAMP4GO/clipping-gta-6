@@ -1004,6 +1004,27 @@ class FindTests(unittest.TestCase):
                          [("live-kai-1", 100, True), ("live-xqc-1", 3, False)])
         self.assertEqual(hits[0]["text"], "Moment of truth.")
 
+    def test_find_orders_matches_across_midnight(self):
+        import json
+        import tempfile
+        from datetime import datetime
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        midnight = datetime(2026, 11, 11).timestamp()
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live.time, "time", return_value=midnight + 600):
+            for name, rec in (("live-a-1", midnight - 30), ("live-b-1", midnight - 20)):
+                job = Path(d) / name
+                job.mkdir()
+                (job / "job.json").write_text(json.dumps({"channel": name, "live": True, "recorded_at": rec,
+                                                          "duration": 600}))
+                start = 25 if name == "live-a-1" else 25  # a at 23:59:55, b at 00:00:05
+                (job / "transcript.json").write_text(json.dumps({"words": [W("Moment", start, start + 0.4),
+                                                                           W("of", start + 0.4, start + 0.5),
+                                                                           W("truth.", start + 0.5, start + 1)]}))
+            hits = live.find("moment of truth", 6, d)
+        self.assertEqual([(h["job"], h["at"]) for h in hits], [("live-a-1", "23:59:55"), ("live-b-1", "00:00:05")])
+
     def test_live_done_keeps_the_source_for_other_streams_edits(self):
         import tempfile
         from pathlib import Path
@@ -1177,3 +1198,40 @@ class RecorderPidTests(unittest.TestCase):
         finally:
             other.kill()
             other.wait()
+
+
+class LearningSafeguardTests(unittest.TestCase):
+    def test_manifest_records_how_strong_the_moment_was(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from clipper import render
+        with tempfile.TemporaryDirectory() as d:
+            job = Path(d)
+            (job / "candidates.json").write_text(json.dumps({"candidates": [
+                {"start": 0, "end": 20, "score": 40, "tier": "maybe", "signals": {"peak_lufs": -12, "typical_lufs": -24,
+                                                                                   "jump_lu": 6, "hype_hits": ["bro"]}},
+                {"start": 25, "end": 60, "score": 70, "tier": "strong", "signals": {"peak_lufs": -6, "typical_lufs": -24,
+                                                                                     "jump_lu": 15, "hype_hits": []}}]}))
+            m = render.moment_signals({"start": 18, "end": 40}, job, {})
+        self.assertEqual(m, {"score": 70, "tier": "strong", "jump_lu": 15, "loud_lu": 18.0, "hype": 0})
+        self.assertIsNone(render.moment_signals({"start": 18, "end": 40}, None, {}))
+
+    def test_learned_weights_are_bounded_and_can_be_switched_off(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import config
+        with tempfile.TemporaryDirectory() as d:
+            prof = Path(d) / "gta-rp"
+            prof.mkdir()
+            (prof / "learned-weights.yaml").write_text("weights: {jump: 0.25, loudness: 5.0, speech_rate: 0.0, bogus: 1}\n")
+            with mock.patch.object(config, "PROFILES", Path(d)), mock.patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("CLIPPER_NO_LEARNED", None)
+                w = config.load(None, "gta-rp")["weights"]
+                self.assertEqual((w["jump"], w["loudness"], w["speech_rate"]), (0.25, 0.45, 0.05))  # 1.5x / 0.5x caps
+                self.assertNotIn("bogus", w)
+                os.environ["CLIPPER_NO_LEARNED"] = "1"
+                self.assertEqual(config.load(None, "gta-rp")["weights"]["jump"], 0.2)
+                os.environ.pop("CLIPPER_NO_LEARNED")

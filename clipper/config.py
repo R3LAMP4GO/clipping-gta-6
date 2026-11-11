@@ -79,6 +79,12 @@ def load(path=None, profile=None):
     if over.exists():
         for k, v in (yaml.safe_load(over.read_text(encoding="utf-8")) or {}).items():
             cfg[k] = {**cfg[k], **v} if isinstance(v, dict) and isinstance(cfg.get(k), dict) else v
+    learned = PROFILES / profile / "learned-weights.yaml"  # written by a posting setup that learns from results
+    if learned.exists() and not os.environ.get("CLIPPER_NO_LEARNED") and isinstance(cfg.get("weights"), dict):
+        base = dict(cfg["weights"])
+        for k, v in ((yaml.safe_load(learned.read_text(encoding="utf-8")) or {}).get("weights") or {}).items():
+            if k in base and isinstance(v, (int, float)):  # bounded: a bad file can't silence or swamp a signal
+                cfg["weights"][k] = round(min(max(float(v), 0.5 * base[k]), 1.5 * base[k]), 4)
     cfg["profile"] = profile
     creators = profile_file("creators.yaml")
     if "channels" not in cfg and creators.exists():

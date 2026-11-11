@@ -426,9 +426,11 @@ def find(pattern, hours=6, jobs_dir=None):
         from .transcribe import drop_repeats, group_sentences
         for sent in group_sentences(drop_repeats(words)):
             if rx.search(sent["text"]):
-                at = (datetime.fromtimestamp(t0 + float(meta.get("offset", 0) or 0) + sent["s"]).strftime("%H:%M:%S")
-                      if meta.get("live") else None)
-                hits.append({"job": job.name, "channel": meta.get("channel"), "at": at, "start": round(sent["s"], 2),
+                ts = t0 + float(meta.get("offset", 0) or 0) + sent["s"] if meta.get("live") else None
+                at = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else None
+                hits.append({"job": job.name, "channel": meta.get("channel"), "at": at, "ts": ts,
+                             "start": round(sent["s"], 2),
                              "end": round(sent["e"], 2), "text": sent["text"].strip(),
                              "footage": (job / "source.mp4").exists(), "profile": meta.get("profile")})
-    return sorted(hits, key=lambda h: (h["at"] or "", h["job"], h["start"]))
+    # by real time, not the clock string: "23:59:59" must come before "00:00:02"
+    return sorted(hits, key=lambda h: (h["ts"] is None, h["ts"] or 0, h["job"], h["start"]))

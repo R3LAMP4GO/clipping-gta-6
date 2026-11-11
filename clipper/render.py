@@ -246,6 +246,25 @@ def footage_reuse(fp, exports=None, tol=REUSE_TOLERANCE_S):
     return hits
 
 
+def moment_signals(pick, job, meta):
+    """How strong the clip's moment was, from the analysis (the candidate overlapping it most): lets the learning
+    tell a strong moment from a strong hook. None when the job has no candidates (or no job is known)."""
+    best = None
+    for src in pick_sources(pick, job, meta):
+        f = Path(src["job"]) / "candidates.json" if src.get("job") else None
+        if not f or not f.exists():
+            continue
+        for c in json.loads(f.read_text(encoding="utf-8")).get("candidates", []):
+            ov = min(src["end"], c["end"]) - max(src["start"], c["start"])
+            if ov > 0 and (best is None or ov > best[0]):
+                sig = c.get("signals") or {}
+                best = (ov, {"score": c.get("score"), "tier": c.get("tier"), "jump_lu": sig.get("jump_lu"),
+                             "loud_lu": round(sig["peak_lufs"] - sig["typical_lufs"], 1)
+                             if sig.get("peak_lufs") is not None and sig.get("typical_lufs") is not None else None,
+                             "hype": len(sig.get("hype_hits") or [])})
+    return best[1] if best else None
+
+
 def predicted(pick, cfg):
     """Each hook's simulated views multiplier (the same ranking `clipper simulate` prints)."""
     try:
@@ -334,6 +353,7 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None):
     table = effect_table()
     creds = creds or credits(pick, job, meta)
     fp, when, pred = footage(pick, job, meta), moment_at(pick, job, meta), predicted(pick, cfg)
+    moment = moment_signals(pick, job, meta)
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
     out = []
@@ -347,7 +367,7 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None):
                     "campaign": pick.get("campaign"),
                     "source": creds[0][1], "sources": [link for _, link in creds],
                     "duration": v["check"].get("duration"), "footage": fp, "moment_at": when,
-                    "predicted": pred.get(v["hook"])})
+                    "predicted": pred.get(v["hook"]), "moment": moment})
     return out
 
 
