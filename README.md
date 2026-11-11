@@ -114,6 +114,7 @@ python3 -m clipper prefs set voice=auto videos_per_run=3 hooks_per_video=4
 python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
+python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper check picks.json --job <id>  # research rules + fail picks reusing exported footage
 python3 -m clipper find "moment of truth"       # one line across every stream of the last 6 h (multi-streamer edits)

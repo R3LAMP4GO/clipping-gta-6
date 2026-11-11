@@ -255,6 +255,20 @@ def predicted(pick, cfg):
         return {}
 
 
+def top_hooks(pick, cfg, n):
+    """The pick with only its `n` best hooks (and their paired titles), best first: hooks that pass `clipper check`
+    before ones that fail, then by simulated multiplier, the same ranking `clipper simulate` prints."""
+    from .hooks import check_hook, is_gta
+    hs = pick.get("hooks") or [pick.get("hook", "")]
+    ts = pick.get("titles") or []
+    pred = predicted({**pick, "hooks": hs}, cfg)
+    order = sorted(range(len(hs)), key=lambda i: (bool(check_hook(hs[i], is_gta(cfg))[0]), -pred.get(hs[i], 0), i))[:n]
+    out = {**pick, "hooks": [hs[i] for i in order]}
+    if len(ts) == len(hs):
+        out["titles"] = [ts[i] for i in order]
+    return out
+
+
 def build_segment_job(pick, job, cfg, out):
     """Cut every segment to 1080x1920 with its own layout and join them into `out` (source.mp4 + transcript.json
     with word times shifted onto the joined clip), so the normal render runs on it. Returns the pick to render
@@ -347,7 +361,7 @@ def next_video_number(out_dir):
     return max(nums, default=0) + 1
 
 
-def render(job, picks, cfg, first_hook_only=False, out_dir=None):
+def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     fallback = transcribe.drop_repeats(json.loads((job / "transcript.json").read_text(encoding="utf-8"))["words"])
     out_dir = Path(out_dir) if out_dir else export_dir(cfg)
@@ -355,6 +369,8 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None):
     first = next_video_number(out_dir)
     results = []
     for n, pick in enumerate(picks, first):
+        if top:  # only the best hook(s) get an MP4; the rest would never be posted
+            pick = top_hooks(pick, cfg, top)
         hooks = pick.get("hooks") or [pick.get("hook", "")]
         if first_hook_only:
             hooks = hooks[:1]

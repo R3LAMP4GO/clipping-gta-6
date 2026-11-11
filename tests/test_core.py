@@ -970,7 +970,7 @@ class FootageTests(unittest.TestCase):
         from unittest import mock
         from clipper import render
         meta = {"id": "x1", "url": "https://www.youtube.com/watch?v=x1", "channel": "Kai"}
-        pick = {"start": 5, "end": 25, "hooks": ["Why did Kai's game crash?", "Kai lost everything"]}
+        pick = {"start": 5, "end": 25, "hooks": ["Why did Kai's game crash?", "Kai never saw the crash coming"]}
         variants = [{"file": "a.mp4", "hook": h, "check": {"duration": 20}} for h in pick["hooks"]]
         with mock.patch.object(render, "predicted", return_value={"Why did Kai's game crash?": 1.4}), \
                 mock.patch.object(render.time, "time", return_value=5000):
@@ -1108,3 +1108,34 @@ class WholeStreamTests(unittest.TestCase):
         cmd = po.call_args[0][0]
         self.assertEqual(cmd[-2:], ["--replace", str(os.getpid())])
         self.assertIn("record", cmd)
+
+
+class TopHookTests(unittest.TestCase):
+    def test_only_the_best_passing_hook_and_its_title_are_rendered(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import render
+        pick = {"start": 0, "end": 10, "hooks": ["Kai never saw the crash coming", "Why did Kai's game crash?", "the stream"],
+                "titles": ["T lost", "T crash", "T stream"]}
+        scores = {"Kai never saw the crash coming": 1.2, "Why did Kai's game crash?": 1.5, "the stream": 9.0}  # fails check
+        with mock.patch.object(render, "predicted", return_value=scores):
+            top = render.top_hooks(pick, {}, 1)
+            self.assertEqual((top["hooks"], top["titles"]), (["Why did Kai's game crash?"], ["T crash"]))
+            self.assertEqual(render.top_hooks(pick, {}, 2)["hooks"], ["Why did Kai's game crash?", "Kai never saw the crash coming"])
+        with tempfile.TemporaryDirectory() as d:
+            job, out = Path(d) / "job", Path(d) / "out"
+            job.mkdir()
+            (job / "job.json").write_text(json.dumps({"channel": "Kai", "url": "u", "title": "t"}))
+            (job / "transcript.json").write_text(json.dumps({"words": []}))
+            with mock.patch.object(render, "predicted", return_value=scores), \
+                    mock.patch.object(render, "prepare_clip", return_value={"vo": None, "speakers": 1, "transcript": ""}), \
+                    mock.patch.object(render, "encode_variant") as enc, mock.patch.object(render, "probe", return_value={}), \
+                    mock.patch.object(render, "clip_markdown", return_value=""):
+                res = render.render(job, [pick], {}, out_dir=out, top=1)
+            self.assertEqual(enc.call_count, 1)
+            manifest = json.loads((out / "video 1" / "upload.json").read_text())
+            self.assertEqual([(m["hook"], m["title"], m["rank"]) for m in manifest],
+                             [("Why did Kai's game crash?", "T crash", 0)])
+            self.assertEqual(res[0]["titles"], ["T crash"])

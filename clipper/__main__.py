@@ -94,6 +94,8 @@ def main(argv=None):
     g.add_argument("--picks", help="JSON list of {start,end,title,hook,description,hashtags,voiceover}")
     g.add_argument("--ids", help="candidate ids, e.g. 1,3")
     r.add_argument("--first-hook-only", action="store_true", help="render one variant per clip (quick check)")
+    r.add_argument("--top-hooks", type=int, help="render only the N best-ranked hooks per clip (simulate's ranking); "
+                                                 "default $CLIPPER_TOP_HOOKS (e.g. in .env), else every hook")
     r.add_argument("--out", help="output folder (default exports/<profile>/<today>; numbering continues)")
     r.add_argument("--allow-say", action="store_true", help="use the system voice (macOS say / espeak-ng) if no Fish Audio key is saved")
     sub.add_parser("voice-setup", help="open Fish Audio + a TextEdit note to paste and save your API key")
@@ -177,7 +179,8 @@ def main(argv=None):
                 print("Voiceover needs a Fish Audio API key. Run `python3 -m clipper voice-setup` "
                       "(opens the key page + a TextEdit note to paste it), or pass --allow-say.", file=sys.stderr)
                 sys.exit(3)
-        print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out), indent=2))
+        top = args.top_hooks if args.top_hooks is not None else int(os.environ.get("CLIPPER_TOP_HOOKS") or 0)
+        print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out, top), indent=2))
     elif args.cmd == "check":
         picks = json.loads(open(args.picks, encoding="utf-8").read())
         report = hooks.check_picks(picks, cfg)
