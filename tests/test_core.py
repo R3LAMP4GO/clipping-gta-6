@@ -952,13 +952,14 @@ class FootageTests(unittest.TestCase):
             (done / "upload.json").write_text(json.dumps([{"footage": [{"source": "x1", "from": 100, "to": 130}]}]))
             other = root / "exports" / "gta6-es" / "2026-11-10" / "video 1"  # a dub on another channel is fine
             other.mkdir(parents=True)
-            (other / "upload.json").write_text(json.dumps([{"footage": [{"source": "x1", "from": 0, "to": 999}]}]))
+            (other / "upload.json").write_text(json.dumps([{"footage": [{"source": "x1", "from": 0, "to": 999}],
+                                                            "lang": "es"}]))
             picks = [{"start": 128, "end": 150}, {"start": 120, "end": 140}]
             with mock.patch.object(render, "EXPORTS", root / "exports"), \
                     mock.patch.object(cli.config, "job_dir", return_value=job):
                 out = cli.reused_footage(picks, "x1", {"profile": "gta6"})
             self.assertEqual(list(out), [2])  # 2 s of overlap is within the tolerance, 10 s is a repost
-            self.assertIn("2026-11-10/video 7 already uses 10s", out[2][0])
+            self.assertIn("gta6/2026-11-10/video 7 already uses 10s", out[2][0])
             from clipper import hooks
             self.assertTrue(hooks.has_fails({"video 2": {"footage": out[2]}}))
 

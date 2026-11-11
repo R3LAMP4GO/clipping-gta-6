@@ -217,18 +217,20 @@ def footage_overlap(a, b):
                for x in a or [] for y in b or [] if x.get("source") == y.get("source"))
 
 
-def footage_reuse(fp, profile, exports=None, tol=REUSE_TOLERANCE_S):
-    """Exported clips of this profile that already use more than `tol` seconds of this footage."""
+def footage_reuse(fp, exports=None, tol=REUSE_TOLERANCE_S):
+    """Exported clips that already use more than `tol` seconds of this footage (profiles can share an account, so
+    all of them count; a dub's entries don't, as it posts the same clip in another language on its own channel)."""
     hits = []
-    for f in sorted(Path(exports or EXPORTS).glob(f"{profile}/**/upload.json")):
+    for f in sorted(Path(exports or EXPORTS).glob("**/upload.json")):
         try:
             entries = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        used = next((e.get("footage") for e in entries if isinstance(e, dict) and e.get("footage")), None)
+        used = next((e.get("footage") for e in entries if isinstance(e, dict) and e.get("footage")
+                     and not e.get("lang")), None)
         shared = footage_overlap(fp, used)
         if shared > tol:
-            hits.append(f"{f.parent.parent.name}/{f.parent.name} already uses {shared:.0f}s of this footage")
+            hits.append(f"{f.parent.parent.parent.name}/{f.parent.parent.name}/{f.parent.name} already uses {shared:.0f}s of this footage")
     return hits
 
 

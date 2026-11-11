@@ -32,7 +32,7 @@ def reused_footage(picks, job_ref, cfg):
         if not ref and not (pick.get("segments") and all(s.get("job") for s in pick["segments"])):
             continue
         job = config.job_dir(ref or pick["segments"][0]["job"])
-        reused = render_mod.footage_reuse(render_mod.footage(pick, job, render_mod.load_meta(job)), cfg["profile"])
+        reused = render_mod.footage_reuse(render_mod.footage(pick, job, render_mod.load_meta(job)))
         if reused:
             out[n] = reused + ["pick other moments: the same footage gets no reach the second time"]
     return out
