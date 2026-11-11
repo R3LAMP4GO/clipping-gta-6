@@ -623,6 +623,20 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual([(w["start"], w["end"], w["cue"]) for w in out], [(20, 38, "I just invented")])
         self.assertEqual(c.scenario_windows(sents, 120, taken=[(19, 40)]), [])  # already a loudness pick
 
+    def test_action_labels_fill_quiet_stretches_on_their_own(self):
+        from clipper import captions, hooks, render
+        pick = {"start": 100, "end": 112, "labels": [{"s": 101, "e": 103, "text": "*enters*"},
+                                                      {"s": 104, "e": 105, "text": "*talks over*"},
+                                                      {"s": 108, "e": 110, "text": "*gets closer*"}]}
+        speech = [{"w": "yo", "s": 4.0, "e": 4.5, "spk": 0}, {"w": "bro", "s": 4.5, "e": 5.0, "spk": 0}]
+        words = render.action_labels(pick, speech)
+        self.assertEqual([w["w"] for w in words], ["*ENTERS*", "yo", "bro", "*GETS CLOSER*"])  # speech wins
+        self.assertEqual(captions.chunk_words(words)[0], [words[0]])  # a label is never merged with speech
+        self.assertEqual(hooks.check_labels(pick), [])
+        bad = {**pick, "labels": [{"s": 99, "e": 101, "text": "*he walks in slowly*"}]}
+        self.assertEqual(len(hooks.check_labels(bad)), 2)
+        self.assertTrue(hooks.has_fails(hooks.check_picks([bad])))
+
     def test_clips_are_capped_at_60s(self):
         from clipper import hooks
         base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 70}

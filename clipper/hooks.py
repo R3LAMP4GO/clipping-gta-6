@@ -158,6 +158,22 @@ def check_length(pick):
     return None
 
 
+def check_labels(pick):
+    """Action captions must sit inside the clip and stay short: 1-3 words, e.g. *GETS CLOSER*."""
+    bad = []
+    for lab in pick.get("labels") or []:
+        try:
+            a, b, text = float(lab["s"]), float(lab["e"]), str(lab["text"]).strip()
+        except (KeyError, TypeError, ValueError):
+            bad.append(f"label {lab!r} needs s, e (source seconds) and text")
+            continue
+        if not text or len(text.strip("*").split()) > 3:
+            bad.append(f"label \"{text}\": 1-3 words, e.g. *GETS CLOSER*")
+        if not (float(pick.get("start", a)) <= a < b <= float(pick.get("end", b))):
+            bad.append(f"label \"{text}\" ({a}-{b}s) must sit inside the clip ({pick.get('start')}-{pick.get('end')}s)")
+    return bad
+
+
 def check_picks(picks, cfg=None):
     """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title."""
     from .playbook import for_profile
@@ -197,6 +213,8 @@ def check_picks(picks, cfg=None):
                             f"{key} '{pick[key]}' differs from the {kind} default '{play[key]}': keep it only on purpose")
         if check_length(pick):
             entry["length"] = check_length(pick)
+        if check_labels(pick):
+            entry["labels"] = check_labels(pick)
         if len(pick.get("hooks") or []) >= 3 and len(used) < 3:
             entry["variety"] = f"hooks only use {sorted(used)}: give each variant a different structure to A/B test"
         if entry:
@@ -206,4 +224,4 @@ def check_picks(picks, cfg=None):
 
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
-        or any("variety" in e or "length" in e for e in report.values())
+        or any("variety" in e or "length" in e or "labels" in e for e in report.values())

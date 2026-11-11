@@ -63,7 +63,7 @@ def chunk_words(words, max_words=3, max_gap=0.45):
         cur.append(w)
         nxt = words[i + 1] if i + 1 < len(words) else None
         if (len(cur) >= max_words or nxt is None or nxt["s"] - w["e"] > max_gap
-                or w["w"].endswith((".", ",", "?", "!"))):
+                or w["w"].endswith((".", ",", "?", "!")) or w.get("label") or nxt.get("label")):
             chunks.append(cur)
             cur = []
     return chunks

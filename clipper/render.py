@@ -48,6 +48,20 @@ def video_filter(layout, size):
             "gblur=sigma=40,eq=brightness=-0.18[bg];[b]scale=1080:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[v1]")
 
 
+def action_labels(pick, words):
+    """The pick's `labels` ({s, e, text} in source seconds) as caption words relative to the clip, each shown on its
+    own; speech wins where they overlap, so labels only fill the quiet stretches."""
+    s, e = float(pick["start"]), float(pick["end"])
+    out = []
+    for lab in pick.get("labels") or []:
+        a, b = max(float(lab["s"]), s) - s, min(float(lab["e"]), e) - s
+        if b - a >= 0.2 and str(lab.get("text") or "").strip() and not any(
+                w["s"] < b and w["e"] > a for w in words):
+            out.append({"w": str(lab["text"]).strip().upper(), "s": round(a, 3), "e": round(b, 3), "spk": 0,
+                        "label": True})
+    return sorted(words + out, key=lambda w: w["s"])
+
+
 def prepare_clip(job, pick, fallback_words, cfg, tmp):
     """Per-clip work shared by every hook variant: voice separation, diarized captions, audio bed, voiceover."""
     s, e = float(pick["start"]), float(pick["end"])
@@ -70,6 +84,9 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(stems[0]), "-i", str(stems[1]),
                         "-filter_complex", f"[1:a]volume={cfg.get('game_volume', 0.7)}[g];"
                         "[0:a][g]amix=inputs=2:duration=first:normalize=0", str(bed)], check=True)
+    if pick.get("labels"):
+        words = action_labels(pick, words)
+        source += " + action captions"
     layout = pick.get("layout") or {"type": "fit"}
     caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", layout.get("type", "fit"),
                                   pick.get("caption_style") or cfg.get("caption_style", "bold"))
@@ -78,7 +95,7 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
         vo_path = tmp / "vo.wav"
         vo_dur, provider = tts.synth(pick["voiceover"], cfg, vo_path)
         vo = {"path": vo_path, "duration": vo_dur, "provider": provider}
-    speakers_found = len({w.get("spk", 0) for w in words})
+    speakers_found = len({w.get("spk", 0) for w in words if not w.get("label")})
     return {"captions": caps, "bed": bed, "vo": vo, "layout": layout, "speakers": speakers_found,
             "transcript": source, "voices_separated": bool(stems), "words": words}
 
