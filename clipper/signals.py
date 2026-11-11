@@ -91,3 +91,34 @@ def speech_rate_per_second(words, n):
             out[sec] += 1
     smooth = np.convolve(out, np.ones(3) / 3, mode="same")
     return norm_spikes(smooth)
+
+
+def ad_seconds(media, n, min_run=5):
+    """Seconds showing Twitch's "commercial in progress" slate: a flat blue-purple gradient (blue well above red and
+    green, almost no edges). Runs shorter than min_run seconds are ignored."""
+    w, h = 32, 18
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(media), "-vf", f"fps=1,scale={w}:{h}",
+                          "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+    frames = np.frombuffer(raw, np.uint8)[: len(raw) // (w * h * 3) * w * h * 3].reshape(-1, h, w, 3).astype(float)
+    return ad_mask(frames, n, min_run)
+
+
+def ad_mask(frames, n, min_run=5):
+    out = np.zeros(n, bool)
+    for t, x in enumerate(frames[:n]):
+        r, g, b = x[..., 0].mean(), x[..., 1].mean(), x[..., 2].mean()
+        gray = x.mean(2)
+        edge = np.abs(np.diff(gray, axis=1)).mean() + np.abs(np.diff(gray, axis=0)).mean()
+        out[t] = b > 1.8 * r and b > 1.6 * g and edge < 13
+    for t in range(1, n - 2):  # a 1-2 s flicker inside an ad break doesn't split it
+        if not out[t] and out[t - 1] and (out[t + 1] or out[t + 2]):
+            out[t] = True
+    run = 0
+    for t in range(n + 1):  # drop runs too short to be an ad break
+        if t < n and out[t]:
+            run += 1
+            continue
+        if 0 < run < min_run:
+            out[t - run:t] = False
+        run = 0
+    return out

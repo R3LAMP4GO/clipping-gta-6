@@ -40,6 +40,29 @@ def grid_frame(job, seconds):
     return out
 
 
+def trim_ads(c, ads, min_s):
+    """Move a window's edges out of ad breaks; None if an ad sits inside it or too little is left."""
+    s, e = c["start"], c["end"]
+    while s < e and ads[min(int(s), len(ads) - 1)]:
+        s = float(int(s) + 1)
+    while e > s and ads[min(int(e - 0.01), len(ads) - 1)]:
+        e = float(int(e - 0.01))
+    if e - s < min_s * 0.8 or ads[int(s):int(e)].any():
+        return None
+    return {**c, "start": round(s, 2), "end": round(e, 2)}
+
+
+def ad_runs(mask):
+    runs, start = [], None
+    for t, v in enumerate(list(mask) + [False]):
+        if v and start is None:
+            start = t
+        elif not v and start is not None:
+            runs.append((start, t))
+            start = None
+    return runs
+
+
 def analyze(job, cfg, fast=False, force=False):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     info = json.loads((job / "source.info.json").read_text(encoding="utf-8"))
@@ -72,6 +95,10 @@ def analyze(job, cfg, fast=False, force=False):
         w = {k: v + extra * v / rest for k, v in w.items()}
     score = (w.get("loudness", 0) * loud + w.get("jump", 0) * jump + w.get("heatmap", 0) * heat
              + w.get("keywords", 0) * kw + w.get("speech_rate", 0) * rate)
+    ads = signals.ad_seconds(src, n) if meta.get("live") else np.zeros(n, bool)
+    score = np.where(ads, 0.0, score)
+    words = [x for x in words if not ads[min(int(x["s"]), n - 1)]] if ads.any() else words
+    sentences = transcribe.group_sentences(words) if ads.any() else sentences
 
     hype_total = sum(len(h) for h in kw_hits)
     profile, spread = cand.clip_profile(lufs, events, meta.get("title", ""), hype_total / max(1.0, duration / 60))
@@ -82,6 +109,7 @@ def analyze(job, cfg, fast=False, force=False):
     count = cfg.get("max_candidates", "auto")
     count = cand.auto_candidate_count(duration) if count == "auto" else int(count)
     picks = cand.pick_windows(score, sentences, duration, lengths["target"], lengths["min"], lengths["max"], count)
+    picks = [c for c in (trim_ads(c, ads, lengths["min"]) for c in picks) if c]
     review = job / "review"
     review.mkdir(exist_ok=True)
     out = []
@@ -137,7 +165,8 @@ def analyze(job, cfg, fast=False, force=False):
     result = {"video": meta, "weights": {k: round(v, 3) for k, v in w.items()}, "has_heatmap": bool(heat.any()),
               "profile": profile, "loudness_spread_lu": spread, "clip_length": lengths,
               "recommended": recommended, "clip_type": clip_type, "hook_plan": playbook.plan_text(clip_type, playbook.for_profile(cfg)),
-              "candidates": out, "scenarios": scenarios}
+              "candidates": out, "scenarios": scenarios,
+              "ad_breaks": [[int(a), int(b)] for a, b in ad_runs(ads)]}
     (job / "candidates.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     (job / "candidates.md").write_text(to_markdown(result), encoding="utf-8")
     return result
@@ -151,6 +180,8 @@ def to_markdown(r):
              f"(loudness spread {r['loudness_spread_lu']} LU) · clip length {r['clip_length']['min']}–"
              f"{r['clip_length']['max']}s, aim {r['clip_length']['target']}s", "",
              f"**Suggested clip type → hook plan:** {r.get('hook_plan', '')}",
+             *([f"**Twitch ad breaks (excluded from every candidate):** "
+                + ", ".join(f"{fmt(a)}-{fmt(b)}" for a, b in r["ad_breaks"]), ""] if r.get("ad_breaks") else []),
              "(Confirm the type per clip from the contact sheet and transcript. A reaction stream can still contain a "
              "comedy bit; set `clip_type` in picks.json.)", "",
              "| # | Tier | Timestamp | Len | Score | Volume jump | Peak / typical loudness | Hype signals |",

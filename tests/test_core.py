@@ -623,6 +623,22 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual([(w["start"], w["end"], w["cue"]) for w in out], [(20, 38, "I just invented")])
         self.assertEqual(c.scenario_windows(sents, 120, taken=[(19, 40)]), [])  # already a loudness pick
 
+    def test_twitch_ad_slate_is_detected_and_short_blips_ignored(self):
+        import numpy as np
+        from clipper import signals
+        slate = np.zeros((18, 32, 3))
+        slate[..., 0], slate[..., 1] = 70, 76
+        slate[..., 2] = np.linspace(150, 180, 32)  # smooth blue-purple gradient
+        game = np.random.default_rng(1).integers(0, 255, (18, 32, 3)).astype(float)
+        frames = np.stack([game] * 3 + [slate] * 6 + [game] * 3 + [slate] * 2 + [game])
+        self.assertEqual(signals.ad_mask(frames, len(frames)).nonzero()[0].tolist(), [3, 4, 5, 6, 7, 8])
+        flicker = np.stack([slate] * 3 + [game] + [slate] * 3 + [game] * 2)
+        self.assertEqual(signals.ad_mask(flicker, len(flicker)).nonzero()[0].tolist(), list(range(7)))
+        from clipper import analyze
+        ads = np.array([True] * 30 + [False] * 40 + [True] * 10 + [False] * 20)
+        self.assertEqual(analyze.trim_ads({"start": 28.0, "end": 52.0}, ads, 9), {"start": 30.0, "end": 52.0})
+        self.assertIsNone(analyze.trim_ads({"start": 60.0, "end": 90.0}, ads, 9))  # an ad inside the clip
+
     def test_action_labels_fill_quiet_stretches_on_their_own(self):
         from clipper import captions, hooks, render
         pick = {"start": 100, "end": 112, "labels": [{"s": 101, "e": 103, "text": "*enters*"},
