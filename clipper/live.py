@@ -112,6 +112,36 @@ def _alive(pid_file):
         return None
 
 
+def claim(d, replace_pid=None):
+    """Take a stream's pid file. Refused while another live recorder owns it (unless it's the one being replaced),
+    so a stream never gets two recorders."""
+    cur = _alive(d / "pid")
+    if cur and cur not in (os.getpid(), replace_pid):
+        return False
+    (d / "pid").write_text(str(os.getpid()))
+    return True
+
+
+def release(d):
+    """Remove the pid file only if it's still ours: a replacement recorder may own it by now."""
+    if _alive(d / "pid") == os.getpid():
+        (d / "pid").unlink(missing_ok=True)
+
+
+def recorder_running(name):
+    """A `clipper live record <name>` process, even if its pid file went missing (Linux; elsewhere just the pid)."""
+    if _alive(WORK / slug(name) / "pid"):
+        return True
+    for cmdline in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            argv = cmdline.read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"record" in argv and name.encode() in argv and b"clipper" in argv and int(cmdline.parent.name) != os.getpid():
+            return True
+    return False
+
+
 def status(cfg):
     streams = load_streams()
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -121,7 +151,7 @@ def status(cfg):
         on = bool(p.get("live")) and (not topic_only(s) or
                                       topic_evidence(p.get("title", ""), p.get("description"), p.get("tags"), cfg))
         out.append({**s, "live": p.get("live", False), "title": p.get("title"), "on_topic": bool(on),
-                    "recording": bool(_alive(WORK / slug(s["name"]) / "pid"))})
+                    "recording": recorder_running(s["name"])})
     return out
 
 
@@ -264,7 +294,10 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
     this stream is stopped only once this one is writing, so a restart overlaps instead of leaving a gap."""
     d = WORK / slug(name)
     d.mkdir(parents=True, exist_ok=True)
-    (d / "pid").write_text(str(os.getpid()))
+    if not claim(d, replace_pid):
+        print(f"[live] {name} is already being recorded (pid {_alive(d / 'pid')}); not starting a second recorder",
+              flush=True)
+        return
     stop = []
     signal.signal(signal.SIGTERM, lambda *_: stop.append(1))
     misses = 0
@@ -320,8 +353,7 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
         reconnect = not stop
     for t in pending:
         t.join()
-    if _alive(d / "pid") == os.getpid():  # a replacement recorder owns the pid file now
-        (d / "pid").unlink(missing_ok=True)
+    release(d)
 
 
 def restart(name, chunk_minutes=30):

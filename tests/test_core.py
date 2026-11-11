@@ -1139,3 +1139,38 @@ class TopHookTests(unittest.TestCase):
             self.assertEqual([(m["hook"], m["title"], m["rank"]) for m in manifest],
                              [("Why did Kai's game crash?", "T crash", 0)])
             self.assertEqual(res[0]["titles"], ["T crash"])
+
+
+class RecorderPidTests(unittest.TestCase):
+    def test_a_stream_never_gets_a_second_recorder(self):
+        import os
+        import subprocess
+        import sys
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                d = Path(d)
+                (d / "pid").write_text(str(other.pid))           # a live recorder owns the stream
+                self.assertFalse(live.claim(d))
+                self.assertEqual((d / "pid").read_text(), str(other.pid))
+                with mock.patch.object(live, "WORK", d.parent), mock.patch.object(live, "probe") as pr:
+                    live.record(d.name, "u", cfg=None)               # refuses before touching the stream
+                pr.assert_not_called()
+                self.assertEqual((d / "pid").read_text(), str(other.pid))
+                self.assertTrue(live.claim(d, replace_pid=other.pid))  # `live restart` may take over
+                self.assertEqual((d / "pid").read_text(), str(os.getpid()))
+                (d / "pid").write_text("99999999")                  # a dead recorder's leftover file
+                self.assertTrue(live.claim(d))
+                (d / "pid").write_text(str(other.pid))              # the replacement owns it now
+                live.release(d)
+                self.assertTrue((d / "pid").exists())               # never delete another recorder's file
+                (d / "pid").write_text(str(os.getpid()))
+                live.release(d)
+                self.assertFalse((d / "pid").exists())
+        finally:
+            other.kill()
+            other.wait()
