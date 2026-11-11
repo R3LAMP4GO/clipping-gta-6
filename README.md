@@ -121,6 +121,7 @@ python3 -m clipper live add twitch:xqc kick:xqc youtube:@KaiCenat   # streams to
 python3 -m clipper live watch                  # start recorders for live GTA 6 streams (run every few minutes)
 python3 -m clipper schedule live               # watch streams every 5 min + clip finished chunks every 2 h (/clip-daily live)
 python3 -m clipper live jobs | done <job>      # finished 30-min chunks to clip / mark clipped (source kept a few hours)
+python3 -m clipper live restart <stream>       # load new code into a recorder without a gap (new one starts first)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
 python3 -m unittest discover -s tests

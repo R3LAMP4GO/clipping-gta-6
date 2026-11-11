@@ -130,9 +130,46 @@ def alive_recorders():
     return sum(1 for f in WORK.glob("*/pid") if _alive(f))
 
 
+ANALYZE_TRIES = 3
+
+
+def stranded_jobs():
+    """This profile's recorded chunks whose analysis died with its recorder (a restart, a crash): never scored, so
+    never clipped. A running analysis keeps an `analyzing` file with its process id."""
+    out = []
+    for jid in ready_jobs():
+        job = JOBS / jid
+        if (job / "candidates.json").exists() or not (job / "source.mp4").exists():
+            continue
+        if _alive(job / "analyzing"):
+            continue
+        tries = job / "analyze_tries"
+        if int(tries.read_text() or 0 if tries.exists() else 0) >= ANALYZE_TRIES:
+            continue
+        out.append(jid)
+    return out
+
+
+def reanalyze_stranded():
+    """Start a detached analysis (sharing the recorders' slots) for every stranded chunk."""
+    started = []
+    WORK.mkdir(parents=True, exist_ok=True)
+    for jid in stranded_jobs():
+        job = JOBS / jid
+        tries = job / "analyze_tries"
+        tries.write_text(str(int(tries.read_text() or 0 if tries.exists() else 0) + 1))
+        log = open(WORK / "reanalyze.log", "a")
+        proc = subprocess.Popen([sys.executable, "-m", "clipper", "live", "analyze", jid], cwd=ROOT, stdout=log,
+                                stderr=log, start_new_session=True, env=profile_env())
+        (job / "analyzing").write_text(str(proc.pid))
+        started.append(jid)
+    return started
+
+
 def watch(cfg, chunk_minutes=30):
     """Start a recorder for every live on-topic stream that isn't being recorded yet, lowest `priority` first
-    (default 100), until `max_recorders` are running."""
+    (default 100), until `max_recorders` are running. Also re-run the analysis of any chunk whose analysis died."""
+    reanalyze_stranded()
     started = []
     cap = cfg.get("max_recorders")
     running = alive_recorders()
@@ -151,9 +188,12 @@ def watch(cfg, chunk_minutes=30):
     return started
 
 
-def make_job(segment, name, url, title, started_at, channel=None):
+def make_job(segment, name, url, title, started_at, channel=None, analyzer_pid=None):
     # seconds too: a stream that reconnects in the same minute must not overwrite an earlier chunk
-    jid = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M%S}"
+    jid = base = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M%S}"
+    n = 2
+    while (JOBS / jid / "source.mp4").exists():  # a replacement recorder overlapping the old one, same second
+        jid, n = f"{base}-{n}", n + 1
     job = JOBS / jid
     job.mkdir(parents=True, exist_ok=True)
     src = job / "source.mp4"
@@ -167,6 +207,8 @@ def make_job(segment, name, url, title, started_at, channel=None):
     (job / "job.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     (job / "source.info.json").write_text(json.dumps({"title": title, "channel": channel, "is_live": True}),
                                           encoding="utf-8")
+    if analyzer_pid:  # written before live_ready, so `watch` never mistakes a fresh chunk for a stranded one
+        (job / "analyzing").write_text(str(analyzer_pid))
     (job / "live_ready").write_text(datetime.now().isoformat())
     segment.unlink(missing_ok=True)
     print(f"[live] chunk ready: {jid} ({dur / 60:.0f} min)", flush=True)
@@ -202,12 +244,24 @@ def analyze_queued(jid, cfg):
                 print(f"[live] analyzed {jid}", flush=True)
             finally:
                 f.close()
+                (JOBS / jid / "analyzing").unlink(missing_ok=True)
             return
         time.sleep(15)
 
 
-def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=None):
-    """Record until the stream ends; every finished chunk becomes a job."""
+def _recording_started(d, session, timeout=120):
+    """True once this session's first segment is growing on disk."""
+    end = time.time() + timeout
+    while time.time() < end:
+        if any(f.stat().st_size > 256_000 for f in d.glob(f"{int(session)}-*.ts")):
+            return True
+        time.sleep(2)
+    return False
+
+
+def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=None, replace_pid=None):
+    """Record until the stream ends; every finished chunk becomes a job. With `replace_pid`, the old recorder of
+    this stream is stopped only once this one is writing, so a restart overlaps instead of leaving a gap."""
     d = WORK / slug(name)
     d.mkdir(parents=True, exist_ok=True)
     (d / "pid").write_text(str(os.getpid()))
@@ -235,6 +289,13 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
                                "-f", "segment", "-segment_time", str(chunk_minutes * 60), "-reset_timestamps", "1",
                                str(pattern)])
         done = set()
+        if replace_pid and _recording_started(d, session):
+            try:
+                os.kill(replace_pid, signal.SIGTERM)  # it saves its last partial chunk and exits
+                print(f"[live] took over from recorder {replace_pid}", flush=True)
+            except OSError:
+                pass
+            replace_pid = None
 
         def finish(final=False):
             segs = sorted(d.glob(f"{int(session)}-*.ts"))
@@ -243,7 +304,7 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
                 if seg.name not in done and seg.stat().st_size > 1_000_000:
                     idx = int(seg.stem.split("-")[1])
                     jid = make_job(seg, name, url, p["title"], session + idx * chunk_minutes * 60,
-                                   p.get("channel"))
+                                   p.get("channel"), os.getpid() if cfg is not None else None)
                     done.add(seg.name)
                     if cfg is not None:
                         t = threading.Thread(target=analyze_queued, args=(jid, cfg))
@@ -259,7 +320,29 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
         reconnect = not stop
     for t in pending:
         t.join()
-    (d / "pid").unlink(missing_ok=True)
+    if _alive(d / "pid") == os.getpid():  # a replacement recorder owns the pid file now
+        (d / "pid").unlink(missing_ok=True)
+
+
+def restart(name, chunk_minutes=30):
+    """Replace a stream's recorder (e.g. to load new code) without a gap: the new one starts recording first."""
+    s = next((x for x in load_streams() if x["name"] == name or slug(x["name"]) == slug(name)), None)
+    if not s:
+        raise SystemExit(f"no stream '{name}' in this profile's live.yaml")
+    d = WORK / slug(s["name"])
+    d.mkdir(parents=True, exist_ok=True)
+    old = _alive(d / "pid")
+    if old:
+        try:  # keep the old recorder's chunk length
+            argv = Path(f"/proc/{old}/cmdline").read_bytes().split(b"\0")
+            chunk_minutes = int(argv[argv.index(b"--chunk") + 1])
+        except (OSError, ValueError, IndexError):
+            pass
+    log = open(d / "recorder.log", "a")
+    cmd = [sys.executable, "-m", "clipper", "live", "record", s["name"], s["url"], "--chunk", str(chunk_minutes)]
+    proc = subprocess.Popen(cmd + (["--replace", str(old)] if old else []), cwd=ROOT, stdout=log, stderr=log,
+                            start_new_session=True, env=profile_env())
+    return {"stream": s["name"], "new_pid": proc.pid, "replacing": old, "chunk": chunk_minutes}
 
 
 def job_profile(job):

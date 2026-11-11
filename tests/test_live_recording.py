@@ -103,6 +103,68 @@ class LiveRecordingTests(unittest.TestCase):
             self.assertGreater(matched, 300)  # >10 s of the stream, every frame identical
 
 
+@unittest.skipUnless(TOOLS, "needs ffmpeg, ffprobe and yt-dlp")
+class RecorderHandoverTests(unittest.TestCase):
+    def test_restart_overlaps_so_no_frame_is_lost(self):
+        """A replacement recorder (`live restart`) starts before the old one stops: together their chunks hold every
+        frame of the stream across the handover."""
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            hls, jobs = d / "hls", d / "jobs"
+            hls.mkdir()
+            producer = subprocess.Popen(
+                ["ffmpeg", "-loglevel", "error", "-re", "-f", "lavfi", "-i", "testsrc=size=1280x720:rate=30",
+                 "-f", "lavfi", "-i", "sine=frequency=1000:sample_rate=48000", "-t", "45",
+                 "-c:v", "libx264", "-preset", "veryfast", "-g", "30", "-pix_fmt", "yuv420p",
+                 "-b:v", "8M", "-minrate", "8M", "-maxrate", "8M", "-bufsize", "8M", "-x264-params", "nal-hrd=cbr",
+                 "-c:a", "aac", "-f", "hls", "-hls_time", "1", "-hls_list_size", "0", str(hls / "live.m3u8")])
+            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_Quiet, directory=str(hls)))
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            url = f"http://127.0.0.1:{server.server_address[1]}/live.m3u8"
+            harness = ("import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); "
+                       "from clipper import live; live.JOBS = Path(sys.argv[2]); live.WORK = live.JOBS / '_live'; "
+                       "live.record('synth', sys.argv[3], chunk_minutes=0.1, "
+                       "replace_pid=int(sys.argv[4]) or None)")
+            old = new = None
+            try:
+                for _ in range(40):
+                    if len(list(hls.glob("*.ts"))) >= 2:
+                        break
+                    time.sleep(0.5)
+                old = subprocess.Popen([sys.executable, "-c", harness, str(ROOT), str(jobs), url, "0"],
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                time.sleep(12)
+                new = subprocess.Popen([sys.executable, "-c", harness, str(ROOT), str(jobs), url, str(old.pid)],
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                old_log = old.communicate(timeout=90)[0]  # the new recorder stops it once it's writing
+                time.sleep(8)
+                new.send_signal(signal.SIGTERM)
+                new_log = new.communicate(timeout=60)[0]
+            finally:
+                for proc in (old, new):
+                    if proc and proc.poll() is None:
+                        proc.kill()
+                producer.terminate()
+                producer.wait()
+                server.shutdown()
+                server.server_close()
+            self.assertIn("took over from recorder", new_log)
+            self.assertEqual(len(set(jobs.glob("live-synth-*/source.mp4"))), old_log.count("chunk ready") +
+                             new_log.count("chunk ready"))  # no chunk overwrote another
+            source = frame_hashes(*sorted(hls.glob("live*.ts"), key=lambda p: int(p.stem[4:])))
+            covered = set()
+            for chunk in sorted(jobs.glob("live-synth-*/source.mp4")):
+                rec = frame_hashes(chunk)
+                start = source.index(rec[0])
+                good = next((i for i, (a, b) in enumerate(zip(rec, source[start:])) if a != b), len(rec))
+                self.assertGreaterEqual(good, len(rec) - 1, chunk)  # only a stopped chunk's last frame may be cut
+                covered.update(range(start, start + good))
+            first, last = min(covered), max(covered)
+            missing = sorted(set(range(first, last + 1)) - covered)
+            self.assertLessEqual(len(missing), 2, f"frames lost in the handover: {missing[:20]}\n{old_log}\n{new_log}")
+            self.assertGreater(last - first, 450)  # >15 s recorded across both recorders
+
+
 class _Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass

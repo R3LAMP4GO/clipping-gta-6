@@ -1058,3 +1058,53 @@ class ScaleTests(unittest.TestCase):
             self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "auto"}), "hot")
             self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "auto", "hot_when_recorders": 5}), "full")
             self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "full"}), "full")
+
+
+class WholeStreamTests(unittest.TestCase):
+    def test_chunks_whose_analysis_died_are_analyzed_again(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import config, live
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "JOBS", Path(d)), \
+                mock.patch.object(live, "WORK", Path(d) / "_live"), mock.patch.object(config, "PROFILE", "gta-rp"):
+            def chunk(name, *files, analyzing=None):
+                job = Path(d) / name
+                job.mkdir()
+                (job / "job.json").write_text('{"profile": "gta-rp"}')
+                for f in ("live_ready", "source.mp4") + files:
+                    (job / f).write_text("x")
+                if analyzing:
+                    (job / "analyzing").write_text(str(analyzing))
+            chunk("live-a-1")                                 # its recorder was killed mid-analysis
+            chunk("live-a-2", analyzing=os.getpid())          # being analyzed right now
+            chunk("live-a-3", "candidates.json")              # scored
+            chunk("live-a-4", "live_done")                    # clipped
+            chunk("live-a-5", analyzing=99999999)             # analyzer died
+            self.assertEqual(live.stranded_jobs(), ["live-a-1", "live-a-5"])
+            with mock.patch.object(live.subprocess, "Popen", return_value=mock.Mock(pid=os.getpid())) as po:
+                self.assertEqual(live.reanalyze_stranded(), ["live-a-1", "live-a-5"])
+                self.assertEqual(live.stranded_jobs(), [])    # now running
+            self.assertIn(["live", "analyze", "live-a-1"], [c[0][0][3:6] for c in po.call_args_list])
+            (Path(d) / "live-a-1" / "analyze_tries").write_text("3")
+            (Path(d) / "live-a-1" / "analyzing").unlink()
+            self.assertEqual(live.stranded_jobs(), [])        # gives up after 3 tries
+
+    def test_restart_hands_over_to_the_new_recorder(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "WORK", Path(d)), \
+                mock.patch.object(live, "load_streams", return_value=[{"name": "kaicenat-twitch",
+                                                                       "url": "https://www.twitch.tv/kaicenat"}]), \
+                mock.patch.object(live.subprocess, "Popen", return_value=mock.Mock(pid=4242)) as po:
+            (Path(d) / "kaicenat-twitch").mkdir()
+            (Path(d) / "kaicenat-twitch" / "pid").write_text(str(os.getpid()))
+            out = live.restart("kaicenat-twitch", 10)
+        self.assertEqual((out["replacing"], out["new_pid"]), (os.getpid(), 4242))
+        cmd = po.call_args[0][0]
+        self.assertEqual(cmd[-2:], ["--replace", str(os.getpid())])
+        self.assertIn("record", cmd)

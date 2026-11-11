@@ -108,11 +108,13 @@ def main(argv=None):
     st.add_argument("--install", action="store_true", help="brew/pip install what's missing + download the model")
     st.add_argument("--dry-run", action="store_true", help="show what would change without writing anything")
     lv = sub.add_parser("live", help="record GTA 6 live streams (Twitch/Kick/YouTube) in chunks while they're on")
-    lv.add_argument("action", choices=["list", "add", "remove", "status", "watch", "record", "jobs", "pending", "done"])
+    lv.add_argument("action", choices=["list", "add", "remove", "status", "watch", "record", "jobs", "pending", "done",
+                                       "restart", "analyze"])
     lv.add_argument("refs", nargs="*", help="add: twitch:NAME | kick:NAME | youtube:@NAME | URL; record: NAME URL; "
                                              "done: JOB")
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
     lv.add_argument("--any-title", action="store_true", help="add: record even if the title isn't on the profile's topic")
+    lv.add_argument("--replace", type=int, help="record: the old recorder's pid, stopped once this one is recording")
     bn = sub.add_parser("bench", help="measure this machine and how many live creators it can keep up with")
     bn.add_argument("--seconds", type=int, default=60)
     cr = sub.add_parser("creators", help="list / add / remove watched creators")
@@ -211,7 +213,14 @@ def main(argv=None):
                               "transcribing": sorted(set(live_mod.ready_jobs()) - set(live_mod.ready_jobs(True)))},
                              indent=2))
         elif a == "record":
-            live_mod.record(refs[0], refs[1], args.chunk, cfg=cfg)
+            live_mod.record(refs[0], refs[1], args.chunk, cfg=cfg, replace_pid=args.replace)
+        elif a == "restart":  # e.g. after a code update: the new recorder starts before the old one stops
+            print(json.dumps([live_mod.restart(r, args.chunk) for r in refs], indent=2))
+        elif a == "analyze":  # a stranded chunk, waiting for a shared analysis slot like the recorders do
+            try:
+                live_mod.analyze_queued(refs[0], cfg)
+            finally:
+                (live_mod.JOBS / refs[0] / "analyzing").unlink(missing_ok=True)
         elif a == "jobs":
             print(json.dumps(live_mod.ready_jobs(), indent=2))
         elif a == "pending":  # exit 1 when nothing is ready, so a scheduled clip run doesn't start Claude for nothing
