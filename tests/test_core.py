@@ -1152,13 +1152,16 @@ class RecorderPidTests(unittest.TestCase):
         from clipper import live
         other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
         try:
-            with tempfile.TemporaryDirectory() as d:
-                d = Path(d)
+            with tempfile.TemporaryDirectory() as root:
+                d = Path(root) / "kaicenat-twitch"  # record() finds it by slug(name)
+                d.mkdir()
                 (d / "pid").write_text(str(other.pid))           # a live recorder owns the stream
                 self.assertFalse(live.claim(d))
                 self.assertEqual((d / "pid").read_text(), str(other.pid))
-                with mock.patch.object(live, "WORK", d.parent), mock.patch.object(live, "probe") as pr:
-                    live.record(d.name, "u", cfg=None)               # refuses before touching the stream
+                with mock.patch.object(live, "WORK", d.parent), mock.patch.object(live, "probe") as pr, \
+                        mock.patch.object(live.subprocess, "run") as run:
+                    live.record("kaicenat-twitch", "u", cfg=None)    # refuses before touching the stream
+                run.assert_not_called()
                 pr.assert_not_called()
                 self.assertEqual((d / "pid").read_text(), str(other.pid))
                 self.assertTrue(live.claim(d, replace_pid=other.pid))  # `live restart` may take over
