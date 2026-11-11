@@ -934,6 +934,9 @@ class FootageTests(unittest.TestCase):
         self.assertEqual(render.footage({"start": 10, "end": 20}, None, vod),
                          [{"source": "x1", "from": 3610.0, "to": 3620.0}])
         self.assertEqual(render.moment_at({"start": 610, "end": 640}, None, live), 1610)
+        vod_chunk = dict(live, url="https://www.twitch.tv/videos/2924282282")  # a VOD recorded like a live chunk
+        self.assertEqual(render.footage({"start": 10, "end": 20}, None, vod_chunk),
+                         [{"source": "twitch-vod:2924282282", "from": 10.0, "to": 20.0}])
 
     def test_check_fails_picks_reusing_exported_footage(self):
         import json

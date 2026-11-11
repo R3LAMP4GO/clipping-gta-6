@@ -185,8 +185,20 @@ def credits(pick, job, meta):
 REUSE_TOLERANCE_S = 3.0  # recorder clocks drift a little; a few seconds of shared footage isn't a repost
 
 
+def vod_id(meta):
+    """A recorded Twitch VOD (twitch.tv/videos/<id>) is a video, not a live channel, even when recorded as a chunk."""
+    m = re.search(r"twitch\.tv/videos/(\d+)", meta.get("url", ""))
+    return f"twitch-vod:{m.group(1)}" if m else None
+
+
+def wall_clock(meta):
+    return bool(meta.get("live")) and not vod_id(meta)
+
+
 def footage_key(meta):
     """What footage is the same: a live channel (every chunk shares its wall clock) or a video id."""
+    if vod_id(meta):
+        return vod_id(meta)
     if meta.get("live"):
         m = re.search(r"(twitch|kick|youtube)\.(?:tv|com)/@?([^/?]+)", meta.get("url", ""))
         return f"{m.group(1)}:{m.group(2).lower()}" if m else f"live:{str(meta.get('channel', '')).lower()}"
@@ -198,7 +210,7 @@ def footage(pick, job, meta):
     out = []
     for src in pick_sources(pick, job, meta):
         m = src["meta"]
-        base = float(m.get("recorded_at") or 0) if m.get("live") else 0.0
+        base = float(m.get("recorded_at") or 0) if wall_clock(m) else 0.0
         base += float(m.get("offset", 0) or 0)
         out.append({"source": footage_key(m), "from": round(base + src["start"], 2), "to": round(base + src["end"], 2)})
     return out
