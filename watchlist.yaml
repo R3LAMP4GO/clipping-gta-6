@@ -48,6 +48,9 @@ voice: Samantha            # macOS `say` fallback voice
 # recorders; `clipper bench` measures what this machine can keep up with and suggests a value.
 live_workers: auto          # auto = one per ~4 CPU cores, or a number
 live_fast: true             # asr: whisper only: live chunks use the fast model (base.en)
+keep_live_sources_hours: 3  # a clipped live chunk's video stays this long (multi-streamer edits); `clipper cleanup` then deletes it
+keep_sources_days: 2        # any other job's video/audio go once the job is untouched this long (null = keep forever)
+min_free_gb: 30             # `clipper live health` warns below this much free disk
 max_recorders: 12           # live streams recorded at once (all profiles); live.yaml `priority` (lower first) decides who
 transcribe_mode: auto       # full | hot (transcribe only the loudest ~35% of a chunk) | auto (hot while busy)
 hot_when_recorders: 4       # auto: go hot when more than this many recorders are running

@@ -7,6 +7,7 @@ from pathlib import Path
 from . import analyze as analyze_mod
 from . import config, hooks, library, render as render_mod, schedule, simulate, sources, voice_setup
 from . import bench as bench_mod
+from . import cleanup as cleanup_mod
 from . import live as live_mod
 from . import setup as setup_mod
 
@@ -41,6 +42,7 @@ def reused_footage(picks, job_ref, cfg):
 def daily(cfg, limit=None):
     """Pick the newest unprocessed GTA 6 uploads from the creators list and analyze them."""
     prefs = library.load_prefs()
+    cleaned = cleanup_mod.run(cfg)  # old downloads go before new ones arrive
     limit = limit or int(prefs.get("sources_per_day", 2))
     found, errors, skipped = sources.watch(cfg, per_channel=6)
     fresh = [v for v in found if not v["processed"]]
@@ -58,6 +60,7 @@ def daily(cfg, limit=None):
     total = (min(sum(j["recommended"] for j in jobs), int(prefs.get("max_videos_per_run", 10)))
              if want == "auto" else int(want))
     return {"prefs": prefs, "new_videos": len(fresh), "analyzed": jobs, "videos_to_export": total,
+            "cleaned": {"files": cleaned["files"], "gb": cleaned["gb"]},
             "skipped_off_topic": skipped, "errors": errors}
 
 
@@ -111,12 +114,15 @@ def main(argv=None):
     st.add_argument("--dry-run", action="store_true", help="show what would change without writing anything")
     lv = sub.add_parser("live", help="record GTA 6 live streams (Twitch/Kick/YouTube) in chunks while they're on")
     lv.add_argument("action", choices=["list", "add", "remove", "status", "watch", "record", "jobs", "pending", "done",
-                                       "restart", "analyze"])
+                                       "restart", "analyze", "health"])
     lv.add_argument("refs", nargs="*", help="add: twitch:NAME | kick:NAME | youtube:@NAME | URL; record: NAME URL; "
                                              "done: JOB")
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
     lv.add_argument("--any-title", action="store_true", help="add: record even if the title isn't on the profile's topic")
     lv.add_argument("--replace", type=int, help="record: the old recorder's pid, stopped once this one is recording")
+    cl = sub.add_parser("cleanup", help="delete old job video/audio (keep_live_sources_hours, keep_sources_days); "
+                                        "transcripts, picks and exports stay")
+    cl.add_argument("--dry-run", action="store_true", help="list what would be deleted, delete nothing")
     bn = sub.add_parser("bench", help="measure this machine and how many live creators it can keep up with")
     bn.add_argument("--seconds", type=int, default=60)
     cr = sub.add_parser("creators", help="list / add / remove watched creators")
@@ -212,9 +218,15 @@ def main(argv=None):
         elif a == "status":
             print(json.dumps(live_mod.status(cfg), indent=2))
         elif a == "watch":
-            print(json.dumps({"started": live_mod.watch(cfg, args.chunk), "ready": live_mod.ready_jobs(True),
-                              "transcribing": sorted(set(live_mod.ready_jobs()) - set(live_mod.ready_jobs(True)))},
-                             indent=2))
+            started = live_mod.watch(cfg, args.chunk)
+            cleaned = cleanup_mod.run(cfg)
+            print(json.dumps({"started": started, "ready": live_mod.ready_jobs(True),
+                              "transcribing": sorted(set(live_mod.ready_jobs()) - set(live_mod.ready_jobs(True))),
+                              "cleaned": {"files": cleaned["files"], "gb": cleaned["gb"]}}, indent=2))
+        elif a == "health":  # exit 1 on any issue, so a timer or monitor can alert on it
+            issues = live_mod.health(cfg)
+            print(json.dumps({"ok": not issues, "issues": issues}, indent=2))
+            sys.exit(1 if issues else 0)
         elif a == "record":
             live_mod.record(refs[0], refs[1], args.chunk, cfg=cfg, replace_pid=args.replace)
         elif a == "restart":  # e.g. after a code update: the new recorder starts before the old one stops
@@ -232,6 +244,8 @@ def main(argv=None):
             sys.exit(0 if ready else 1)
         else:
             print(json.dumps([live_mod.mark_done(j) for j in refs]))
+    elif args.cmd == "cleanup":
+        print(json.dumps(cleanup_mod.run(cfg, args.dry_run), indent=2))
     elif args.cmd == "bench":
         print(bench_mod.run(cfg, args.seconds))
     elif args.cmd == "creators":

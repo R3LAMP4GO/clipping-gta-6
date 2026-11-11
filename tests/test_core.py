@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 
@@ -1235,3 +1237,97 @@ class LearningSafeguardTests(unittest.TestCase):
                 os.environ["CLIPPER_NO_LEARNED"] = "1"
                 self.assertEqual(config.load(None, "gta-rp")["weights"]["jump"], 0.2)
                 os.environ.pop("CLIPPER_NO_LEARNED")
+
+
+class CleanupTests(unittest.TestCase):
+    def make_job(self, root, name, age_h, live_done_h=None, files=("source.mp4", "audio.wav", "transcript.json")):
+        import os
+        import time
+        job = root / name
+        job.mkdir()
+        t = time.time() - age_h * 3600
+        for n in files:
+            (job / n).write_text("x" * 10)
+            os.utime(job / n, (t, t))
+        if live_done_h is not None:
+            (job / "live_done").write_text("done")
+            t = time.time() - live_done_h * 3600
+            os.utime(job / "live_done", (t, t))
+        return job
+
+    def test_only_expired_sources_go_and_everything_else_stays(self):
+        import os
+        from clipper import cleanup
+        cfg = {"keep_live_sources_hours": 3, "keep_sources_days": 2}
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            old_live = self.make_job(root, "live-a-1", 5, live_done_h=4)
+            new_live = self.make_job(root, "live-a-2", 2, live_done_h=1)
+            unclipped = self.make_job(root, "live-a-3", 5)  # recorded, not clipped yet: kept until the day rule
+            old_vod = self.make_job(root, "vod-old", 72)
+            new_vod = self.make_job(root, "vod-new", 12)
+            busy = self.make_job(root, "vod-busy", 72)
+            (busy / "analyzing").write_text(str(os.getpid()))  # an analysis is reading it right now
+            (root / "_live").mkdir()
+            (root / "_live" / "source.mp4").write_text("x")
+
+            dry = cleanup.run(cfg, dry_run=True, jobs_dir=root)
+            self.assertEqual(dry["jobs"], ["live-a-1", "vod-old"])
+            self.assertTrue((old_live / "source.mp4").exists())  # dry run deletes nothing
+
+            out = cleanup.run(cfg, jobs_dir=root)
+            self.assertEqual((out["files"], out["jobs"]), (4, ["live-a-1", "vod-old"]))
+            for job in (old_live, old_vod):
+                self.assertFalse((job / "source.mp4").exists())
+                self.assertFalse((job / "audio.wav").exists())
+                self.assertTrue((job / "transcript.json").exists())
+            for job in (new_live, unclipped, new_vod, busy):
+                self.assertTrue((job / "source.mp4").exists(), job.name)
+            self.assertTrue((root / "_live" / "source.mp4").exists())
+
+    def test_null_keeps_sources_forever(self):
+        from clipper import cleanup
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self.make_job(root, "live-a-1", 500, live_done_h=400)
+            self.make_job(root, "vod-old", 500)
+            cfg = {"keep_live_sources_hours": None, "keep_sources_days": None}
+            self.assertEqual(cleanup.run(cfg, jobs_dir=root)["files"], 0)
+
+
+class LiveHealthTests(unittest.TestCase):
+    def test_reports_missed_stalled_failed_and_low_disk(self):
+        import os
+        import time
+        from collections import namedtuple
+        from unittest import mock
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d:
+            jobs = Path(d)
+            stalled = jobs / "_live" / "b"
+            stalled.mkdir(parents=True)
+            (stalled / "pid").write_text(str(os.getpid()))
+            seg = stalled / "1-0001.ts"
+            seg.write_text("x")
+            old = time.time() - 30 * 60
+            os.utime(seg, (old, old))
+            job = jobs / "live-c-1"
+            job.mkdir()
+            for n, text in (("live_ready", "1"), ("source.mp4", "x"), ("analyze_tries", "3"), ("job.json", "{}")):
+                (job / n).write_text(text)
+            streams = [{"name": "a", "live": True, "on_topic": True, "recording": False},
+                       {"name": "b", "live": True, "on_topic": True, "recording": True},
+                       {"name": "c", "live": False, "on_topic": False, "recording": False}]
+            Usage = namedtuple("Usage", "total used free")
+            with mock.patch.object(live, "JOBS", jobs), mock.patch.object(live, "WORK", jobs / "_live"), \
+                    mock.patch.object(live, "status", return_value=streams), \
+                    mock.patch.object(live.shutil, "disk_usage", return_value=Usage(0, 0, 5e9)):
+                issues = live.health({"max_recorders": 12, "min_free_gb": 30})
+                self.assertEqual(sorted(issues), ["analysis_failed", "disk", "not_recording", "stalled"])
+                self.assertIn("a", issues["not_recording"])
+                self.assertIn("b (30 min)", issues["stalled"])
+                self.assertIn("live-c-1", issues["analysis_failed"])
+                # at the recorder cap a missed stream is expected, and a fresh segment means it's recording fine
+                os.utime(seg)
+                issues = live.health({"max_recorders": 1, "min_free_gb": 1})
+                self.assertEqual(sorted(issues), ["analysis_failed"])

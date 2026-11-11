@@ -6,6 +6,7 @@ Each finished chunk is remuxed into jobs/live-<name>-<time>/ with job.json + sou
 import fcntl
 import json
 import os
+import shutil
 import threading
 import re
 import signal
@@ -218,6 +219,41 @@ def watch(cfg, chunk_minutes=30):
     return started
 
 
+STALL_MINUTES = 10  # a recorder that wrote no video this long while its stream is live is stuck
+
+
+def health(cfg, now=None):
+    """{issue: message} for everything about live recording that needs a person; empty when all is well."""
+    now, issues = now or time.time(), {}
+    streams = status(cfg)
+    cap = cfg.get("max_recorders")
+    missed = [s["name"] for s in streams if s["live"] and s["on_topic"] and not s["recording"]]
+    if missed and (cap is None or sum(s["recording"] for s in streams) < int(cap)):
+        issues["not_recording"] = f"live on-topic streams not being recorded: {', '.join(missed)} (run `live watch`)"
+    stuck = []
+    for s in streams:
+        d = WORK / slug(s["name"])
+        if not (s["live"] and s["recording"] and (d / "pid").exists()):
+            continue
+        last = max((f.stat().st_mtime for f in d.glob("*.ts")), default=(d / "pid").stat().st_mtime)
+        if now - last > STALL_MINUTES * 60:
+            stuck.append(f"{s['name']} ({(now - last) / 60:.0f} min)")
+    if stuck:
+        issues["stalled"] = (f"recorders running but writing no video: {', '.join(stuck)} "
+                             f"(`live restart <stream>` replaces one without a gap)")
+    failed = [j for j in ready_jobs() if not (JOBS / j / "candidates.json").exists() and (JOBS / j / "source.mp4")
+              .exists() and int((JOBS / j / "analyze_tries").read_text() or 0 if (JOBS / j / "analyze_tries").exists()
+                                else 0) >= ANALYZE_TRIES and not _alive(JOBS / j / "analyzing")]
+    if failed:
+        issues["analysis_failed"] = (f"chunks whose analysis failed {ANALYZE_TRIES} times (see "
+                                     f"jobs/_live/reanalyze.log): {', '.join(failed)}")
+    disk = JOBS if JOBS.exists() else ROOT
+    free, need = shutil.disk_usage(disk).free / 1e9, float(cfg.get("min_free_gb") or 0)
+    if free < need:
+        issues["disk"] = f"only {free:.0f} GB free for recordings (want {need:.0f} GB; `clipper cleanup` frees old sources)"
+    return issues
+
+
 def make_job(segment, name, url, title, started_at, channel=None, analyzer_pid=None):
     # seconds too: a stream that reconnects in the same minute must not overwrite an earlier chunk
     jid = base = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M%S}"
@@ -393,7 +429,7 @@ def ready_jobs(analyzed_only=False):
 
 def mark_done(jid, drop_source=False):
     """Clipped. source.mp4 stays for a few hours (`keep_live_sources_hours`) so multi-streamer edits can still cut
-    this stream's side of a moment; the autopilot cleanup deletes it after that."""
+    this stream's side of a moment; `clipper cleanup` (run by every `live watch`) deletes it after that."""
     job = JOBS / jid
     (job / "live_done").write_text(datetime.now().isoformat())
     (job / "audio.wav").unlink(missing_ok=True)  # only analysis reads it
