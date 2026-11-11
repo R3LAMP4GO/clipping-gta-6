@@ -57,7 +57,7 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
                     "-i", str(job / "source.mp4"), "-vn", "-ac", "2", "-ar", "44100", str(clip_wav)], check=True)
     stems = speakers.separate(clip_wav, tmp, cfg) if cfg.get("separate_voices", True) else None
     silent = bool(stems) and (signals.integrated_loudness(stems[0]) or -99) < cfg.get("speech_floor_lufs", -40)
-    words = [] if silent else speakers.diarized_words(stems[0] if stems else clip_wav, tmp / "wk", cfg)
+    words = [] if silent else (speakers.diarized_words(stems[0] if stems else clip_wav, tmp / "wk", cfg) or [])
     source = "no speech (captions off)" if silent else "whisperkit+diarization"
     heard = [dict(w, s=w["s"] - s, e=w["e"] - s, spk=0) for w in fallback_words if s <= w["s"] < e]
     # WhisperKit on separated vocals sometimes drops most of the speech (4 of 54 words, one held for 8s)

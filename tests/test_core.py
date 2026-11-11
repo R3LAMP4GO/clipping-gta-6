@@ -132,6 +132,19 @@ class HookTests(unittest.TestCase):
         self.assertAlmostEqual(prep["words"][1]["s"], 0.2)
         self.assertEqual(prep["transcript"], "source transcript")
 
+    def test_captions_fall_back_when_whisperkit_is_missing(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import render
+        said = [{"w": f"w{i}", "s": 100 + i * 0.5, "e": 100.4 + i * 0.5} for i in range(10)]
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(render.subprocess, "run"), \
+                mock.patch.object(render.speakers, "diarized_words", return_value=None), \
+                mock.patch.object(render.captions, "write_overlay", return_value="caps"):
+            prep = render.prepare_clip(Path(d), {"start": 100, "end": 110}, said, {"separate_voices": False}, Path(d))
+        self.assertEqual(len(prep["words"]), 10)
+        self.assertEqual(prep["transcript"], "source transcript")
+
     def test_rerender_replaces_index_line(self):
         import json
         import shutil
