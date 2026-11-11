@@ -203,16 +203,19 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
     signal.signal(signal.SIGTERM, lambda *_: stop.append(1))
     misses = 0
     pending = []
+    p, reconnect = {}, False
     while not stop and misses < 3:
-        p = probe(url)
-        if not p.get("live"):
-            misses += 1
-            time.sleep(60)
-            continue
+        if not reconnect:  # after a session drops, go straight for a fresh HLS URL: no re-probe gap in the recording
+            p = probe(url)
+            if not p.get("live"):
+                misses += 1
+                time.sleep(60)
+                continue
+        reconnect = False
         misses = 0
         hls = subprocess.run(["yt-dlp", "-g", "-f", quality, "--no-warnings", url], capture_output=True, text=True)
         if hls.returncode != 0:
-            time.sleep(60)
+            time.sleep(5)
             continue
         session = time.time()
         pattern = d / f"{int(session)}-%04d.ts"
@@ -240,7 +243,8 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
         if stop:
             ff.terminate()
             ff.wait()
-        finish(final=True)  # ffmpeg ended: the stream stopped or the HLS URL expired; re-probe and go on
+        finish(final=True)  # ffmpeg ended: the HLS URL expired or the stream stopped
+        reconnect = not stop
     for t in pending:
         t.join()
     (d / "pid").unlink(missing_ok=True)

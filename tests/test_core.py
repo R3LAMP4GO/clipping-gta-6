@@ -578,6 +578,24 @@ class LinuxPortTests(unittest.TestCase):
             ids = {live.make_job(Path(d) / "seg.ts", "xqc", "u", "t", 1794321600 + s) for s in (0, 20)}
         self.assertEqual(len(ids), 2)
 
+    def test_recorder_reconnects_without_reprobing(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        ff = mock.Mock(**{"poll.return_value": 0})
+        hls = [mock.Mock(returncode=0, stdout="https://hls/1\n"), mock.Mock(returncode=0, stdout="https://hls/2\n"),
+               mock.Mock(returncode=1, stdout="")]
+        probes = [{"live": True, "title": "t"}] + [{"live": False}] * 3
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "WORK", Path(d)), \
+                mock.patch.object(live, "probe", side_effect=probes) as pr, \
+                mock.patch.object(live.subprocess, "run", side_effect=hls), \
+                mock.patch.object(live.subprocess, "Popen", return_value=ff) as po, \
+                mock.patch.object(live.time, "sleep"), mock.patch.object(live.signal, "signal"):
+            live.record("kai", "u")
+        self.assertEqual(po.call_count, 2)  # the second session started straight after the first ended
+        self.assertEqual(pr.call_count, 4)  # probed once to start, then only after a reconnect failed
+
     def test_live_job_credits_the_streamer_not_the_recorder(self):
         import json
         import tempfile
