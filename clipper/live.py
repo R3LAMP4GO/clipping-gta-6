@@ -139,7 +139,7 @@ def watch(cfg, chunk_minutes=30):
     return started
 
 
-def make_job(segment, name, url, title, started_at):
+def make_job(segment, name, url, title, started_at, channel=None):
     # seconds too: a stream that reconnects in the same minute must not overwrite an earlier chunk
     jid = f"live-{slug(name)}-{datetime.fromtimestamp(started_at):%Y%m%d-%H%M%S}"
     job = JOBS / jid
@@ -149,10 +149,11 @@ def make_job(segment, name, url, title, started_at):
                     str(src)], check=True)
     dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
                                 str(src)], capture_output=True, text=True).stdout.strip() or 0)
-    meta = {"id": jid, "url": url, "title": title, "channel": name, "duration": round(dur), "offset": 0.0,
+    channel = channel or name  # the streamer's display name for the credit line, not the recorder slug
+    meta = {"id": jid, "url": url, "title": title, "channel": channel, "duration": round(dur), "offset": 0.0,
             "live": True, "recorded_at": started_at, "profile": config.PROFILE}
     (job / "job.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    (job / "source.info.json").write_text(json.dumps({"title": title, "channel": name, "is_live": True}),
+    (job / "source.info.json").write_text(json.dumps({"title": title, "channel": channel, "is_live": True}),
                                           encoding="utf-8")
     (job / "live_ready").write_text(datetime.now().isoformat())
     segment.unlink(missing_ok=True)
@@ -226,7 +227,8 @@ def record(name, url, chunk_minutes=30, quality="best[height<=1080]/best", cfg=N
             for i, seg in enumerate(ready):
                 if seg.name not in done and seg.stat().st_size > 1_000_000:
                     idx = int(seg.stem.split("-")[1])
-                    jid = make_job(seg, name, url, p["title"], session + idx * chunk_minutes * 60)
+                    jid = make_job(seg, name, url, p["title"], session + idx * chunk_minutes * 60,
+                                   p.get("channel"))
                     done.add(seg.name)
                     if cfg is not None:
                         t = threading.Thread(target=analyze_queued, args=(jid, cfg))

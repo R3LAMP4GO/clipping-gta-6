@@ -145,6 +145,19 @@ def opening_type(first_line):
     return "statement"
 
 
+MAX_CLIP_S = 60  # our cap; YouTube Shorts allow longer
+
+
+def check_length(pick):
+    try:
+        d = float(pick["end"]) - float(pick["start"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if d > MAX_CLIP_S:
+        return f"{d:.0f}s is over the {MAX_CLIP_S}s maximum: cut it to {MAX_CLIP_S}s or less"
+    return None
+
+
 def check_picks(picks, cfg=None):
     """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title."""
     from .playbook import for_profile
@@ -182,6 +195,8 @@ def check_picks(picks, cfg=None):
                     if pick.get(key) and pick[key] != play[key]:
                         entry.setdefault("playbook", []).append(
                             f"{key} '{pick[key]}' differs from the {kind} default '{play[key]}': keep it only on purpose")
+        if check_length(pick):
+            entry["length"] = check_length(pick)
         if len(pick.get("hooks") or []) >= 3 and len(used) < 3:
             entry["variety"] = f"hooks only use {sorted(used)}: give each variant a different structure to A/B test"
         if entry:
@@ -191,4 +206,4 @@ def check_picks(picks, cfg=None):
 
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
-        or any("variety" in e for e in report.values())
+        or any("variety" in e or "length" in e for e in report.values())

@@ -141,6 +141,9 @@ def main(argv=None):
         job = config.job_dir(args.job)
         picks = (json.loads(open(args.picks, encoding="utf-8").read()) if args.picks
                  else _picks_from_ids(job, args.ids))
+        too_long = [f"video {n}: {hooks.check_length(p)}" for n, p in enumerate(picks, 1) if hooks.check_length(p)]
+        if too_long:
+            raise SystemExit("[check] clips over the length cap, nothing rendered:\n" + "\n".join(too_long))
         problems = hooks.check_picks(picks, cfg)
         if hooks.has_fails(problems):
             print("[check] hooks/titles that break the research rules (rendering anyway):\n"

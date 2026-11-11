@@ -119,11 +119,18 @@ def probe(path):
             "duration": round(float(d["format"]["duration"]), 2), "lufs": signals.integrated_loudness(path)}
 
 
+def post_description(desc, meta, link, hashtags):
+    # hashtags already written into the description aren't repeated after the credit line
+    have = {w.lower() for w in re.findall(r"#\w+", desc)}
+    extra = " ".join(t for t in hashtags if t.lower() not in have)
+    return f"{desc}\n\nClip from {meta['channel']}: {link}" + (f"\n\n{extra}" if extra else "")
+
+
 def clip_markdown(n, pick, meta, cfg, variants, prep):
     abs_s = int(float(pick["start"]) + meta.get("offset", 0))
     link = config.timestamp_link(meta['url'], abs_s)
     titles = pick.get("titles") or [pick.get("title") or pick.get("hook") or "Clip"]
-    tags = " ".join(pick.get("hashtags") or cfg.get("hashtags", []))
+    tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
     lines = [f"# Video {n}: {titles[0]}", "",
              f"Source: {link} ({fmt(abs_s)}, {float(pick['end']) - float(pick['start']):.0f}s)",
@@ -137,7 +144,7 @@ def clip_markdown(n, pick, meta, cfg, variants, prep):
                      + (f"  →  post with title: {titles[i][:100]}" if paired else ""))
     lines += ["", "## Title options (YouTube Shorts, 100 max)"]
     lines += [f"{i}. {t[:100]} ({len(t[:100])})" for i, t in enumerate(titles, 1)]
-    lines += ["", "## Description", f"{desc}\n\nClip from {meta['channel']}: {link}\n\n{tags}"]
+    lines += ["", "## Description", post_description(desc, meta, link, tags)]
     return "\n".join(lines) + "\n"
 
 
@@ -148,7 +155,7 @@ def upload_manifest(pick, meta, cfg, variants, titles):
     table = effect_table()
     abs_s = int(float(pick["start"]) + meta.get("offset", 0))
     link = config.timestamp_link(meta['url'], abs_s)
-    tags = " ".join(pick.get("hashtags") or cfg.get("hashtags", []))
+    tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
     out = []
     for i, v in enumerate(variants):
@@ -156,7 +163,7 @@ def upload_manifest(pick, meta, cfg, variants, titles):
         out.append({"file": v["file"], "rank": i, "hook": v["hook"],
                     "hook_type": max(types, key=lambda t: table[t][0]) if types else None,
                     "title": (titles[i] if len(titles) == len(variants) else titles[0])[:100],
-                    "description": f"{desc}\n\nClip from {meta['channel']}: {link}\n\n{tags}",
+                    "description": post_description(desc, meta, link, tags),
                     "hashtags": pick.get("hashtags") or [], "clip_type": pick.get("clip_type"),
                     "campaign": pick.get("campaign"),
                     "source": link, "duration": v["check"].get("duration")})

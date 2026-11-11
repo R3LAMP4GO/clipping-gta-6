@@ -565,6 +565,43 @@ class LinuxPortTests(unittest.TestCase):
             ids = {live.make_job(Path(d) / "seg.ts", "xqc", "u", "t", 1794321600 + s) for s in (0, 20)}
         self.assertEqual(len(ids), 2)
 
+    def test_live_job_credits_the_streamer_not_the_recorder(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "JOBS", Path(d)), \
+                mock.patch.object(live.subprocess, "run", return_value=mock.Mock(stdout="6")):
+            jid = live.make_job(Path(d) / "seg.ts", "kaicenat-twitch", "u", "t", 1794321600, "KaiCenat")
+            self.assertEqual(json.loads((Path(d) / jid / "job.json").read_text())["channel"], "KaiCenat")
+
+    def test_description_hashtags_are_not_repeated(self):
+        from clipper import render
+        out = render.post_description("Kai promises A1. #gta6 #KaiCenat", {"channel": "KaiCenat"}, "L",
+                                      ["#gta6", "#kaicenat", "#shorts"])
+        self.assertEqual(out, "Kai promises A1. #gta6 #KaiCenat\n\nClip from KaiCenat: L\n\n#shorts")
+        self.assertTrue(render.post_description("d", {"channel": "c"}, "L", ["#gta6"]).endswith("L\n\n#gta6"))
+
+    def test_clips_are_capped_at_60s(self):
+        from clipper import hooks
+        base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 70}
+        self.assertNotIn("length", hooks.check_picks([base]).get("video 1", {}))
+        long = {**base, "end": 72}
+        self.assertIn("60s maximum", hooks.check_picks([long])["video 1"]["length"])
+        self.assertTrue(hooks.has_fails(hooks.check_picks([long])))
+        import json
+        import tempfile
+        from unittest import mock
+        from clipper import __main__ as cli
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump([long], f)
+        with mock.patch.object(cli.render_mod, "render") as rj, mock.patch.object(cli.config, "job_dir"), \
+                self.assertRaises(SystemExit) as e:
+            cli.main(["render", "anyjob", "--picks", f.name])
+        self.assertIn("60s maximum", str(e.exception))
+        rj.assert_not_called()
+
     def test_live_clip_cmd_replaces_claude(self):
         from clipper import schedule
         jobs = schedule.live_jobs(None, clip_cmd="/venv/bin/python /ops/autopilot.py live")
