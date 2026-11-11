@@ -63,6 +63,69 @@ def ad_runs(mask):
     return runs
 
 
+HOT_SHARE = 0.35  # hot mode transcribes at most this share of a chunk
+
+
+def transcribe_mode(cfg):
+    """full | hot; `auto` goes hot while more than `hot_when_recorders` recorders are running."""
+    mode = cfg.get("transcribe_mode", "auto")
+    if mode == "auto":
+        from .live import alive_recorders
+        return "hot" if alive_recorders() > int(cfg.get("hot_when_recorders", 4)) else "full"
+    return mode
+
+
+def hot_windows(score, duration, share=HOT_SHARE, before=30, after=60):
+    """Spans around the strongest loudness/jump/heatmap peaks, together at most `share` of the chunk."""
+    sm = cand.smooth(score)
+    budget, wins = share * duration, []
+    for p in np.argsort(-sm, kind="stable"):
+        if sm[p] <= 0:
+            break
+        if any(a <= p < b for a, b in wins):
+            continue
+        a, b = max(0.0, float(p) - before), min(duration, float(p) + after)
+        for x, y in wins:  # don't pay twice for audio another window already covers
+            if x < b and y > a:
+                a, b = (y, b) if x <= a else (a, x) if y >= b else (a, b)
+        if b - a < 1 or sum(y - x for x, y in wins) + (b - a) > budget:
+            continue
+        wins.append((a, b))
+    merged = []
+    for a, b in sorted(wins):
+        if merged and a <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(b, merged[-1][1]))
+        else:
+            merged.append((a, b))
+    return merged
+
+
+def transcribe_windows(wav, job, cfg, fast, wins):
+    """Transcribe only `wins` of the chunk, with word and event times shifted back onto the whole chunk."""
+    words, events, model = [], [], None
+    for i, (a, b) in enumerate(wins):
+        part = job / f"hot_{i:02d}.wav"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{a:.2f}", "-t", f"{b - a:.2f}", "-i", str(wav),
+                        "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(part)], check=True)
+        try:
+            w, ev, model = transcribe.transcribe(part, job / f"whisper_hot_{i:02d}", cfg, fast)
+        finally:
+            part.unlink(missing_ok=True)
+        words += [dict(x, s=round(x["s"] + a, 2), e=round(x["e"] + a, 2)) for x in w]
+        events += [dict(x, s=round(x["s"] + a, 2), e=round(x["e"] + a, 2)) for x in ev]
+    return words, events, model
+
+
+def prescore(wav, info, cfg):
+    """Loudness, volume jumps and heatmap only: what can rank a chunk before it's transcribed."""
+    lufs = signals.loudness_per_second(wav)
+    n = len(lufs)
+    w = cfg.get("weights", {})
+    jump, _ = signals.jump_per_second(lufs)
+    return (w.get("loudness", 0) * signals.norm_spikes(lufs) + w.get("jump", 0) * jump
+            + w.get("heatmap", 0) * signals.heatmap_per_second(info, n)), float(n)
+
+
 def analyze(job, cfg, fast=False, force=False):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     info = json.loads((job / "source.info.json").read_text(encoding="utf-8"))
@@ -72,9 +135,19 @@ def analyze(job, cfg, fast=False, force=False):
 
     tpath = job / "transcript.json"
     if force or not tpath.exists():
-        print(f"[analyze] transcribing locally ({cfg.get('asr', 'parakeet')}) ...", flush=True)
-        words, events, model = transcribe.transcribe(wav, job / "whisper", cfg, fast)
-        tpath.write_text(json.dumps({"model": model, "words": words, "events": events}), encoding="utf-8")
+        mode = transcribe_mode(cfg)
+        extra = {}
+        if mode == "hot":
+            score0, dur0 = prescore(wav, info, cfg)
+            wins = hot_windows(score0, dur0)
+            print(f"[analyze] hot mode: transcribing {len(wins)} windows "
+                  f"({sum(b - a for a, b in wins) / max(1.0, dur0):.0%} of the chunk) ...", flush=True)
+            words, events, model = transcribe_windows(wav, job, cfg, fast, wins)
+            extra = {"mode": "hot", "windows": [[round(a, 2), round(b, 2)] for a, b in wins]}
+        else:
+            print(f"[analyze] transcribing locally ({cfg.get('asr', 'parakeet')}) ...", flush=True)
+            words, events, model = transcribe.transcribe(wav, job / "whisper", cfg, fast)
+        tpath.write_text(json.dumps({"model": model, "words": words, "events": events, **extra}), encoding="utf-8")
     t = json.loads(tpath.read_text(encoding="utf-8"))
     words, events = transcribe.drop_repeats(t["words"]), t["events"]
     sentences = transcribe.group_sentences(words)

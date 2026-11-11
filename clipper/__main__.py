@@ -23,6 +23,21 @@ def _picks_from_ids(job, ids):
     return picks
 
 
+def reused_footage(picks, job_ref, cfg):
+    """{video n: [clips already using its footage]} for picks whose job is known (`--job`, the pick's or every
+    segment's `job`)."""
+    out = {}
+    for n, pick in enumerate(picks, 1):
+        ref = pick.get("job") or job_ref
+        if not ref and not (pick.get("segments") and all(s.get("job") for s in pick["segments"])):
+            continue
+        job = config.job_dir(ref or pick["segments"][0]["job"])
+        reused = render_mod.footage_reuse(render_mod.footage(pick, job, render_mod.load_meta(job)), cfg["profile"])
+        if reused:
+            out[n] = reused + ["pick other moments: the same footage gets no reach the second time"]
+    return out
+
+
 def daily(cfg, limit=None):
     """Pick the newest unprocessed GTA 6 uploads from the creators list and analyze them."""
     prefs = library.load_prefs()
@@ -84,6 +99,7 @@ def main(argv=None):
     sub.add_parser("voice-setup", help="open Fish Audio + a TextEdit note to paste and save your API key")
     ck = sub.add_parser("check", help="check picks.json hooks/titles against the viral research rules")
     ck.add_argument("picks")
+    ck.add_argument("--job", help="the picks' job: also fail picks reusing footage this profile already exported")
     sm = sub.add_parser("simulate", help="Monte Carlo swipe test: rank a picks.json's hook variants")
     sm.add_argument("picks", nargs="?", help="omit to print the fitted effect of every hook feature")
     sm.add_argument("--strategies", action="store_true", help="compare hooks-per-clip strategies at equal uploads")
@@ -115,6 +131,10 @@ def main(argv=None):
                                                                  "scheduled task)")
     sc.add_argument("--clip-cmd", help="live: shell command that clips the waiting chunks instead of `claude -p "
                                        "'/clip-daily live'` (e.g. your own agent runner); still only runs when chunks wait")
+    fd = sub.add_parser("find", help="search recent jobs' transcripts (all streams) for a line, e.g. one cutscene "
+                                     "line to find the same moment in every stream for a multi-streamer edit")
+    fd.add_argument("pattern", help="regex, case-insensitive")
+    fd.add_argument("--hours", type=float, default=6, help="only jobs recorded or fetched in the last N hours")
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
@@ -157,7 +177,10 @@ def main(argv=None):
                 sys.exit(3)
         print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out), indent=2))
     elif args.cmd == "check":
-        report = hooks.check_picks(json.loads(open(args.picks, encoding="utf-8").read()), cfg)
+        picks = json.loads(open(args.picks, encoding="utf-8").read())
+        report = hooks.check_picks(picks, cfg)
+        for n, reused in reused_footage(picks, args.job, cfg).items():
+            report.setdefault(f"video {n}", {})["footage"] = reused
         failing = hooks.has_fails(report)
         if report:
             print(json.dumps(report, indent=2, ensure_ascii=False))
@@ -229,6 +252,13 @@ def main(argv=None):
             print(schedule.remove() if args.action == "remove" else schedule.status())
     elif args.cmd == "voice-setup":
         sys.exit(0 if voice_setup.setup(cfg) else 1)
+    elif args.cmd == "find":
+        hits = live_mod.find(args.pattern, args.hours)
+        for h in hits:
+            print(f"{h['job']}\t{h['channel']}\t{h['at'] or '-'}\t{h['start']}-{h['end']}s\t"
+                  f"{'' if h['footage'] else '(footage deleted) '}{h['text']}")
+        if not hits:
+            print(f"no line matching '{args.pattern}' in the last {args.hours:g} h")
     elif args.cmd == "frame":
         print(analyze_mod.grid_frame(config.job_dir(args.job), args.seconds))
 

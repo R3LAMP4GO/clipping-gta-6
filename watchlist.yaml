@@ -48,3 +48,6 @@ voice: Samantha            # macOS `say` fallback voice
 # recorders; `clipper bench` measures what this machine can keep up with and suggests a value.
 live_workers: auto          # auto = one per ~4 CPU cores, or a number
 live_fast: true             # asr: whisper only: live chunks use the fast model (base.en)
+max_recorders: 12           # live streams recorded at once (all profiles); live.yaml `priority` (lower first) decides who
+transcribe_mode: auto       # full | hot (transcribe only the loudest ~35% of a chunk) | auto (hot while busy)
+hot_when_recorders: 4       # auto: go hot when more than this many recorders are running

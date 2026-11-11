@@ -2,12 +2,12 @@ import json
 import re
 import subprocess
 import tempfile
+import time
 from datetime import date
 from pathlib import Path
 
 from . import captions, signals, speakers, transcribe, tts
 from .analyze import fmt
-from . import config
 from . import config
 from .config import ROOT
 
@@ -36,7 +36,14 @@ def source_size(src):
     return int(w), int(h)
 
 
+def caption_layout(layout):
+    """Where hooks and captions sit: a pre-cut vertical source keeps the positions of the layout it was cut with."""
+    return layout.get("as", "fit") if layout.get("type") == "vertical" else layout.get("type", "fit")
+
+
 def video_filter(layout, size):
+    if layout.get("type") == "vertical":  # already 1080x1920 (a joined story cut)
+        return "[0:v]scale=1080:1920,setsar=1[v1]"
     if layout.get("type") == "split":
         sw, sh = size
         fx, fy, fw, fh = layout["face"]
@@ -88,7 +95,7 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
         words = action_labels(pick, words)
         source += " + action captions"
     layout = pick.get("layout") or {"type": "fit"}
-    caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", layout.get("type", "fit"),
+    caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", caption_layout(layout),
                                   pick.get("caption_style") or cfg.get("caption_style", "bold"))
     vo = None
     if pick.get("voiceover"):
@@ -105,7 +112,7 @@ def encode_variant(job, pick, prep, hook, cfg, out_path, tmp):
     dur = e - s
     layout = prep["layout"]
     hook_png = tmp / f"hook_{out_path.stem}.png"
-    captions.render_hook(hook, hook_png, pick.get("hook_style", "box"), layout.get("type", "fit"))
+    captions.render_hook(hook, hook_png, pick.get("hook_style", "box"), caption_layout(layout))
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{s:.3f}", "-t", f"{dur:.3f}",
            "-i", str(job / "source.mp4"), "-f", "concat", "-safe", "0", "-i", str(prep["captions"]),
            "-loop", "1", "-framerate", "30", "-t", f"{dur:.3f}", "-i", str(hook_png), "-i", str(prep["bed"])]
@@ -136,21 +143,147 @@ def probe(path):
             "duration": round(float(d["format"]["duration"]), 2), "lufs": signals.integrated_loudness(path)}
 
 
-def post_description(desc, meta, link, hashtags):
+def post_description(desc, credits, hashtags):
+    """`credits`: (channel, link) per source; a story cut or multi-streamer edit credits every one."""
     # hashtags already written into the description aren't repeated after the credit line
     have = {w.lower() for w in re.findall(r"#\w+", desc)}
     extra = " ".join(t for t in hashtags if t.lower() not in have)
-    return f"{desc}\n\nClip from {meta['channel']}: {link}" + (f"\n\n{extra}" if extra else "")
+    credits = list({link: (ch, link) for ch, link in reversed(list(credits))}.values())[::-1]  # one line per link
+    if len(credits) == 1:
+        credit = f"Clip from {credits[0][0]}: {credits[0][1]}"
+    else:
+        credit = "Clips from:\n" + "\n".join(f"{ch}: {link}" for ch, link in credits)
+    return f"{desc}\n\n{credit}" + (f"\n\n{extra}" if extra else "")
 
 
-def clip_markdown(n, pick, meta, cfg, variants, prep):
-    abs_s = int(float(pick["start"]) + meta.get("offset", 0))
-    link = config.timestamp_link(meta['url'], abs_s)
+def segment_job_dir(seg, job):
+    return config.job_dir(seg["job"]) if seg.get("job") else job
+
+
+def load_meta(job):
+    return json.loads((job / "job.json").read_text(encoding="utf-8"))
+
+
+def pick_sources(pick, job, meta):
+    """[{job, meta, start, end}] in source seconds: one per segment, or the pick itself."""
+    if not pick.get("segments") or job is None:
+        return [{"job": job, "meta": meta, "start": float(pick["start"]), "end": float(pick["end"])}]
+    out = []
+    for seg in pick["segments"]:
+        sj = segment_job_dir(seg, job)
+        out.append({"job": sj, "meta": meta if sj == job else load_meta(sj),
+                    "start": float(seg["start"]), "end": float(seg["end"])})
+    return out
+
+
+def credits(pick, job, meta):
+    return [(src["meta"]["channel"],
+             config.timestamp_link(src["meta"]["url"], int(src["start"] + src["meta"].get("offset", 0))))
+            for src in pick_sources(pick, job, meta)]
+
+
+REUSE_TOLERANCE_S = 3.0  # recorder clocks drift a little; a few seconds of shared footage isn't a repost
+
+
+def footage_key(meta):
+    """What footage is the same: a live channel (every chunk shares its wall clock) or a video id."""
+    if meta.get("live"):
+        m = re.search(r"(twitch|kick|youtube)\.(?:tv|com)/@?([^/?]+)", meta.get("url", ""))
+        return f"{m.group(1)}:{m.group(2).lower()}" if m else f"live:{str(meta.get('channel', '')).lower()}"
+    return str(meta.get("id") or meta.get("url"))
+
+
+def footage(pick, job, meta):
+    """Per source span: {source, from, to}; wall-clock seconds for live chunks, video seconds otherwise."""
+    out = []
+    for src in pick_sources(pick, job, meta):
+        m = src["meta"]
+        base = float(m.get("recorded_at") or 0) if m.get("live") else 0.0
+        base += float(m.get("offset", 0) or 0)
+        out.append({"source": footage_key(m), "from": round(base + src["start"], 2), "to": round(base + src["end"], 2)})
+    return out
+
+
+def moment_at(pick, job, meta):
+    """When the moment happened (wall clock): the newest live segment, else now (a VOD's air time is unknown)."""
+    live = [float(src["meta"]["recorded_at"]) + float(src["meta"].get("offset", 0) or 0) + src["start"]
+            for src in pick_sources(pick, job, meta) if src["meta"].get("live") and src["meta"].get("recorded_at")]
+    return round(max(live) if live else time.time())
+
+
+def footage_overlap(a, b):
+    """Seconds of footage two clips share."""
+    return sum(max(0.0, min(x["to"], y["to"]) - max(x["from"], y["from"]))
+               for x in a or [] for y in b or [] if x.get("source") == y.get("source"))
+
+
+def footage_reuse(fp, profile, exports=None, tol=REUSE_TOLERANCE_S):
+    """Exported clips of this profile that already use more than `tol` seconds of this footage."""
+    hits = []
+    for f in sorted(Path(exports or EXPORTS).glob(f"{profile}/**/upload.json")):
+        try:
+            entries = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        used = next((e.get("footage") for e in entries if isinstance(e, dict) and e.get("footage")), None)
+        shared = footage_overlap(fp, used)
+        if shared > tol:
+            hits.append(f"{f.parent.parent.name}/{f.parent.name} already uses {shared:.0f}s of this footage")
+    return hits
+
+
+def predicted(pick, cfg):
+    """Each hook's simulated views multiplier (the same ranking `clipper simulate` prints)."""
+    try:
+        from .simulate import profile_kw, simulate
+        return {r["hook"]: round(r["x"], 3) for r in simulate(pick, runs=60, **profile_kw(cfg))}
+    except Exception:  # a missing research dataset must not stop a render
+        return {}
+
+
+def build_segment_job(pick, job, cfg, out):
+    """Cut every segment to 1080x1920 with its own layout and join them into `out` (source.mp4 + transcript.json
+    with word times shifted onto the joined clip), so the normal render runs on it. Returns the pick to render
+    there: start 0, end = total length, a `vertical` layout that keeps the segments' caption positions."""
+    out.mkdir(parents=True, exist_ok=True)
+    parts, words, t = [], [], 0.0
+    layouts = []
+    for i, seg in enumerate(pick["segments"]):
+        sj = segment_job_dir(seg, job)
+        s, e = float(seg["start"]), float(seg["end"])
+        layout = seg.get("layout") or pick.get("layout") or {"type": "fit"}
+        layouts.append(layout.get("type", "fit"))
+        part = out / f"part{i:02d}.mp4"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{s:.3f}", "-t", f"{e - s:.3f}",
+                        "-i", str(sj / "source.mp4"), "-filter_complex",
+                        video_filter(layout, source_size(sj / "source.mp4")) + ";[v1]fps=30,format=yuv420p[v]",
+                        "-map", "[v]", "-map", "0:a:0", "-c:v", "libx264", "-preset", "veryfast", "-crf", "16",
+                        "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-t", f"{e - s:.3f}",
+                        str(part)], check=True)
+        parts.append(part)
+        src_words = transcribe.drop_repeats(json.loads((sj / "transcript.json").read_text(encoding="utf-8"))["words"])
+        words += [dict(w, s=round(w["s"] - s + t, 3), e=round(min(w["e"], e) - s + t, 3))
+                  for w in src_words if s <= w["s"] < e]
+        t += e - s
+    lst = out / "parts.txt"
+    lst.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
+                    "-c", "copy", str(out / "source.mp4")], check=True)
+    (out / "transcript.json").write_text(json.dumps({"words": words}), encoding="utf-8")
+    # never cover a face: if any segment shows the facecam on top, the hook sits on the split seam
+    as_ = (pick.get("layout") or {}).get("as") or ("split" if "split" in layouts else "fit")
+    flat = {k: v for k, v in pick.items() if k != "segments"}
+    return {**flat, "start": 0.0, "end": round(t, 3), "layout": {"type": "vertical", "as": as_}}, words
+
+
+def clip_markdown(n, pick, meta, cfg, variants, prep, creds=None, dur=None):
+    creds = creds or credits(pick, None, meta)
+    dur = float(pick["end"]) - float(pick["start"]) if dur is None else dur
     titles = pick.get("titles") or [pick.get("title") or pick.get("hook") or "Clip"]
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
     lines = [f"# Video {n}: {titles[0]}", "",
-             f"Source: {link} ({fmt(abs_s)}, {float(pick['end']) - float(pick['start']):.0f}s)",
+             "Source: " + " + ".join(f"{ch} {link}" for ch, link in creds) + f" ({dur:.0f}s)",
              f"Speakers detected: {prep['speakers']} · captions from {prep['transcript']}"
              f" · voices separated: {'yes' if prep['voices_separated'] else 'no'}"
              + (f" · voiceover: {prep['vo']['provider']}" if prep["vo"] else ""), "",
@@ -161,17 +294,18 @@ def clip_markdown(n, pick, meta, cfg, variants, prep):
                      + (f"  →  post with title: {titles[i][:100]}" if paired else ""))
     lines += ["", "## Title options (YouTube Shorts, 100 max)"]
     lines += [f"{i}. {t[:100]} ({len(t[:100])})" for i, t in enumerate(titles, 1)]
-    lines += ["", "## Description", post_description(desc, meta, link, tags)]
+    lines += ["", "## Description", post_description(desc, creds, tags)]
     return "\n".join(lines) + "\n"
 
 
-def upload_manifest(pick, meta, cfg, variants, titles):
-    """What a poster needs per MP4: its hook, hook type, paired title and the caption."""
+def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None):
+    """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
+    (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
     from .hooks import structures
     from .simulate import MODIFIERS, effect_table
     table = effect_table()
-    abs_s = int(float(pick["start"]) + meta.get("offset", 0))
-    link = config.timestamp_link(meta['url'], abs_s)
+    creds = creds or credits(pick, job, meta)
+    fp, when, pred = footage(pick, job, meta), moment_at(pick, job, meta), predicted(pick, cfg)
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
     out = []
@@ -180,10 +314,12 @@ def upload_manifest(pick, meta, cfg, variants, titles):
         out.append({"file": v["file"], "rank": i, "hook": v["hook"],
                     "hook_type": max(types, key=lambda t: table[t][0]) if types else None,
                     "title": (titles[i] if len(titles) == len(variants) else titles[0])[:100],
-                    "description": post_description(desc, meta, link, tags),
+                    "description": post_description(desc, creds, tags),
                     "hashtags": pick.get("hashtags") or [], "clip_type": pick.get("clip_type"),
                     "campaign": pick.get("campaign"),
-                    "source": link, "duration": v["check"].get("duration")})
+                    "source": creds[0][1], "sources": [link for _, link in creds],
+                    "duration": v["check"].get("duration"), "footage": fp, "moment_at": when,
+                    "predicted": pred.get(v["hook"])})
     return out
 
 
@@ -212,25 +348,33 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None):
         folder = out_dir / f"video {n}"
         folder.mkdir()
         taken = set()
+        creds = credits(pick, job, meta)
         with tempfile.TemporaryDirectory(dir=job) as tmp:
             tmp = Path(tmp)
+            src_job, flat, words = job, pick, fallback
+            if pick.get("segments"):
+                print(f"[render] video {n}: joining {len(pick['segments'])} segments ...", flush=True)
+                src_job = tmp / "segments"
+                flat, words = build_segment_job(pick, job, cfg, src_job)
             print(f"[render] video {n} ({n - first + 1} of {len(picks)}): separating voices + diarizing ...", flush=True)
-            prep = prepare_clip(job, pick, fallback, cfg, tmp)
+            prep = prepare_clip(src_job, flat, words, cfg, tmp)
             variants = []
             for i, hook in enumerate(hooks):
                 mp4 = folder / hook_filename(hook, taken)
                 print(f"[render]   {mp4.relative_to(out_dir)}", flush=True)
-                encode_variant(job, pick, prep, hook, cfg, mp4, tmp)
+                encode_variant(src_job, flat, prep, hook, cfg, mp4, tmp)
                 variants.append({"file": str(mp4), "hook": hook, "check": probe(mp4)})
-        (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles), indent=2,
-                                                       ensure_ascii=False), encoding="utf-8")
+        (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job),
+                                                       indent=2, ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
-        md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep), encoding="utf-8")
+        md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),
+                      encoding="utf-8")
         index = out_dir / "index.md"
         # a re-render of a deleted video N replaces its line instead of listing it twice
         lines = [x for x in (index.read_text(encoding="utf-8").splitlines(keepends=True) if index.exists() else [])
                  if not x.startswith(f"- **video {n}**:")]
-        lines.append(f"- **video {n}**: {titles[0]} · {meta['channel']} · {len(variants)} hooks · "
+        lines.append(f"- **video {n}**: {titles[0]} · {' + '.join(dict.fromkeys(ch for ch, _ in creds))} · "
+                     f"{len(variants)} hooks · "
                      f"voiceover: {prep['vo']['provider'] if prep['vo'] else 'none'}\n")
         index.write_text("".join(lines), encoding="utf-8")
         results.append({"video": n, "folder": str(folder), "titles": titles, "metadata": str(md), "speakers": prep["speakers"],

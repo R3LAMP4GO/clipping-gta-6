@@ -70,6 +70,13 @@ Give each variant a **different** structure so the A/B test actually tests somet
 - Captions are huge (about 8–10% of frame height), 1–3 words at a time, bold white with a black outline, and the active or key word in yellow or red. Emphasis words get their own colour ("WHAT?" in red).
 - Overlapping voices: show each speaker in a different colour so viewers can follow the back-and-forth.
 
+## Originality: story cuts and multi-streamer edits
+YouTube's reused-content rules reward clips that add editing over raw re-uploads, and the same footage posted twice gets no reach the second time. So every video is one of three kinds, and no footage is ever used twice (`clipper check --job` enforces it, 3 s tolerance):
+- **Single clip:** one moment that carries itself (the formats above).
+- **Story cut:** several beats of one stream joined into one Short (setup → turn → payoff), dead air cut out. Example: Kai's crash: "Moment of truth" → the blackout → "y'all missed that entire thing?".
+- **Multi-streamer edit:** the same moment seen from several streams, back to back (the same cutscene, heist or reveal). Cutscene dialogue is identical in every stream, so `clipper find "<line>"` locates each stream's copy. Each streamer is credited.
+All three keep the 60 s cap across their segments, and the hook/title rules above apply unchanged.
+
 ## Fonts
 Identified from full-resolution frames of the top performers (bundled in `assets/fonts`, all OFL/Apache):
 

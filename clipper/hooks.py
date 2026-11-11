@@ -148,9 +148,29 @@ def opening_type(first_line):
 MAX_CLIP_S = 60  # our cap; YouTube Shorts allow longer
 
 
+def pick_duration(pick):
+    """Seconds in the finished clip: a story cut / multi-streamer edit sums its segments."""
+    if pick.get("segments"):
+        return sum(float(s["end"]) - float(s["start"]) for s in pick["segments"])
+    return float(pick["end"]) - float(pick["start"])
+
+
+def check_segments(pick):
+    bad = []
+    for i, seg in enumerate(pick.get("segments") or [], 1):
+        try:
+            if float(seg["end"]) - float(seg["start"]) < 0.5:
+                bad.append(f"segment {i}: end must be at least 0.5s after start")
+        except (KeyError, TypeError, ValueError):
+            bad.append(f"segment {i} needs start and end (source seconds of its job)")
+    return bad
+
+
 def check_length(pick):
+    if check_segments(pick):
+        return "; ".join(check_segments(pick))
     try:
-        d = float(pick["end"]) - float(pick["start"])
+        d = pick_duration(pick)
     except (KeyError, TypeError, ValueError):
         return None
     if d > MAX_CLIP_S:
@@ -159,8 +179,11 @@ def check_length(pick):
 
 
 def check_labels(pick):
-    """Action captions must sit inside the clip and stay short: 1-3 words, e.g. *GETS CLOSER*."""
+    """Action captions must sit inside the clip and stay short: 1-3 words, e.g. *GETS CLOSER*. A segment pick's
+    labels use seconds of the finished clip (0 = its first frame)."""
     bad = []
+    lo, hi = (0.0, pick_duration(pick)) if pick.get("segments") and not check_segments(pick) else \
+        (pick.get("start"), pick.get("end"))
     for lab in pick.get("labels") or []:
         try:
             a, b, text = float(lab["s"]), float(lab["e"]), str(lab["text"]).strip()
@@ -169,8 +192,8 @@ def check_labels(pick):
             continue
         if not text or len(text.strip("*").split()) > 3:
             bad.append(f"label \"{text}\": 1-3 words, e.g. *GETS CLOSER*")
-        if not (float(pick.get("start", a)) <= a < b <= float(pick.get("end", b))):
-            bad.append(f"label \"{text}\" ({a}-{b}s) must sit inside the clip ({pick.get('start')}-{pick.get('end')}s)")
+        if not (float(a if lo is None else lo) <= a < b <= float(b if hi is None else hi)):
+            bad.append(f"label \"{text}\" ({a}-{b}s) must sit inside the clip ({lo}-{hi}s)")
     return bad
 
 
@@ -224,4 +247,4 @@ def check_picks(picks, cfg=None):
 
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
-        or any("variety" in e or "length" in e or "labels" in e for e in report.values())
+        or any("variety" in e or "length" in e or "labels" in e or "footage" in e for e in report.values())

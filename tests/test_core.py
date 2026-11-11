@@ -609,10 +609,10 @@ class LinuxPortTests(unittest.TestCase):
 
     def test_description_hashtags_are_not_repeated(self):
         from clipper import render
-        out = render.post_description("Kai promises A1. #gta6 #KaiCenat", {"channel": "KaiCenat"}, "L",
+        out = render.post_description("Kai promises A1. #gta6 #KaiCenat", [("KaiCenat", "L")],
                                       ["#gta6", "#kaicenat", "#shorts"])
         self.assertEqual(out, "Kai promises A1. #gta6 #KaiCenat\n\nClip from KaiCenat: L\n\n#shorts")
-        self.assertTrue(render.post_description("d", {"channel": "c"}, "L", ["#gta6"]).endswith("L\n\n#gta6"))
+        self.assertTrue(render.post_description("d", [("c", "L")], ["#gta6"]).endswith("L\n\n#gta6"))
 
     def test_scenario_windows_open_on_a_curiosity_cue_and_end_on_a_pause(self):
         from clipper import candidates as c
@@ -857,3 +857,200 @@ class ShippedProfilesTests(unittest.TestCase):
                         self.assertEqual(hooks.check_hook(ex, gta=gta)[0], [], f"{name}/{kind}: {ex}")
         finally:
             config.load()  # back to the default profile for the other tests
+
+
+class SegmentPickTests(unittest.TestCase):
+    def _job(self, root, name, channel, url, words, **extra):
+        import json
+        job = root / name
+        job.mkdir()
+        (job / "job.json").write_text(json.dumps({"channel": channel, "url": url, "title": "t", **extra}))
+        (job / "transcript.json").write_text(json.dumps({"words": words}))
+        return job
+
+    def test_segments_join_into_one_vertical_source_with_shifted_words(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import render
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            kai = self._job(root, "kai", "Kai", "https://www.youtube.com/watch?v=x",
+                            [W("Moment", 100.5, 101), W("of", 101, 101.2), W("missed", 300.2, 300.6)])
+            xqc = self._job(root, "xqc", "xQc", "https://www.twitch.tv/xqc", [W("no", 50.1, 50.4)])
+            pick = {"segments": [{"start": 100, "end": 104}, {"start": 300, "end": 302, "layout": {"type": "split",
+                    "face": [0, 0, 0.3, 0.3]}}, {"start": 50, "end": 53, "job": "xqc"}]}
+            with mock.patch.object(render.subprocess, "run") as run, \
+                    mock.patch.object(render, "source_size", return_value=(1920, 1080)), \
+                    mock.patch.object(render.config, "job_dir", side_effect=lambda j: root / j):
+                flat, words = render.build_segment_job(pick, kai, {}, root / "seg")
+                creds = render.credits(pick, kai, render.load_meta(kai))
+            self.assertEqual((flat["start"], flat["end"]), (0.0, 9.0))
+            self.assertEqual(flat["layout"], {"type": "vertical", "as": "split"})  # the hook never covers a face
+            self.assertEqual([(w["w"], w["s"]) for w in words], [("Moment", 0.5), ("of", 1.0), ("missed", 4.2),
+                                                                 ("no", 6.1)])
+            self.assertEqual(run.call_count, 4)  # three cuts + the join
+            self.assertIn(str(xqc / "source.mp4"), run.call_args_list[2][0][0])
+            self.assertIn("crop=", " ".join(run.call_args_list[1][0][0]))  # its own split layout
+            self.assertEqual(creds, [("Kai", "https://www.youtube.com/watch?v=x&t=100s"),
+                                     ("Kai", "https://www.youtube.com/watch?v=x&t=300s"),
+                                     ("xQc", "https://www.twitch.tv/xqc")])
+            desc = render.post_description("d", creds, [])
+            self.assertIn("Clips from:\nKai: https://www.youtube.com/watch?v=x&t=100s\n", desc)
+            self.assertTrue(desc.endswith("xQc: https://www.twitch.tv/xqc"))
+            same_stream = [("KaiCenat", "https://www.twitch.tv/kaicenat"), ("kai", "https://www.twitch.tv/kaicenat")]
+            self.assertEqual(render.post_description("d", same_stream, []),
+                             "d\n\nClip from KaiCenat: https://www.twitch.tv/kaicenat")
+
+    def test_vertical_layout_passes_through_and_keeps_caption_positions(self):
+        from clipper import render
+        self.assertEqual(render.video_filter({"type": "vertical", "as": "split"}, (1080, 1920)),
+                         "[0:v]scale=1080:1920,setsar=1[v1]")
+        self.assertEqual(render.caption_layout({"type": "vertical", "as": "split"}), "split")
+        self.assertEqual(render.caption_layout({"type": "split"}), "split")
+        self.assertEqual(render.caption_layout({}), "fit")
+
+    def test_segment_length_and_labels_use_the_finished_clip(self):
+        from clipper import hooks
+        pick = {"hooks": ["Why did Kai's game crash?"], "segments": [{"start": 0, "end": 40}, {"start": 100, "end": 125}],
+                "labels": [{"s": 41, "e": 43, "text": "*BLACKOUT*"}]}
+        self.assertIn("65s is over", hooks.check_length(pick))
+        ok = {**pick, "segments": [{"start": 0, "end": 30}, {"start": 100, "end": 125}]}
+        self.assertIsNone(hooks.check_length(ok))
+        self.assertEqual(hooks.check_labels(ok), [])  # 41-43 s lies inside the 55 s clip
+        self.assertIn("segment 1", hooks.check_length({"segments": [{"start": 5}]}))
+
+
+class FootageTests(unittest.TestCase):
+    def test_live_footage_uses_the_wall_clock_and_overlaps_across_chunks(self):
+        from clipper import render
+        live = {"live": True, "url": "https://www.twitch.tv/KaiCenat", "recorded_at": 1000, "channel": "Kai", "id": "a"}
+        later = dict(live, recorded_at=1600, id="b")  # the next chunk of the same stream
+        a = render.footage({"start": 610, "end": 640}, None, live)
+        b = render.footage({"start": 15, "end": 30}, None, later)
+        self.assertEqual(a, [{"source": "twitch:kaicenat", "from": 1610.0, "to": 1640.0}])
+        self.assertEqual(render.footage_overlap(a, b), 15.0)
+        vod = {"id": "x1", "url": "https://www.youtube.com/watch?v=x1", "offset": 3600}
+        self.assertEqual(render.footage({"start": 10, "end": 20}, None, vod),
+                         [{"source": "x1", "from": 3610.0, "to": 3620.0}])
+        self.assertEqual(render.moment_at({"start": 610, "end": 640}, None, live), 1610)
+
+    def test_check_fails_picks_reusing_exported_footage(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import __main__ as cli
+        from clipper import render
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            job = root / "jobs" / "x1"
+            job.mkdir(parents=True)
+            (job / "job.json").write_text(json.dumps({"id": "x1", "url": "u", "channel": "Kai"}))
+            done = root / "exports" / "gta6" / "2026-11-10" / "video 7"
+            done.mkdir(parents=True)
+            (done / "upload.json").write_text(json.dumps([{"footage": [{"source": "x1", "from": 100, "to": 130}]}]))
+            other = root / "exports" / "gta6-es" / "2026-11-10" / "video 1"  # a dub on another channel is fine
+            other.mkdir(parents=True)
+            (other / "upload.json").write_text(json.dumps([{"footage": [{"source": "x1", "from": 0, "to": 999}]}]))
+            picks = [{"start": 128, "end": 150}, {"start": 120, "end": 140}]
+            with mock.patch.object(render, "EXPORTS", root / "exports"), \
+                    mock.patch.object(cli.config, "job_dir", return_value=job):
+                out = cli.reused_footage(picks, "x1", {"profile": "gta6"})
+            self.assertEqual(list(out), [2])  # 2 s of overlap is within the tolerance, 10 s is a repost
+            self.assertIn("2026-11-10/video 7 already uses 10s", out[2][0])
+            from clipper import hooks
+            self.assertTrue(hooks.has_fails({"video 2": {"footage": out[2]}}))
+
+    def test_manifest_carries_footage_prediction_and_moment(self):
+        from unittest import mock
+        from clipper import render
+        meta = {"id": "x1", "url": "https://www.youtube.com/watch?v=x1", "channel": "Kai"}
+        pick = {"start": 5, "end": 25, "hooks": ["Why did Kai's game crash?", "Kai lost everything"]}
+        variants = [{"file": "a.mp4", "hook": h, "check": {"duration": 20}} for h in pick["hooks"]]
+        with mock.patch.object(render, "predicted", return_value={"Why did Kai's game crash?": 1.4}), \
+                mock.patch.object(render.time, "time", return_value=5000):
+            out = render.upload_manifest(pick, meta, {}, variants, ["T"])
+        self.assertEqual(out[0]["footage"], [{"source": "x1", "from": 5.0, "to": 25.0}])
+        self.assertEqual((out[0]["predicted"], out[1]["predicted"], out[0]["moment_at"]), (1.4, None, 5000))
+        self.assertEqual(out[0]["source"], "https://www.youtube.com/watch?v=x1&t=5s")
+
+
+class FindTests(unittest.TestCase):
+    def test_find_matches_one_line_across_recent_streams_and_skips_old_jobs(self):
+        import json
+        import tempfile
+        import time
+        from pathlib import Path
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d:
+            now = time.time()
+            for name, ch, rec, start in (("live-kai-1", "Kai", now - 1800, 100), ("live-xqc-1", "xQc", now - 1700, 3),
+                                          ("live-old-1", "Old", now - 86400, 100)):
+                job = Path(d) / name
+                job.mkdir()
+                (job / "job.json").write_text(json.dumps({"channel": ch, "live": True, "recorded_at": rec,
+                                                          "duration": 1800}))
+                (job / "transcript.json").write_text(json.dumps({"words": [
+                    W("Moment", start, start + 0.4), W("of", start + 0.4, start + 0.5), W("truth.", start + 0.5, start + 1),
+                    W("unrelated", start + 5, start + 6)]}))
+            (Path(d) / "live-kai-1" / "source.mp4").write_bytes(b"x")
+            hits = live.find(r"moment of truth", 6, d)
+        self.assertEqual([(h["job"], h["start"], h["footage"]) for h in hits],
+                         [("live-kai-1", 100, True), ("live-xqc-1", 3, False)])
+        self.assertEqual(hits[0]["text"], "Moment of truth.")
+
+    def test_live_done_keeps_the_source_for_other_streams_edits(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "JOBS", Path(d)):
+            job = Path(d) / "live-kai-1"
+            job.mkdir()
+            for f in ("source.mp4", "audio.wav"):
+                (job / f).write_bytes(b"x")
+            live.mark_done("live-kai-1")
+            self.assertEqual(sorted(p.name for p in job.iterdir()), ["live_done", "source.mp4"])
+
+
+class ScaleTests(unittest.TestCase):
+    def test_watch_starts_recorders_by_priority_up_to_the_cap(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import live
+        streams = [{"name": n, "url": f"https://www.twitch.tv/{n}", "live": True, "on_topic": True, "recording": False,
+                    **({"priority": p} if p is not None else {})} for n, p in (("b", None), ("a", 1), ("c", 50))]
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(live, "WORK", Path(d)), \
+                mock.patch.object(live, "status", return_value=streams), \
+                mock.patch.object(live, "alive_recorders", return_value=1), \
+                mock.patch.object(live.subprocess, "Popen", return_value=mock.Mock(pid=1)):
+            self.assertEqual(live.watch({"max_recorders": 3}), ["a", "c"])
+            self.assertEqual(live.watch({}), ["a", "c", "b"])
+
+    def test_hot_windows_cover_the_peaks_within_the_budget(self):
+        import numpy as np
+        from clipper import analyze
+        score = np.zeros(1800)
+        score[300:305], score[1200:1205], score[320:322] = 1.0, 0.8, 0.9
+        wins = analyze.hot_windows(score, 1800.0)
+        self.assertTrue(any(a <= 302 < b for a, b in wins) and any(a <= 1202 < b for a, b in wins))
+        self.assertLessEqual(sum(b - a for a, b in wins), 0.35 * 1800)
+        self.assertEqual(wins, sorted(wins))
+        self.assertTrue(all(b1 <= a2 for (_, b1), (a2, _) in zip(wins, wins[1:])))
+
+    def test_hot_transcription_shifts_words_onto_the_chunk_and_auto_needs_load(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import analyze
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(analyze.subprocess, "run"), \
+                mock.patch.object(analyze.transcribe, "transcribe",
+                                  return_value=([{"w": "no", "s": 1.0, "e": 1.5}], [], "m")):
+            words, _, model = analyze.transcribe_windows(Path(d) / "a.wav", Path(d), {}, False, [(100, 190), (600, 690)])
+        self.assertEqual([w["s"] for w in words], [101.0, 601.0])
+        with mock.patch("clipper.live.alive_recorders", return_value=5):
+            self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "auto"}), "hot")
+            self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "auto", "hot_when_recorders": 5}), "full")
+            self.assertEqual(analyze.transcribe_mode({"transcribe_mode": "full"}), "full")

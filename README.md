@@ -115,16 +115,20 @@ python3 -m clipper daily                       # new GTA 6 uploads -> analyzed j
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
+python3 -m clipper check picks.json --job <id>  # research rules + fail picks reusing exported footage
+python3 -m clipper find "moment of truth"       # one line across every stream of the last 6 h (multi-streamer edits)
 python3 -m clipper live add twitch:xqc kick:xqc youtube:@KaiCenat   # streams to record while they play GTA 6
 python3 -m clipper live watch                  # start recorders for live GTA 6 streams (run every few minutes)
 python3 -m clipper schedule live               # watch streams every 5 min + clip finished chunks every 2 h (/clip-daily live)
-python3 -m clipper live jobs | done <job>      # finished 30-min chunks to clip / mark clipped (frees disk)
+python3 -m clipper live jobs | done <job>      # finished 30-min chunks to clip / mark clipped (source kept a few hours)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
 python3 -m unittest discover -s tests
 ```
 
 Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights and clip length in `watchlist.yaml`. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
+
+A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first.
 
 Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included).
 

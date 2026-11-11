@@ -72,9 +72,11 @@ def topic_only(stream):
 
 
 def add(ref, name=None, topic_only=True):
-    streams = [s for s in load_streams() if s["url"] != stream_url(ref)]
     url = stream_url(ref)
-    streams.append({"name": name or stream_name(url), "url": url, "topic_only": topic_only})
+    old = next((s for s in load_streams() if s["url"] == url), {})
+    streams = [s for s in load_streams() if s["url"] != url]
+    streams.append({"name": name or stream_name(url), "url": url, "topic_only": topic_only,
+                    **({"priority": old["priority"]} if "priority" in old else {})})
     save_streams(streams)
     return streams[-1]
 
@@ -123,10 +125,20 @@ def status(cfg):
     return out
 
 
+def alive_recorders():
+    """Recorders running now, across every profile (they share jobs/_live)."""
+    return sum(1 for f in WORK.glob("*/pid") if _alive(f))
+
+
 def watch(cfg, chunk_minutes=30):
-    """Start a recorder for every live on-topic stream that isn't being recorded yet."""
+    """Start a recorder for every live on-topic stream that isn't being recorded yet, lowest `priority` first
+    (default 100), until `max_recorders` are running."""
     started = []
-    for s in status(cfg):
+    cap = cfg.get("max_recorders")
+    running = alive_recorders()
+    for s in sorted(status(cfg), key=lambda s: float(s.get("priority", 100))):
+        if cap is not None and running + len(started) >= int(cap):
+            break
         if s["live"] and s["on_topic"] and not s["recording"]:
             d = WORK / slug(s["name"])
             d.mkdir(parents=True, exist_ok=True)
@@ -264,10 +276,44 @@ def ready_jobs(analyzed_only=False):
                   and job_profile(p.parent) == config.PROFILE)
 
 
-def mark_done(jid, drop_source=True):
+def mark_done(jid, drop_source=False):
+    """Clipped. source.mp4 stays for a few hours (`keep_live_sources_hours`) so multi-streamer edits can still cut
+    this stream's side of a moment; the autopilot cleanup deletes it after that."""
     job = JOBS / jid
     (job / "live_done").write_text(datetime.now().isoformat())
-    if drop_source:  # a live chunk is ~1-3 GB/hour; the clips are rendered, the transcript and picks stay
-        for f in ("source.mp4", "audio.wav"):
-            (job / f).unlink(missing_ok=True)
+    (job / "audio.wav").unlink(missing_ok=True)  # only analysis reads it
+    if drop_source:
+        (job / "source.mp4").unlink(missing_ok=True)
     return jid
+
+
+def job_time(job, meta):
+    """When the job's footage was recorded (live) or fetched."""
+    return float(meta.get("recorded_at") or (job / "job.json").stat().st_mtime)
+
+
+def find(pattern, hours=6, jobs_dir=None):
+    """Lines matching `pattern` in every job of the last `hours` (all profiles): the same cutscene line is the same
+    moment in every stream that played it, which is how a multi-streamer edit finds its other angles."""
+    rx = re.compile(pattern, re.I)
+    since = time.time() - hours * 3600
+    hits = []
+    for tf in sorted(Path(jobs_dir or JOBS).glob("*/transcript.json")):
+        job = tf.parent
+        try:
+            meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
+            words = json.loads(tf.read_text(encoding="utf-8"))["words"]
+        except (OSError, ValueError, KeyError):
+            continue
+        t0 = job_time(job, meta)
+        if t0 + float(meta.get("duration") or 0) < since:
+            continue
+        from .transcribe import drop_repeats, group_sentences
+        for sent in group_sentences(drop_repeats(words)):
+            if rx.search(sent["text"]):
+                at = (datetime.fromtimestamp(t0 + float(meta.get("offset", 0) or 0) + sent["s"]).strftime("%H:%M:%S")
+                      if meta.get("live") else None)
+                hits.append({"job": job.name, "channel": meta.get("channel"), "at": at, "start": round(sent["s"], 2),
+                             "end": round(sent["e"], 2), "text": sent["text"].strip(),
+                             "footage": (job / "source.mp4").exists(), "profile": meta.get("profile")})
+    return sorted(hits, key=lambda h: (h["at"] or "", h["job"], h["start"]))
