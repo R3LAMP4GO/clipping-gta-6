@@ -677,8 +677,8 @@ class LinuxPortTests(unittest.TestCase):
 
     def test_live_clip_cmd_replaces_claude(self):
         from clipper import schedule
-        jobs = schedule.live_jobs(None, clip_cmd="/venv/bin/python /ops/autopilot.py live")
-        self.assertEqual(jobs["live-clip"][0][2].split("; then ")[1], "/venv/bin/python /ops/autopilot.py live; fi")
+        jobs = schedule.live_jobs(None, clip_cmd="/usr/local/bin/my-clip-job")
+        self.assertEqual(jobs["live-clip"][0][2].split("; then ")[1], "/usr/local/bin/my-clip-job; fi")
         self.assertIn("live pending", jobs["live-clip"][0][2])
         self.assertNotIn("live-clip", schedule.live_jobs(None))  # no claude and no command: watcher only
 
