@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 import subprocess
@@ -6,7 +7,7 @@ import time
 from datetime import date
 from pathlib import Path
 
-from . import captions, signals, speakers, transcribe, tts
+from . import captions, music, signals, speakers, transcribe, tts
 from .analyze import fmt
 from . import config
 from .config import ROOT
@@ -69,6 +70,60 @@ def action_labels(pick, words):
     return sorted(words + out, key=lambda w: w["s"])
 
 
+FLASH_COLOUR = "0x9EFF00"  # the lime wash Zylok's payoff flashes use
+ZOOM, ZOOM_S, ZOOM_GAP_S = 0.12, 0.6, 3.0
+FX_TYPES = ("flash", "zoom", "hit")
+
+
+def auto_fx(words, dur, payoff=None):
+    """Default beats: a punch-in on shouted words ("!", at most one per 3s) and a flash plus a hit where a segment
+    pick's last segment (the payoff) starts."""
+    fx, last = [], -ZOOM_GAP_S
+    for w in words or []:
+        if not w.get("label") and str(w["w"]).rstrip("\"')").endswith("!") and w["s"] - last >= ZOOM_GAP_S \
+                and 0 <= w["s"] < dur:
+            fx.append({"t": round(w["s"], 3), "type": "zoom"})
+            last = w["s"]
+    if payoff is not None and 0 < payoff < dur:
+        fx += [{"t": round(payoff, 3), "type": "flash"}, {"t": round(payoff, 3), "type": "hit"}]
+    return sorted(fx, key=lambda f: f["t"])
+
+
+def clip_fx(pick, words, dur):
+    """The pick's `fx` (source seconds, or clip seconds for a segment pick) in clip seconds; without `fx`, auto_fx."""
+    if pick.get("fx") is None:
+        return auto_fx(words, dur, pick.get("payoff_at"))
+    off = float(pick.get("start") or 0)
+    out = []
+    for f in pick["fx"]:
+        try:
+            t = float(f["t"]) - off
+        except (KeyError, TypeError, ValueError):
+            continue
+        if f.get("type") in FX_TYPES and 0 <= t < dur:
+            out.append({"t": round(t, 3), "type": f["type"]})
+    return sorted(out, key=lambda f: f["t"])
+
+
+def fx_filter(fx, dur):
+    """FFmpeg filters for the video under the captions: punch-in zooms (scaled up per frame, cropped back to
+    1080x1920) and lime flashes (0.45 then 0.2 opacity over 0.25s). Empty when there's nothing to draw."""
+    parts = []
+    zooms = [f["t"] for f in fx or [] if f["type"] == "zoom" and f["t"] < dur]
+    if zooms:
+        pulse = "+".join(f"if(between(t,{z:.3f},{z + ZOOM_S:.3f}),1-(t-{z:.3f})/{ZOOM_S},0)" for z in zooms)
+        k = f"(1+{ZOOM}*min(1,{pulse}))"
+        parts.append(f"scale=w='trunc(1080*{k}/2)*2':h='trunc(1920*{k}/2)*2':eval=frame,crop=1080:1920")
+    for f in fx or []:
+        if f["type"] == "flash" and f["t"] < dur:
+            a = f["t"]
+            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={FLASH_COLOUR}@0.45:t=fill:"
+                         f"enable='between(t,{a:.3f},{a + 0.12:.3f})'")
+            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={FLASH_COLOUR}@0.2:t=fill:"
+                         f"enable='between(t,{a + 0.12:.3f},{a + 0.25:.3f})'")
+    return ",".join(parts)
+
+
 def prepare_clip(job, pick, fallback_words, cfg, tmp):
     """Per-clip work shared by every hook variant: voice separation, diarized captions, audio bed, voiceover."""
     s, e = float(pick["start"]), float(pick["end"])
@@ -91,20 +146,27 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(stems[0]), "-i", str(stems[1]),
                         "-filter_complex", f"[1:a]volume={cfg.get('game_volume', 0.7)}[g];"
                         "[0:a][g]amix=inputs=2:duration=first:normalize=0", str(bed)], check=True)
+    # the pick's own fixes win over the profile's (both whole words, any case)
+    words = captions.apply_fixes(words, {**(cfg.get("caption_fixes") or {}), **(pick.get("caption_fixes") or {})})
     if pick.get("labels"):
         words = action_labels(pick, words)
         source += " + action captions"
     layout = pick.get("layout") or {"type": "fit"}
     caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", caption_layout(layout),
-                                  pick.get("caption_style") or cfg.get("caption_style", "bold"))
+                                  pick.get("caption_style") or cfg.get("caption_style", "bold"),
+                                  cfg.get("censor_captions", True))
     vo = None
     if pick.get("voiceover"):
         vo_path = tmp / "vo.wav"
         vo_dur, provider = tts.synth(pick["voiceover"], cfg, vo_path)
         vo = {"path": vo_path, "duration": vo_dur, "provider": provider}
+    fx = clip_fx(pick, words, dur)
+    # music and hits go into the bed once per clip, so every hook variant gets the same mix before loudnorm
+    layers = music.plan(pick, words, fx, dur, cfg, seed=f"{job.name}:{s:.2f}")
+    bed, used = music.mix(bed, words, layers, dur, tmp / "bed_music.wav")
     speakers_found = len({w.get("spk", 0) for w in words if not w.get("label")})
     return {"captions": caps, "bed": bed, "vo": vo, "layout": layout, "speakers": speakers_found,
-            "transcript": source, "voices_separated": bool(stems), "words": words}
+            "transcript": source, "voices_separated": bool(stems), "words": words, "fx": fx, "music": used}
 
 
 def encode_variant(job, pick, prep, hook, cfg, out_path, tmp):
@@ -116,9 +178,12 @@ def encode_variant(job, pick, prep, hook, cfg, out_path, tmp):
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{s:.3f}", "-t", f"{dur:.3f}",
            "-i", str(job / "source.mp4"), "-f", "concat", "-safe", "0", "-i", str(prep["captions"]),
            "-loop", "1", "-framerate", "30", "-t", f"{dur:.3f}", "-i", str(hook_png), "-i", str(prep["bed"])]
-    vf = (video_filter(layout, source_size(job / "source.mp4")) + ";"
-          "[1:v]fps=30,format=rgba[cap];[v1][cap]overlay=0:0:eof_action=pass[v2];"
-          "[2:v]format=rgba[hk];[v2][hk]overlay=0:0[v]")
+    vf = video_filter(layout, source_size(job / "source.mp4"))
+    fxs = fx_filter(prep.get("fx"), dur)
+    if fxs:  # zooms and flashes hit the video only; captions and hook stay put
+        vf += f";[v1]{fxs}[v1x]"
+    vf += (f";[1:v]fps=30,format=rgba[cap];[{'v1x' if fxs else 'v1'}][cap]overlay=0:0:eof_action=pass[v2];"
+           "[2:v]format=rgba[hk];[v2][hk]overlay=0:0[v]")
     loud = "loudnorm=I=-14:TP=-1.5:LRA=11"
     if prep["vo"]:
         cmd += ["-i", str(prep["vo"]["path"])]
@@ -320,7 +385,9 @@ def build_segment_job(pick, job, cfg, out):
     # never cover a face: if any segment shows the facecam on top, the hook sits on the split seam
     as_ = (pick.get("layout") or {}).get("as") or ("split" if "split" in layouts else "fit")
     flat = {k: v for k, v in pick.items() if k != "segments"}
-    return {**flat, "start": 0.0, "end": round(t, 3), "layout": {"type": "vertical", "as": as_}}, words
+    payoff = round(t - (float(pick["segments"][-1]["end"]) - float(pick["segments"][-1]["start"])), 3)
+    return {**flat, "start": 0.0, "end": round(t, 3), "layout": {"type": "vertical", "as": as_},
+            "payoff_at": payoff if len(pick["segments"]) > 1 else None}, words
 
 
 def clip_markdown(n, pick, meta, cfg, variants, prep, creds=None, dur=None):
@@ -345,7 +412,17 @@ def clip_markdown(n, pick, meta, cfg, variants, prep, creds=None, dur=None):
     return "\n".join(lines) + "\n"
 
 
-def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None):
+def no_hook_arm(pick, job, meta, share):
+    """Whether this clip posts with no on-screen hook (the A/B arm the results compare): a hash of its footage, so
+    the same moment always lands in the same arm, and about `share` of clips do."""
+    if not share or share <= 0:
+        return False
+    fp = footage(pick, job, meta)[0]
+    digest = hashlib.sha1(f"{fp['source']}:{fp['from']:.2f}".encode()).hexdigest()
+    return int(digest[:8], 16) / 0xFFFFFFFF < float(share)
+
+
+def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None):
     """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
     (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
     from .hooks import structures
@@ -359,15 +436,17 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None):
     out = []
     for i, v in enumerate(variants):
         types = [t for t in structures(v["hook"]) if t not in MODIFIERS and t in table]
+        none = not (v["hook"] or "").strip()
         out.append({"file": v["file"], "rank": i, "hook": v["hook"],
-                    "hook_type": max(types, key=lambda t: table[t][0]) if types else None,
+                    "hook_type": "none" if none else max(types, key=lambda t: table[t][0]) if types else None,
+                    "arm": "no-hook" if none else "hook",
                     "title": (titles[i] if len(titles) == len(variants) else titles[0])[:100],
                     "description": post_description(desc, creds, tags),
                     "hashtags": pick.get("hashtags") or [], "clip_type": pick.get("clip_type"),
                     "campaign": pick.get("campaign"),
                     "source": creds[0][1], "sources": [link for _, link in creds],
                     "duration": v["check"].get("duration"), "footage": fp, "moment_at": when,
-                    "predicted": pred.get(v["hook"]), "moment": moment})
+                    "predicted": pred.get(v["hook"]), "moment": moment, "music": list(music_used or [])})
     return out
 
 
@@ -405,6 +484,9 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
         if first_hook_only:
             hooks = hooks[:1]
         titles = pick.get("titles") or [pick.get("title") or hooks[0]]
+        if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.33)):
+            print(f"[render] video {n}: no-hook arm (one MP4, no banner, best title)", flush=True)
+            hooks, titles = [""], titles[:1]
         folder = out_dir / f"video {n}"
         folder.mkdir()
         taken = set()
@@ -424,7 +506,8 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                 print(f"[render]   {mp4.relative_to(out_dir)}", flush=True)
                 encode_variant(src_job, flat, prep, hook, cfg, mp4, tmp)
                 variants.append({"file": str(mp4), "hook": hook, "check": probe(mp4)})
-        (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job),
+        (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job,
+                                                                       prep.get("music")),
                                                        indent=2, ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),

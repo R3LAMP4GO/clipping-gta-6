@@ -1,0 +1,9 @@
+# Music and sound hits the render may use. A track plays only when `approved: true`, and a `claimable: true`
+# track (anything Content ID can claim, e.g. a game theme or meme song) only when the profile sets
+# `music: {allow_claimable: true}`. `file` is relative to this folder; meme tracks the user approved go in
+# local/ (gitignored, copied to each machine by hand).
+#   kind: music | hit      mood (music): suspense | sneaky | epic | sad | funny
+tracks:
+  - {id: hit, file: hit.wav, kind: hit, mood: any, claimable: false, approved: true}
+  - {id: boom, file: boom.wav, kind: hit, mood: any, claimable: false, approved: true}
+  - {id: whoosh, file: whoosh.wav, kind: hit, mood: any, claimable: false, approved: true}

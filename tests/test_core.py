@@ -1157,7 +1157,7 @@ class TopHookTests(unittest.TestCase):
                     mock.patch.object(render, "prepare_clip", return_value={"vo": None, "speakers": 1, "transcript": ""}), \
                     mock.patch.object(render, "encode_variant") as enc, mock.patch.object(render, "probe", return_value={}), \
                     mock.patch.object(render, "clip_markdown", return_value=""):
-                res = render.render(job, [pick], {}, out_dir=out, top=1)
+                res = render.render(job, [pick], {"no_hook_share": 0}, out_dir=out, top=1)
             self.assertEqual(enc.call_count, 1)
             manifest = json.loads((out / "video 1" / "upload.json").read_text())
             self.assertEqual([(m["hook"], m["title"], m["rank"]) for m in manifest],
@@ -1396,3 +1396,241 @@ class ReportTests(unittest.TestCase):
             body = Path(prompt).read_text()
             self.assertIn("python3 -m clipper report", body)
             self.assertIn("never Write or Edit `index.md`", body)
+
+
+class EditCheckTests(unittest.TestCase):
+    def test_filler_opening_is_noted_and_a_real_word_is_not(self):
+        from clipper import hooks
+        pick = {"start": 10.0, "end": 20.0, "hooks": ["Why did Kai *run*?"]}
+        filler = [W("so", 10.1, 10.3), W("um", 10.4, 10.6), W("Trevor", 11.0, 11.4)]
+        self.assertIn("filler", hooks.check_opening(pick, hooks.clip_words(pick, filler)))
+        real = [W("Trevor", 10.1, 10.5), W("so", 10.6, 10.8)]
+        self.assertIsNone(hooks.check_opening(pick, hooks.clip_words(pick, real)))
+
+    def test_hook_that_says_the_last_segments_label_is_a_spoiler(self):
+        from clipper import hooks
+        pick = {"segments": [{"start": 0, "end": 10}, {"start": 50, "end": 54}],
+                "labels": [{"s": 11, "e": 13, "text": "*MICHAEL DEAD*"}],
+                "hooks": ["Kai kills *Michael*", "Who does Kai *pick*?"]}
+        notes = hooks.check_spoiler(pick)
+        self.assertEqual(len(notes), 1)
+        self.assertIn("michael", notes[0])
+
+    def test_dead_air_gaps_are_noted_and_labels_fill_them(self):
+        from clipper import hooks
+        pick = {"start": 0.0, "end": 10.0, "hooks": ["Why did Kai *run*?"]}
+        words = [W("go", 0.0, 0.5), W("now", 5.0, 5.5), W("run", 8.5, 9.9)]
+        gaps = hooks.check_dead_air(pick, hooks.clip_words(pick, words))
+        self.assertEqual(len(gaps), 2)
+        self.assertIn("0.5-5.0s", gaps[0])
+        pick["labels"] = [{"s": 0.6, "e": 4.9, "text": "*RUNS*"}]
+        self.assertEqual(len(hooks.check_dead_air(pick, hooks.clip_words(pick, words))), 1)
+
+    def test_check_picks_reports_edit_notes_without_failing(self):
+        from clipper import hooks
+        pick = {"start": 0.0, "end": 6.0, "hooks": ["Why did Kai *run*?"]}
+        rep = hooks.check_picks([pick], {"research": "gta"}, [W("um", 0.1, 0.3), W("go", 4.0, 4.4)])
+        self.assertTrue(any("filler" in n for n in rep["video 1"]["edit"]))
+        self.assertTrue(any("dead air" in n for n in rep["video 1"]["edit"]))
+        self.assertFalse(hooks.has_fails({"video 1": {"edit": rep["video 1"]["edit"]}}))
+
+
+class CaptionCleanupTests(unittest.TestCase):
+    def test_swears_are_masked_whole_words_only_and_slurs_dropped(self):
+        self.assertEqual(captions.censor("fuck"), "f*ck")
+        self.assertEqual(captions.censor("SHIT!"), "SH*T!")
+        self.assertEqual(captions.censor("Asshole,"), "@sshole,")
+        self.assertEqual(captions.censor("MOTHERFUCKER"), "MOTHERF*CKER")
+        self.assertEqual(captions.censor("dumbass"), "dumb@ss")
+        for ok in ("class", "Dickens", "assume", "Michael", "hello"):
+            self.assertEqual(captions.censor(ok), ok)
+        self.assertIsNone(captions.censor("nigga"))
+        words = [W("oh", 0, 0.2), W("nigga", 0.2, 0.4), W("shit", 0.4, 0.6), dict(W("*FUCK*", 0.6, 1), label=True)]
+        self.assertEqual([w["w"] for w in captions.censor_words(words)], ["oh", "sh*t", "*FUCK*"])
+
+    def test_caption_fixes_replace_whole_words_any_case(self):
+        words = [W("Swerver!", 0, 0.3), W("swerve", 0.3, 0.5), dict(W("SWERVER", 0.5, 1), label=True)]
+        fixed = captions.apply_fixes(words, {"swerver": "Trevor"})
+        self.assertEqual([w["w"] for w in fixed], ["Trevor!", "swerve", "SWERVER"])
+
+    def test_render_applies_profile_then_pick_fixes_before_captions(self):
+        from unittest import mock
+        from clipper import render
+        seen = {}
+        def overlay(words, *a, **k):
+            seen["words"] = [w["w"] for w in words]
+            seen["censor"] = a[-1]
+            return "caps"
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(render.subprocess, "run"), \
+                mock.patch.object(render.captions, "write_overlay", side_effect=overlay):
+            pick = {"start": 0.0, "end": 5.0, "caption_fixes": {"michel": "Mikey"}}
+            words = [W("trever", 0.1, 0.4), W("michel", 0.5, 0.9)]
+            render.prepare_clip(Path(d), pick, words, {"separate_voices": False, "censor_captions": False,
+                                                      "caption_fixes": {"trever": "Trevor", "michel": "Michael"}},
+                                Path(d))
+        self.assertEqual(seen["words"], ["Trevor", "Mikey"])
+        self.assertFalse(seen["censor"])
+
+
+class WhisperPromptTests(unittest.TestCase):
+    def test_profile_vocabulary_reaches_whisper_cli_as_prompt(self):
+        from unittest import mock
+        self.assertIsNone(transcribe.whisper_prompt([]))
+        with tempfile.TemporaryDirectory() as d:
+            prefix = Path(d) / "w"
+            prefix.with_suffix(".json").write_text('{"transcription": []}', encoding="utf-8")
+            with mock.patch.object(transcribe.subprocess, "run",
+                                   return_value=mock.Mock(returncode=0, stderr="")) as run:
+                transcribe.run_whisper("a.wav", prefix, "m.bin", "en", transcribe.whisper_prompt(["Trevor", "Lucia"]))
+        cmd = run.call_args[0][0]
+        self.assertEqual(cmd[cmd.index("--prompt") + 1], "Trevor, Lucia.")
+
+
+class EditFxTests(unittest.TestCase):
+    def test_auto_fx_zooms_shouts_at_most_every_3s_and_flashes_the_payoff(self):
+        from clipper import render
+        words = [W("no!", 1.0, 1.3), W("way!", 2.0, 2.3), W("RUN!", 4.5, 5.0), dict(W("*DEAD!*", 6, 7), label=True)]
+        fx = render.auto_fx(words, 10.0, payoff=8.0)
+        self.assertEqual([(f["t"], f["type"]) for f in fx],
+                         [(1.0, "zoom"), (4.5, "zoom"), (8.0, "flash"), (8.0, "hit")])
+        self.assertEqual(render.auto_fx(words[:1], 10.0), [{"t": 1.0, "type": "zoom"}])
+
+    def test_pick_fx_are_moved_onto_the_clip_and_bad_ones_dropped(self):
+        from clipper import render
+        pick = {"start": 100.0, "end": 110.0, "fx": [{"t": 104, "type": "flash"}, {"t": 99, "type": "zoom"},
+                                                     {"t": 105, "type": "spin"}, {"t": 106, "type": "hit"}]}
+        self.assertEqual(render.clip_fx(pick, [], 10.0), [{"t": 4.0, "type": "flash"}, {"t": 6.0, "type": "hit"}])
+        self.assertEqual(render.clip_fx({**pick, "fx": []}, [W("go!", 101, 102)], 10.0), [])
+
+    def test_fx_filter_zooms_and_flashes_the_video(self):
+        from clipper import render
+        self.assertEqual(render.fx_filter([{"t": 3.0, "type": "hit"}], 10.0), "")
+        f = render.fx_filter([{"t": 2.0, "type": "zoom"}, {"t": 5.0, "type": "flash"}], 10.0)
+        self.assertIn("scale=w='trunc(1080*(1+0.12*min(1,if(between(t,2.000,2.600),1-(t-2.000)/0.6,0)))/2)*2'", f)
+        self.assertIn("eval=frame,crop=1080:1920", f)
+        self.assertIn("color=0x9EFF00@0.45:t=fill:enable='between(t,5.000,5.120)'", f)
+        self.assertIn("color=0x9EFF00@0.2:t=fill:enable='between(t,5.120,5.250)'", f)
+
+    def test_segment_pick_payoff_is_where_the_last_segment_starts(self):
+        from unittest import mock
+        from clipper import render
+        pick = {"segments": [{"start": 10, "end": 16}, {"start": 50, "end": 54}], "layout": {"type": "fit"}}
+        with tempfile.TemporaryDirectory() as d:
+            job = Path(d)
+            (job / "transcript.json").write_text('{"words": []}', encoding="utf-8")
+            with mock.patch.object(render.subprocess, "run"), \
+                    mock.patch.object(render, "source_size", return_value=(1920, 1080)):
+                flat, _ = render.build_segment_job(pick, job, {}, job / "seg")
+        self.assertEqual(flat["payoff_at"], 6.0)
+
+
+class MusicTests(unittest.TestCase):
+    def lib(self, d):
+        from clipper import music
+        folder = Path(d)
+        for name in ("ok.wav", "claim.wav", "unapproved.wav", "hit.wav"):
+            (folder / name).write_bytes(b"x")
+        (folder / "library.yaml").write_text(
+            "tracks:\n"
+            "  - {id: ok, file: ok.wav, kind: music, mood: sneaky, claimable: false, approved: true}\n"
+            "  - {id: claim, file: claim.wav, kind: music, mood: epic, claimable: true, approved: true}\n"
+            "  - {id: unapproved, file: unapproved.wav, kind: music, mood: sad, claimable: false, approved: false}\n"
+            "  - {id: missing, file: gone.wav, kind: music, mood: funny, claimable: false, approved: true}\n"
+            "  - {id: hit, file: hit.wav, kind: hit, mood: any, claimable: false, approved: true}\n", encoding="utf-8")
+        return music.load_library(folder)
+
+    def test_unapproved_or_claimable_tracks_never_play(self):
+        from clipper import music
+        with tempfile.TemporaryDirectory() as d:
+            lib = self.lib(d)
+            self.assertEqual(music.choose(lib, {}, "music", "sneaky")["id"], "ok")
+            self.assertIsNone(music.choose(lib, {}, "music", "epic"))
+            self.assertEqual(music.choose(lib, {"music": {"allow_claimable": True}}, "music", "epic")["id"], "claim")
+            self.assertIsNone(music.choose(lib, {"music": {"allow_claimable": True}}, "music", "sad"))
+            self.assertIsNone(music.choose(lib, {}, "music", "funny"))
+
+    def test_plan_fills_windows_and_hits_and_skips_moods_with_no_track(self):
+        from clipper import music
+        with tempfile.TemporaryDirectory() as d:
+            lib = self.lib(d)
+            pick = {"start": 100.0, "end": 120.0, "music": [{"s": 102, "e": 108, "mood": "sneaky"},
+                                                           {"s": 110, "e": 115, "mood": "epic"},
+                                                           {"s": 116, "e": 116.5, "mood": "sneaky"}]}
+            layers = music.plan(pick, [], [{"t": 9.0, "type": "hit"}, {"t": 3.0, "type": "zoom"}], 20.0, {}, lib=lib)
+        self.assertEqual([(t["id"], s, round(n, 3), k) for t, s, n, k in layers],
+                         [("ok", 2.0, 6.0, "music"), ("hit", 9.0, 2.0, "hit")])
+
+    def test_mix_ducks_music_under_speech_and_records_ids(self):
+        from unittest import mock
+        from clipper import music
+        with tempfile.TemporaryDirectory() as d:
+            lib = self.lib(d)
+            layers = [(lib[0], 2.0, 6.0, "music"), (lib[4], 9.0, 2.0, "hit")]
+            with mock.patch.object(music.subprocess, "run") as run:
+                out, used = music.mix("bed.wav", [W("go", 3.0, 3.5)], layers, 20.0, "out.wav")
+            self.assertEqual((out, used), ("out.wav", ["ok", "hit"]))
+            cmd = run.call_args[0][0]
+            graph = cmd[cmd.index("-filter_complex") + 1]
+            self.assertIn("adelay=2000:all=1,volume='if(gt(between(t,2.85,3.65),0),0.1259,1)':eval=frame[m1]", graph)
+            self.assertIn("afade=t=out:st=5.700:d=0.3", graph)
+            self.assertIn("adelay=9000:all=1[m2]", graph)
+            self.assertIn("amix=inputs=3:duration=first:normalize=0", graph)
+            self.assertEqual(cmd.count("-stream_loop"), 1)
+            self.assertEqual(music.mix("bed.wav", [], [], 20.0, "out.wav"), ("bed.wav", []))
+
+    def test_shipped_library_has_only_approved_unclaimable_effects(self):
+        from clipper import music
+        lib = music.load_library()
+        self.assertTrue(lib)
+        for t in lib:
+            self.assertTrue(t["path"].exists(), t["file"])
+            self.assertFalse(t["claimable"])
+        self.assertTrue((music.MUSIC / "LICENSE.txt").exists())
+
+    def test_manifest_records_the_music_used(self):
+        from unittest import mock
+        from clipper import render
+        with mock.patch.object(render, "predicted", return_value={}), \
+                mock.patch.object(render, "moment_signals", return_value=None):
+            m = render.upload_manifest({"start": 0, "end": 10, "hooks": ["h"]},
+                                       {"channel": "c", "url": "https://youtube.com/watch?v=x", "id": "x"},
+                                       {}, [{"file": "a.mp4", "hook": "h", "check": {}}], ["t"],
+                                       music_used=["ok", "hit"])
+        self.assertEqual(m[0]["music"], ["ok", "hit"])
+
+
+class NoHookArmTests(unittest.TestCase):
+    def test_arm_is_deterministic_and_about_a_third(self):
+        from clipper import render
+        meta = {"id": "vid", "url": "https://youtube.com/watch?v=vid", "channel": "c"}
+        arms = [render.no_hook_arm({"start": s, "end": s + 20}, None, meta, 0.33) for s in range(0, 3000, 10)]
+        self.assertEqual(arms, [render.no_hook_arm({"start": s, "end": s + 20}, None, meta, 0.33)
+                                for s in range(0, 3000, 10)])
+        self.assertAlmostEqual(sum(arms) / len(arms), 0.33, delta=0.07)
+        self.assertFalse(any(render.no_hook_arm({"start": s, "end": s + 20}, None, meta, 0) for s in range(50)))
+
+    def test_no_hook_arm_renders_one_bannerless_mp4_with_the_best_title(self):
+        from unittest import mock
+        import json
+        from clipper import render
+        pick = {"start": 0, "end": 10, "hooks": ["Why did Kai *run*?", "Kai never saw it"],
+                "titles": ["Why Did Kai Run In GTA 6?", "Kai NEVER Saw It Coming In GTA 6"]}
+        with tempfile.TemporaryDirectory() as d:
+            job, out = Path(d) / "job", Path(d) / "out"
+            job.mkdir()
+            (job / "job.json").write_text(json.dumps({"channel": "Kai", "url": "u", "title": "t"}))
+            (job / "transcript.json").write_text(json.dumps({"words": []}))
+            with mock.patch.object(render, "no_hook_arm", return_value=True), \
+                    mock.patch.object(render, "predicted", return_value={}), \
+                    mock.patch.object(render, "prepare_clip", return_value={"vo": None, "speakers": 1, "transcript": "",
+                                                                          "music": ["hit"]}), \
+                    mock.patch.object(render, "encode_variant") as enc, mock.patch.object(render, "probe", return_value={}), \
+                    mock.patch.object(render, "clip_markdown", return_value=""):
+                render.render(job, [pick], {}, out_dir=out)
+            self.assertEqual(enc.call_count, 1)
+            self.assertEqual(enc.call_args[0][3], "")
+            m = json.loads((out / "video 1" / "upload.json").read_text())
+            self.assertEqual([(x["hook"], x["hook_type"], x["arm"], x["title"], x["music"]) for x in m],
+                             [("", "none", "no-hook", "Why Did Kai Run In GTA 6?", ["hit"])])
+            self.assertTrue((out / "video 1" / "no hook.mp4").name.endswith(".mp4"))

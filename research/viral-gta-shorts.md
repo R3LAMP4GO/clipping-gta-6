@@ -212,3 +212,38 @@ Two numbers can't be measured from public data: how much weaker a source's 8th-b
 | One hook per clip | 23% | 60% |
 
 **Default: Claude drafts a hook for every type that honestly fits the clip, simulates them, and posts the best 3, each a different type.** Forcing every type onto every clip (a "4 things…" hook on a skit) is the second-worst choice. Its misfit variants promise what the clip doesn't deliver.
+
+## Zylok teardown (5 Shorts, 2026-11-12; hypotheses until our own uploads measure them)
+Zylok (703k subscribers) posts 17–29s streamer clips; the median of their last 60 Shorts is ~560k views. Each clip was watched frame by frame with its audio.
+
+| Short (views, x channel median) | Length | What happens | The moves |
+|---|---|---|---|
+| "Agent00 Is Shocked By The New Tesla Roadster's Acceleration! 🤯" (4.07M, 7.3x) | 17s | A launch, his face, the car keeps going | Cold open on the launch; ends on the result (the speed) and his face; meme music under the speech-free stretch |
+| "Kai Cenat Finds Out What NPCs Do After Completing A Mission! 😭" (2.63M, 4.7x) | 25s | Big Smoke walks off after a mission, Kai follows him | Action labels in lime (`*FOLLOWS*`, `*RUNS*`, `*TURNS*`) carry the silent chase; a meme track (the Skyrim theme) under 7–12s and 13–18s; captions censored (`SH*T`, `F*CK`); ends on the reveal |
+| "Ray Betrayed Him! 😳" (1.51M, 2.7x) | 29s | A betrayal plays out | Music under the whole clip; ends on the betrayal itself, the title withholds who and how |
+| "Agent Thinks GTA 6 Story Mode Will Only Last A Week! 🤔" (335k, 0.6x) | 28s | A take, no visible result | A claim with no payoff on screen; no reveal to end on |
+| "Kai Cenat Decides Who To Kill in GTA 5! 😭" (81k, 0.14x) | 26s | Kai talks through the Trevor/Michael/Deathwish choice and picks | Ends on the decision (the phone's "Kill Trevor"), never the death; the lime flash and censored captions (`@SSHOLE`, `F*CK`) couldn't save it |
+
+**The moves, in order of how much they seem to matter**
+1. **End on the result, not the decision.** The two winners end on what happened (the speed, the NPC's walk); the two weakest end on a choice or a take. If the stream shows the outcome later (the death, the crash, the reveal), cut it on as the last segment with a result label (`*MICHAEL DEAD*`). The hook and title must not say the outcome.
+2. **Cold open on the first meaningful word:** no "so", "um", "great, the…". The premise lands in the first second.
+3. **No on-screen hook banner.** All 5 rely on the title and the first line. We test this: 1 in 3 of our clips post with no hook (`no_hook_share`), recorded as `hook_type: "none"`.
+4. **Captions: one big word at a time, swears censored by masking a vowel** (`F*CK`, `SH*T`, `@SSHOLE`), audio untouched, names spelled right (Trevor, Michael). Action labels in lime fill silent stretches.
+5. **Edit effects on beats:** a lime flash on the payoff, punch-in zooms on shouted lines. Cheap and frequent, never long.
+6. **Music under the quiet stretches, a sound hit on the reveal.** Meme tracks (game themes) are Content ID claimable: a track is only used once the user approves it (`assets/music/library.yaml`, `approved: true`), and claimable ones stay off until `music.allow_claimable: true`.
+7. **No dead air:** any 2s+ gap with no word or label gets cut with segments.
+
+**Music found in the reference clips** (candidates awaiting approval; nothing is downloaded until the user approves each one): see "Reference music" below.
+
+### Reference music (2026-11-12; candidates, none approved or downloaded)
+Each clip's audio was split with demucs (`htdemucs --two-stems vocals`, the `no_vocals` stem) and read from spectrograms plus an onset-tempo estimate. No open fingerprinter (`songrec`) is installed, and the macOS `shazam` tool only builds signatures (no lookup), so only one track is named, from the user's own identification. Every one is a game theme or a meme track, so it's `claimable: true`.
+
+| Clip | Where | What the stem shows | Track | claimable |
+|---|---|---|---|---|
+| NPCs after a mission (4.7x) | 6.7–18s, under the silent chase | Dense orchestral bed starting on a hard cut at 6.7s, ~99 BPM pulse | The Elder Scrolls V: Skyrim main theme ("Dragonborn"), named by the user | true |
+| Tesla Roadster (7.3x) | kicks from 0s, full track 6.9–17s | Regular kicks (~81 BPM half-time), then a broadband swell on the launch | Unidentified beat (phonk/trap style) | true |
+| Ray Betrayed Him (2.7x) | whole clip | Repeating ~1.9s harmonic pattern, ~89 BPM, under the speech | Unidentified suspense loop | true |
+| Agent: story mode (0.6x) | whole clip | A melodic lead with vibrato at 1–2 kHz | Unidentified (may be the stream's own background music) | true |
+| Kai decides who to kill (0.14x) | whole clip | Steady sustained harmony at 0.5–1.1 kHz, ~78 BPM | Unidentified (likely the GTA V menu/score from the stream) | true |
+
+To use one: the user approves it, its file goes into `assets/music/local/`, and it's added to `library.yaml` with its mood (Skyrim theme: `epic`; the Tesla beat: `epic`; the Ray loop: `suspense`), `claimable: true` and `approved: true`. It still only plays once the profile sets `music: {allow_claimable: true}`.

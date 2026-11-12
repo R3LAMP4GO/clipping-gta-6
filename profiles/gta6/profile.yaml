@@ -18,3 +18,9 @@ exclude_title_patterns: ["\\bgta ?(5|v|iv|4)\\b", "gta online", "\\bgtao\\b", "r
 
 # Extra YouTube searches `watch` runs to find GTA videos outside the watchlist.
 search: ["GTA 6 reaction", "GTA 6 gameplay funny"]
+
+# Names the speech recognition gets wrong in GTA streams (whole words, any case); a pick's own caption_fixes win.
+caption_fixes: {trever: Trevor, travor: Trevor, michel: Michael, franklyn: Franklin, lamarr: Lamar,
+  lestor: Lester, luchia: Lucia, lusia: Lucia, leonidas: Leonida}
+# Names passed to whisper.cpp as its prompt so it spells them right (asr: whisper).
+vocabulary: [Lucia, Jason, Leonida, Vice City, Trevor, Michael, Franklin, Lester, Lamar]

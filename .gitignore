@@ -12,3 +12,5 @@ profiles/*/learned-weights.yaml
 .pytest_cache/
 # local agent workspace: screenshots, plans, uploads
 .gg/
+# approved meme tracks: copied to each machine by hand, never committed (Content ID claimable)
+assets/music/local/

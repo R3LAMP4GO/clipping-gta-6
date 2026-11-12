@@ -1,0 +1,12 @@
+hit.wav, boom.wav and whoosh.wav were synthesized for this project with FFmpeg's aevalsrc/anoisesrc generators
+and contain no third-party audio:
+
+  hit.wav     aevalsrc='0.9*sin(2*PI*(55+140*exp(-30*t))*t)*exp(-9*t)' (0.6s, stereo)
+  boom.wav    aevalsrc='0.95*sin(2*PI*(38+70*exp(-12*t))*t)*exp(-2.8*t)' + lowpassed brown noise (1.6s)
+  whoosh.wav  pink noise, band-passed 400-6000 Hz, faded in 0.45s and out 0.35s (0.8s)
+
+They are dedicated to the public domain under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Tracks in assets/music/local/ are not part of this repository (gitignored): their rights are the user's
+responsibility, and library.yaml records whether each is Content ID claimable and whether the user approved it.

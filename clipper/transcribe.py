@@ -91,14 +91,24 @@ def transcribe(wav, prefix, cfg, fast=False):
             print("[asr] onnx-asr not installed (pip install 'onnx-asr[cpu,hub]'); using whisper.cpp", flush=True)
     from .config import find_model
     model = find_model(cfg, fast=fast)
-    words, events = parse_words(run_whisper(wav, prefix, model, cfg.get("language", "en")))
+    words, events = parse_words(run_whisper(wav, prefix, model, cfg.get("language", "en"),
+                                            whisper_prompt(cfg.get("vocabulary"))))
     return words, events, model.name
 
 
-def run_whisper(wav, prefix, model, language="en"):
+def whisper_prompt(vocabulary):
+    """The profile's names as an initial prompt, so whisper.cpp spells them right (Parakeet takes no prompt;
+    `caption_fixes` covers it)."""
+    names = [str(v).strip() for v in vocabulary or [] if str(v).strip()]
+    return ", ".join(names) + "." if names else None
+
+
+def run_whisper(wav, prefix, model, language="en", prompt=None):
     cmd = ["whisper-cli", "-m", str(model), "-f", str(wav), "-l", language, "-ml", "1", "-sow",
            "-oj", "-of", str(prefix), "-np", "-mc", "0",
            "-t", str(asr_threads())]
+    if prompt:
+        cmd += ["--prompt", prompt]
     res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     if res.returncode != 0:
         raise SystemExit("whisper-cli failed:\n" + "\n".join(res.stderr.strip().splitlines()[-15:]))

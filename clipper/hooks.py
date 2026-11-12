@@ -197,8 +197,97 @@ def check_labels(pick):
     return bad
 
 
-def check_picks(picks, cfg=None):
-    """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title."""
+OPENING_FILLER = {"so", "um", "umm", "uh", "uhh", "like", "okay", "ok", "alright", "yeah", "anyway", "well", "great",
+                  "and", "but", "chat", "bro", "hmm"}
+
+
+def clip_labels(pick):
+    """The pick's labels as (s, e, text) in seconds of the finished clip."""
+    off = 0.0 if pick.get("segments") else float(pick.get("start") or 0)
+    out = []
+    for lab in pick.get("labels") or []:
+        try:
+            out.append((float(lab["s"]) - off, float(lab["e"]) - off, str(lab.get("text") or "")))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def clip_words(pick, words, load=None):
+    """Transcript words (source seconds) moved onto the finished clip; a segment from another job needs `load(job)`
+    to return its words. None when some segment's words can't be had."""
+    if not pick.get("segments"):
+        s, e = float(pick["start"]), float(pick["end"])
+        return [dict(w, s=w["s"] - s, e=min(w["e"], e) - s) for w in words or [] if s <= w["s"] < e]
+    out, t = [], 0.0
+    for seg in pick["segments"]:
+        src = load(seg["job"]) if seg.get("job") and load else (None if seg.get("job") else words)
+        if src is None:
+            return None
+        s, e = float(seg["start"]), float(seg["end"])
+        out += [dict(w, s=w["s"] - s + t, e=min(w["e"], e) - s + t) for w in src if s <= w["s"] < e]
+        t += e - s
+    return out
+
+
+def _bare(w):
+    return re.sub(r"[^a-z0-9']", "", str(w).lower())
+
+
+def check_opening(pick, words):
+    """A note when the clip's first 1.5s open on filler instead of the first meaningful word."""
+    first = [w for w in words or [] if w["s"] < 1.5 and not w.get("label")]
+    if not first:
+        return None
+    text = " ".join(str(w["w"]) for w in first)
+    if _bare(first[0]["w"]) in OPENING_FILLER or FILLER_OPEN.match(text):
+        return f"opens on filler (\"{text}\"): move the start to the first meaningful word"
+    return None
+
+
+def check_spoiler(pick, words=None):
+    """A note per hook that repeats a word from the ending (the last segment's labels or the final 3s of speech):
+    the hook must not say the outcome."""
+    try:
+        dur = pick_duration(pick)
+    except (KeyError, TypeError, ValueError):
+        return []
+    last = dur - 3.0
+    if pick.get("segments"):
+        last = min(last, dur - (float(pick["segments"][-1]["end"]) - float(pick["segments"][-1]["start"])))
+    ending = [text for a, b, text in clip_labels(pick) if b > last]
+    ending += [str(w["w"]) for w in words or [] if w["s"] >= dur - 3.0]
+    end_words = {_bare(x) for x in " ".join(ending).split()} - STOP - {""}
+    end_words = {w for w in end_words if len(w) >= 3}
+    out = []
+    for h in pick.get("hooks") or [pick.get("hook", "")]:
+        hit = sorted({_bare(x) for x in (h or "").split()} & end_words)
+        if hit:
+            out.append(f"hook \"{h}\" says the ending ({', '.join(hit)}): withhold the outcome")
+    return out
+
+
+DEAD_AIR_S = 2.0
+
+
+def check_dead_air(pick, words):
+    """Gaps of 2s+ in the finished clip with no word or label."""
+    try:
+        dur = pick_duration(pick)
+    except (KeyError, TypeError, ValueError):
+        return []
+    spans = sorted([(w["s"], w["e"]) for w in words or []] + [(a, b) for a, b, _ in clip_labels(pick)])
+    out, t = [], 0.0
+    for a, b in spans + [(dur, dur)]:
+        if a - t >= DEAD_AIR_S:
+            out.append(f"dead air {t:.1f}-{a:.1f}s ({a - t:.1f}s): cut it with segments")
+        t = max(t, b)
+    return out
+
+
+def check_picks(picks, cfg=None, words=None, load=None):
+    """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title; `edit` notes need the
+    job's transcript `words` (source seconds; `load(job)` for other jobs' segments)."""
     from .playbook import for_profile
     gta, topic, playbook = is_gta(cfg), title_topic(cfg), for_profile(cfg)
     report = {}
@@ -238,6 +327,12 @@ def check_picks(picks, cfg=None):
             entry["length"] = check_length(pick)
         if check_labels(pick):
             entry["labels"] = check_labels(pick)
+        edit = check_spoiler(pick, None)
+        cw = clip_words(pick, words, load) if words is not None and not check_segments(pick) else None
+        if cw is not None:
+            edit = check_spoiler(pick, cw) + [x for x in [check_opening(pick, cw)] if x] + check_dead_air(pick, cw)
+        if edit:
+            entry["edit"] = edit
         if len(pick.get("hooks") or []) >= 3 and len(used) < 3:
             entry["variety"] = f"hooks only use {sorted(used)}: give each variant a different structure to A/B test"
         if entry:

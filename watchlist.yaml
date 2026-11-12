@@ -31,6 +31,8 @@ hype_words: [no way, oh my god, omg, what the, wtf, let's go, lets go, holy, ins
 # Default caption look (picks can override): bold = Montserrat Black outline,
 # boxed = Bebas Neue on black (Kai Cenat Live style), comic = Luckiest Guy (Typical Gamer style).
 caption_style: bold
+censor_captions: true      # mask swears in captions (F*CK, SH*T), drop slurs; the audio is untouched
+no_hook_share: 0.33        # this share of clips posts with no on-screen hook (upload.json arm: no-hook), to compare
 
 # Speakers: Demucs splits voices from game audio, WhisperKit labels who is talking.
 separate_voices: true

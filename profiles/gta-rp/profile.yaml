@@ -34,3 +34,9 @@ playbook:
     what: "a streamer reacting in character to another player; their face and voice are the payoff"
     examples: ["Me explaining RP to my mom", "xQc was NOT ready for *this*",
                "Why couldn't xQc stop laughing?", "Wait for xQc's face at the end..."]
+
+# Names the speech recognition gets wrong in GTA streams (whole words, any case); a pick's own caption_fixes win.
+caption_fixes: {trever: Trevor, travor: Trevor, michel: Michael, franklyn: Franklin, lamarr: Lamar,
+  lestor: Lester, chopp: Chop}
+# Names passed to whisper.cpp as its prompt so it spells them right (asr: whisper).
+vocabulary: [Trevor, Michael, Franklin, Lester, Lamar, Chop, Los Santos, NoPixel]

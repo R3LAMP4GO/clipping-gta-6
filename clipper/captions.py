@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -77,6 +78,61 @@ def font_for(name, size, text):
         if covers(g, text):
             return g
     return next((ImageFont.truetype(p, size) for p in SYSTEM_FALLBACK if Path(p).exists()), f)
+
+
+# Whole words only (so "class" or "Dickens" stay); the vowel is masked like Zylok's captions: F*CK, SH*T, @SSHOLE
+SWEARS = re.compile(r"^((mother)?f+u+c+k+\w*|f+u+k+|sh+i+t+\w*|bull ?shit|b+i+t+c+h+\w*|ass(hole|holes|es)?|"
+                    r"dumbass|jackass|bastards?|dick(s|head)?|puss(y|ies)|cunts?|whores?|sluts?|damn(it)?|goddamn)$")
+DROPPED = re.compile(r"^n+[i1]+g+(a|ah|as|az|er|ers|guh|gas)$")  # slurs leave the captions entirely
+
+
+def censor(word):
+    """'fucking!' -> 'F*CKING!' (case kept), 'asshole' -> '@SSHOLE'; a slur -> None; anything else unchanged."""
+    m = re.match(r"^([^\w]*)([\w']+)([^\w]*)$", word or "")
+    if not m:
+        return word
+    pre, body, post = m.groups()
+    low = body.lower().replace("'", "")
+    if DROPPED.match(low):
+        return None
+    if not SWEARS.match(low):
+        return word
+    stem = re.search(r"(?i)f(u)+c?k|sh(i)+t|b(i)+tch|d(i)ck|p(u)ss|c(u)nt|wh(o)re|sl(u)t|d(a)mn|b(a)stard|(a)ss",
+                     body)
+    if stem:
+        i = next(stem.start(g) for g in range(1, stem.re.groups + 1) if stem.group(g))
+        masked = body[:i] + ("@" if body[i:i + 3].lower() == "ass" else "*") + body[i + 1:]
+    else:
+        i = next((i for i, c in enumerate(body) if i and c.lower() in "aeiou"), None)
+        masked = body if i is None else body[:i] + "*" + body[i + 1:]
+    return pre + masked + post
+
+
+def censor_words(words):
+    """Caption words with swears masked and slurs dropped (labels are left as written)."""
+    out = []
+    for w in words:
+        if w.get("label"):
+            out.append(w)
+            continue
+        c = censor(str(w["w"]))
+        if c:
+            out.append(dict(w, w=c))
+    return out
+
+
+def apply_fixes(words, fixes):
+    """Replace misheard words, whole words and any case: {"swerver": "Trevor"} (punctuation around it stays)."""
+    table = {str(k).lower(): str(v) for k, v in (fixes or {}).items() if str(k).strip()}
+    if not table:
+        return words
+    out = []
+    for w in words:
+        m = re.match(r"^([^\w]*)([\w']+)([^\w]*)$", str(w["w"]))
+        if m and m.group(2).lower() in table and not w.get("label"):
+            w = dict(w, w=m.group(1) + table[m.group(2).lower()] + m.group(3))
+        out.append(w)
+    return out
 
 
 def chunk_words(words, max_words=3, max_gap=0.45):
@@ -236,8 +292,10 @@ def render_hook(text, path, style="box", layout="fit"):
     Image.alpha_composite(img, layer).save(path)
 
 
-def write_overlay(words, clip_start, clip_end, out_dir, layout="fit", style="bold"):
+def write_overlay(words, clip_start, clip_end, out_dir, layout="fit", style="bold", censored=True):
     """Render caption PNGs and an FFmpeg concat list that shows each for as long as it's on screen."""
+    if censored:
+        words = censor_words(words)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     caption_y = LAYOUTS.get(layout, LAYOUTS["fit"])["caption_y"]

@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import analyze as analyze_mod
-from . import config, hooks, library, render as render_mod, schedule, simulate, sources, voice_setup
+from . import config, hooks, library, render as render_mod, schedule, simulate, sources, transcribe, voice_setup
 from . import bench as bench_mod
 from . import cleanup as cleanup_mod
 from . import dub as dub_mod
@@ -24,6 +24,12 @@ def _picks_from_ids(job, ids):
             raise SystemExit(f"no candidate #{i}")
         picks.append({"start": c["start"], "end": c["end"], "hooks": [c["hook"]], "titles": [c["hook"]]})
     return picks
+
+
+def job_words(ref):
+    """A job's transcript words (source seconds), or None when it has none."""
+    f = config.job_dir(ref) / "transcript.json"
+    return transcribe.drop_repeats(json.loads(f.read_text(encoding="utf-8"))["words"]) if f.exists() else None
 
 
 def reused_footage(picks, job_ref, cfg):
@@ -188,7 +194,7 @@ def main(argv=None):
         too_long = [f"video {n}: {hooks.check_length(p)}" for n, p in enumerate(picks, 1) if hooks.check_length(p)]
         if too_long:
             raise SystemExit("[check] clips over the length cap, nothing rendered:\n" + "\n".join(too_long))
-        problems = hooks.check_picks(picks, cfg)
+        problems = hooks.check_picks(picks, cfg, job_words(job), job_words)
         if hooks.has_fails(problems):
             print("[check] hooks/titles that break the research rules (rendering anyway):\n"
                   + json.dumps(problems, indent=2, ensure_ascii=False), file=sys.stderr)
@@ -203,7 +209,7 @@ def main(argv=None):
         print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out, top), indent=2))
     elif args.cmd == "check":
         picks = json.loads(open(args.picks, encoding="utf-8").read())
-        report = hooks.check_picks(picks, cfg)
+        report = hooks.check_picks(picks, cfg, job_words(args.job) if args.job else None, job_words)
         for n, reused in reused_footage(picks, args.job, cfg).items():
             report.setdefault(f"video {n}", {})["footage"] = reused
         failing = hooks.has_fails(report)
