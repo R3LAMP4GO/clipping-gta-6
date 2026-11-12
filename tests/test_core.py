@@ -1341,3 +1341,25 @@ class CaptionFontTests(unittest.TestCase):
         self.assertFalse(captions.covers(bebas, "НЕЕЕТ"))  # Bebas has no Cyrillic: it drew empty boxes
         self.assertIs(captions.font_for("bebas", 116, "NOOOO"), bebas)  # Latin keeps the style's font
         self.assertTrue(captions.covers(captions.font_for("bebas", 116, "ВЫ ПРОПУСТИЛИ ВСЁ"), "ВЫ ПРОПУСТИЛИ ВСЁ"))
+
+
+class DailySkipsFailedDownloads(unittest.TestCase):
+    def test_age_restricted_download_is_skipped_not_fatal(self):
+        import subprocess
+        from unittest import mock
+        from clipper import __main__ as cli
+        vids = [{"id": "bad", "processed": False, "source": "c", "duration": 60, "title": "a", "channel": "x"},
+                {"id": "good", "processed": False, "source": "c", "duration": 60, "title": "b", "channel": "x"}]
+
+        def fetch(vid, section=None):
+            if vid == "bad":
+                raise subprocess.CalledProcessError(1, ["yt-dlp"])
+            return Path("/tmp/good"), {}
+        with mock.patch.object(cli.library, "load_prefs", return_value={}), \
+                mock.patch.object(cli.cleanup_mod, "run", return_value={"files": 0, "gb": 0}), \
+                mock.patch.object(cli.sources, "watch", return_value=(vids, [], 0)), \
+                mock.patch.object(cli.sources, "fetch", side_effect=fetch), \
+                mock.patch.object(cli.analyze_mod, "analyze", return_value={"candidates": [], "recommended": 1}):
+            out = cli.daily({}, limit=2)
+        self.assertEqual([j["job"] for j in out["analyzed"]], ["good"])
+        self.assertIn("bad", out["errors"][0]["source"])

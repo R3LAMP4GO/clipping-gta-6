@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -51,7 +52,11 @@ def daily(cfg, limit=None):
     jobs = []
     for v in fresh[:limit]:
         section = f"0:00-{max_s // 3600}:{max_s % 3600 // 60:02d}:00" if v["duration"] > max_s else None
-        job, _ = sources.fetch(v["id"], section)
+        try:
+            job, _ = sources.fetch(v["id"], section)
+        except subprocess.CalledProcessError as e:  # age-restricted, private or removed: skip, don't end the run
+            errors.append({"source": v["id"], "error": f"download failed: {e}"})
+            continue
         res = analyze_mod.analyze(job, cfg)
         jobs.append({"job": v["id"], "title": v["title"], "channel": v["channel"], "section": section,
                      "minutes": round(v["duration"] / 60), "candidates_md": str(job / "candidates.md"),
