@@ -7,3 +7,11 @@ tracks:
   - {id: hit, file: hit.wav, kind: hit, mood: any, claimable: false, approved: true}
   - {id: boom, file: boom.wav, kind: hit, mood: any, claimable: false, approved: true}
   - {id: whoosh, file: whoosh.wav, kind: hit, mood: any, claimable: false, approved: true}
+  # CC0 music from OpenGameArt (see CREDITS.md); levelled to -18 LUFS, trimmed to 75s unless it's a short loop
+  - {id: sad-emotional-piano-loop, file: sad-emotional-piano-loop.m4a, kind: music, mood: sad, claimable: false, approved: true}
+  - {id: funny-quirky-jazz, file: funny-quirky-jazz.m4a, kind: music, mood: funny, claimable: false, approved: true}
+  - {id: funny-catch-me-if-you-can, file: funny-catch-me-if-you-can.m4a, kind: music, mood: funny, claimable: false, approved: true}
+  - {id: epic-determined-pursuit, file: epic-determined-pursuit.m4a, kind: music, mood: epic, claimable: false, approved: true}
+  - {id: epic-trance-trap, file: epic-trance-trap.m4a, kind: music, mood: epic, claimable: false, approved: true}
+  - {id: suspense-night-of-the-streets, file: suspense-night-of-the-streets.m4a, kind: music, mood: suspense, claimable: false, approved: true}
+  - {id: sneaky-acid-detective, file: sneaky-acid-detective.m4a, kind: music, mood: sneaky, claimable: false, approved: true}

@@ -1718,3 +1718,19 @@ class FlashColourTests(unittest.TestCase):
         rep = hooks.check_picks([pick], {"research": "gta"})
         self.assertIn("purple", rep["video 1"]["fx"][0])
         self.assertTrue(hooks.has_fails(rep))
+
+
+class ShippedMusicTests(unittest.TestCase):
+    def test_every_mood_gets_a_shipped_cc0_track_and_a_missing_one_skips(self):
+        from clipper import music
+        lib = music.load_library()
+        credits = (music.MUSIC / "CREDITS.md").read_text(encoding="utf-8")
+        for mood in music.MOODS:
+            t = music.choose(lib, {}, "music", mood, seed="x")
+            self.assertIsNotNone(t, mood)
+            self.assertEqual(t["mood"], mood)
+            self.assertIn(t["file"], credits)
+        pick = {"start": 0.0, "end": 20.0, "music": [{"s": 2, "e": 8, "mood": "sad"}, {"s": 10, "e": 15, "mood": "epic"}]}
+        only_sad = [t for t in lib if t.get("mood") != "epic"]
+        layers = music.plan(pick, [], [], 20.0, {}, lib=only_sad)
+        self.assertEqual([(t["mood"], s, k) for t, s, _, k in layers], [("sad", 2.0, "music")])
