@@ -7,11 +7,9 @@
       "Bash(ffprobe:*)",
       "Bash(open jobs/:*)",
       "Bash(open exports/:*)",
-      "Write(jobs/**)",
       "Edit(jobs/**)",
       "Glob",
       "Grep",
-      "Write(exports/**)",
       "Edit(exports/**)"
     ]
   }

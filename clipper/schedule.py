@@ -18,7 +18,7 @@ LABEL = "com.clipper.gta6.daily"
 PLIST = Path("~/Library/LaunchAgents").expanduser() / f"{LABEL}.plist"
 # Only what a clipping run needs, so the unattended agent can't wander.
 ALLOWED = ["Bash(python3 -m clipper:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "Bash(open:*)", "Read", "Glob", "Grep",
-           "Write(jobs/**)", "Edit(jobs/**)", "Write(exports/**)", "Edit(exports/**)"]
+           "Edit(jobs/**)", "Edit(exports/**)"]  # Edit path rules cover Write too; Write(path) rules are ignored
 
 
 MODEL = "sonnet"  # good judgment on picks and hooks at a fraction of Opus's usage

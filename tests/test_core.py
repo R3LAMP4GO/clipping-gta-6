@@ -532,8 +532,9 @@ class LinuxPortTests(unittest.TestCase):
         # /clip-daily appends its report to exports/<profile>/<date>/index.md; dontAsk mode refuses unlisted tools
         project = json.loads(Path(".claude/settings.json").read_text())["permissions"]["allow"]
         for allowed in (schedule.ALLOWED, project):
-            self.assertIn("Write(exports/**)", allowed)
-            self.assertIn("Edit(exports/**)", allowed)
+            self.assertIn("Edit(exports/**)", allowed)  # Claude Code applies Edit path rules to Write as well
+            # Write(path) rules are ignored, with a warning on every run (seen in the end-to-end test)
+            self.assertFalse([a for a in allowed if a.startswith("Write(")])
         for prompt in (".claude/commands/clip-daily.md", ".codex/prompts/clip-daily.md"):
             self.assertIn("no `cd`", Path(prompt).read_text())
 
