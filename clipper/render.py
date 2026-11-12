@@ -70,7 +70,21 @@ def action_labels(pick, words):
     return sorted(words + out, key=lambda w: w["s"])
 
 
-FLASH_COLOUR = "0x9EFF00"  # the lime wash Zylok's payoff flashes use
+FLASH_COLOUR = "0x9EFF00"  # lime, the default wash
+FLASH_COLOURS = {"lime": FLASH_COLOUR, "white": "0xFFFFFF", "red": "0xFF1E1E", "orange": "0xFF8A00"}
+
+
+def flash_colour(color=None):
+    """FFmpeg colour for a flash's `color`: lime/white/red/orange or hex (#RRGGBB, 0xRRGGBB); lime when missing."""
+    if color is None:
+        return FLASH_COLOUR
+    c = str(color).strip().lower()
+    if c in FLASH_COLOURS:
+        return FLASH_COLOURS[c]
+    m = re.fullmatch(r"(?:#|0x)?([0-9a-f]{6})", c)
+    if not m:
+        raise ValueError(f"flash color {color!r} isn't one of {', '.join(FLASH_COLOURS)} or a hex like #FF0000")
+    return "0x" + m.group(1).upper()
 ZOOM, ZOOM_S, ZOOM_GAP_S = 0.12, 0.6, 3.0
 FX_TYPES = ("flash", "zoom", "hit")
 
@@ -106,12 +120,14 @@ def clip_fx(pick, words, dur):
             out.append({"t": round(t, 3), "type": f["type"]})
             if f["type"] == "hit" and f.get("sound"):
                 out[-1]["sound"] = str(f["sound"])
+            if f["type"] == "flash" and f.get("color") is not None:
+                out[-1]["color"] = flash_colour(f["color"])
     return sorted(out, key=lambda f: f["t"])
 
 
 def fx_filter(fx, dur):
     """FFmpeg filters for the video under the captions: punch-in zooms (scaled up per frame, cropped back to
-    1080x1920) and lime flashes (0.45 then 0.2 opacity over 0.25s). Empty when there's nothing to draw."""
+    1080x1920) and colour flashes (lime unless `color` says otherwise; 0.45 then 0.2 opacity over 0.25s). Empty when there's nothing to draw."""
     parts = []
     zooms = [f["t"] for f in fx or [] if f["type"] == "zoom" and f["t"] < dur]
     if zooms:
@@ -120,10 +136,10 @@ def fx_filter(fx, dur):
         parts.append(f"scale=w='trunc(1080*{k}/2)*2':h='trunc(1920*{k}/2)*2':eval=frame,crop=1080:1920")
     for f in fx or []:
         if f["type"] == "flash" and f["t"] < dur:
-            a = f["t"]
-            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={FLASH_COLOUR}@0.45:t=fill:"
+            a, colour = f["t"], flash_colour(f.get("color"))
+            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={colour}@0.45:t=fill:"
                          f"enable='between(t,{a:.3f},{a + 0.12:.3f})'")
-            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={FLASH_COLOUR}@0.2:t=fill:"
+            parts.append(f"drawbox=x=0:y=0:w=iw:h=ih:color={colour}@0.2:t=fill:"
                          f"enable='between(t,{a + 0.12:.3f},{a + 0.25:.3f})'")
     return ",".join(parts)
 

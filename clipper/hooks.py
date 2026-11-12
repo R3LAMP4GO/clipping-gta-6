@@ -285,6 +285,19 @@ def check_dead_air(pick, words):
     return out
 
 
+def check_fx(pick):
+    """Errors for flashes whose `color` the render would reject."""
+    from .render import flash_colour
+    out = []
+    for f in pick.get("fx") or []:
+        if isinstance(f, dict) and f.get("type") == "flash" and f.get("color") is not None:
+            try:
+                flash_colour(f["color"])
+            except ValueError as e:
+                out.append(str(e))
+    return out
+
+
 QUIET_FOR_MUSIC_S = 3.0
 
 
@@ -350,6 +363,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["length"] = check_length(pick)
         if check_labels(pick):
             entry["labels"] = check_labels(pick)
+        if check_fx(pick):
+            entry["fx"] = check_fx(pick)
         edit = check_spoiler(pick, None)
         cw = clip_words(pick, words, load) if words is not None and not check_segments(pick) else None
         if cw is not None:
@@ -366,4 +381,4 @@ def check_picks(picks, cfg=None, words=None, load=None):
 
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
-        or any("variety" in e or "length" in e or "labels" in e or "footage" in e for e in report.values())
+        or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e for e in report.values())

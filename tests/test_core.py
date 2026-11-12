@@ -1683,3 +1683,37 @@ class SoundAndQuietTests(unittest.TestCase):
         rep = hooks.check_picks([pick], {"research": "gta"}, words)
         self.assertTrue(any("no `music` key" in n for n in rep["video 1"]["edit"]))
         self.assertFalse(hooks.has_fails(rep))
+
+
+class FlashColourTests(unittest.TestCase):
+    def test_each_flash_colour_reaches_the_filter(self):
+        from clipper import render
+        for color, hexv in (("white", "0xFFFFFF"), ("red", "0xFF1E1E"), ("orange", "0xFF8A00"), ("lime", "0x9EFF00"),
+                            ("#12ab3C", "0x12AB3C"), ("0xff0000", "0xFF0000"), ("RED", "0xFF1E1E")):
+            f = render.fx_filter([{"t": 5.0, "type": "flash", "color": color}], 10.0)
+            self.assertIn(f"color={hexv}@0.45:t=fill:enable='between(t,5.000,5.120)'", f)
+            self.assertIn(f"color={hexv}@0.2:t=fill:enable='between(t,5.120,5.250)'", f)
+
+    def test_flash_without_colour_stays_lime_and_auto_fx_unchanged(self):
+        from clipper import render
+        self.assertIn("color=0x9EFF00@0.45", render.fx_filter([{"t": 5.0, "type": "flash"}], 10.0))
+        auto = render.clip_fx({"start": 0.0, "end": 10.0, "payoff_at": 6.0}, [], 10.0)
+        self.assertEqual(auto, [{"t": 6.0, "type": "flash"}, {"t": 6.0, "type": "hit"}])
+        pick = {"start": 100.0, "end": 110.0, "fx": [{"t": 104, "type": "flash"}, {"t": 105, "type": "flash",
+                                                                                   "color": "red"}]}
+        self.assertEqual(render.clip_fx(pick, [], 10.0),
+                         [{"t": 4.0, "type": "flash"}, {"t": 5.0, "type": "flash", "color": "0xFF1E1E"}])
+
+    def test_invalid_flash_colour_is_rejected(self):
+        from clipper import hooks, render
+        for bad in ("purple", "#FFF", "red;drawbox", ""):
+            with self.assertRaises(ValueError) as e:
+                render.flash_colour(bad)
+            self.assertIn("flash color", str(e.exception))
+        pick = {"start": 0.0, "end": 10.0, "hooks": ["Why did Kai *run*?"],
+                "fx": [{"t": 5.0, "type": "flash", "color": "purple"}]}
+        with self.assertRaises(ValueError):
+            render.clip_fx(pick, [], 10.0)
+        rep = hooks.check_picks([pick], {"research": "gta"})
+        self.assertIn("purple", rep["video 1"]["fx"][0])
+        self.assertTrue(hooks.has_fails(rep))
