@@ -285,6 +285,29 @@ def check_dead_air(pick, words):
     return out
 
 
+QUIET_FOR_MUSIC_S = 3.0
+
+
+def check_music(pick, words):
+    """A note when the clip has a 3s+ stretch with no speech (labels don't count) and the pick has no `music` key:
+    music may add there. An explicit `"music": []` means none on purpose."""
+    if "music" in pick:
+        return None
+    try:
+        dur = pick_duration(pick)
+    except (KeyError, TypeError, ValueError):
+        return None
+    t, best = 0.0, (0.0, 0.0, 0.0)
+    for a, b in sorted((w["s"], w["e"]) for w in words or [] if not w.get("label")) + [(dur, dur)]:
+        if a - t > best[0]:
+            best = (a - t, t, a)
+        t = max(t, b)
+    if best[0] < QUIET_FOR_MUSIC_S:
+        return None
+    return (f"{best[0]:.1f}s with no speech at {best[1]:.1f}-{best[2]:.1f}s and no `music` key: add a music window "
+            f"in the moment's mood if it adds, or set \"music\": [] to skip on purpose")
+
+
 def check_picks(picks, cfg=None, words=None, load=None):
     """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title; `edit` notes need the
     job's transcript `words` (source seconds; `load(job)` for other jobs' segments)."""
@@ -330,7 +353,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
         edit = check_spoiler(pick, None)
         cw = clip_words(pick, words, load) if words is not None and not check_segments(pick) else None
         if cw is not None:
-            edit = check_spoiler(pick, cw) + [x for x in [check_opening(pick, cw)] if x] + check_dead_air(pick, cw)
+            edit = check_spoiler(pick, cw) + [x for x in [check_opening(pick, cw)] if x] + check_dead_air(pick, cw) \
+                + [x for x in [check_music(pick, cw)] if x]
         if edit:
             entry["edit"] = edit
         if len(pick.get("hooks") or []) >= 3 and len(used) < 3:

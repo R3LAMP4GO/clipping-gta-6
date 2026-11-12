@@ -1634,3 +1634,52 @@ class NoHookArmTests(unittest.TestCase):
             self.assertEqual([(x["hook"], x["hook_type"], x["arm"], x["title"], x["music"]) for x in m],
                              [("", "none", "no-hook", "Why Did Kai Run In GTA 6?", ["hit"])])
             self.assertTrue((out / "video 1" / "no hook.mp4").name.endswith(".mp4"))
+
+
+class SoundAndQuietTests(unittest.TestCase):
+    def test_hit_sound_id_is_used_when_usable_and_falls_back_otherwise(self):
+        from clipper import music
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d)
+            for name in ("boom.wav", "whoosh.wav"):
+                (folder / name).write_bytes(b"x")
+            (folder / "library.yaml").write_text(
+                "tracks:\n"
+                "  - {id: boom, file: boom.wav, kind: hit, claimable: false, approved: true}\n"
+                "  - {id: whoosh, file: whoosh.wav, kind: hit, claimable: false, approved: true}\n"
+                "  - {id: scratch, file: gone.wav, kind: hit, claimable: false, approved: true}\n", encoding="utf-8")
+            lib = music.load_library(folder)
+            for seed in ("a", "b", "c", "d"):
+                self.assertEqual(music.choose(lib, {}, "hit", seed=seed, want="whoosh")["id"], "whoosh")
+                self.assertIn(music.choose(lib, {}, "hit", seed=seed, want="scratch")["id"], ("boom", "whoosh"))
+            layers = music.plan({"start": 0, "end": 10}, [], [{"t": 2.0, "type": "hit", "sound": "boom"}], 10.0,
+                                {}, lib=lib)
+            self.assertEqual(layers[0][0]["id"], "boom")
+
+    def test_pick_hit_keeps_its_sound_id(self):
+        from clipper import render
+        pick = {"start": 100.0, "end": 110.0, "fx": [{"t": 102, "type": "hit", "sound": "whoosh"},
+                                                     {"t": 103, "type": "flash", "sound": "boom"}]}
+        self.assertEqual(render.clip_fx(pick, [], 10.0),
+                         [{"t": 2.0, "type": "hit", "sound": "whoosh"}, {"t": 3.0, "type": "flash"}])
+
+    def test_explicit_empty_fx_or_music_turns_auto_effects_off(self):
+        from clipper import render
+        pick = {"start": 0.0, "end": 10.0, "payoff_at": 6.0}
+        words = [W("go!", 1.0, 1.4)]
+        self.assertEqual([f["type"] for f in render.clip_fx(pick, words, 10.0)], ["zoom", "flash", "hit"])
+        self.assertEqual(render.clip_fx({**pick, "fx": []}, words, 10.0), [])
+        self.assertEqual([f["type"] for f in render.clip_fx({**pick, "music": []}, words, 10.0)], ["zoom", "flash"])
+
+    def test_quiet_stretch_without_music_key_gets_an_edit_note(self):
+        from clipper import hooks
+        pick = {"start": 0.0, "end": 10.0, "hooks": ["Why did Kai *run*?"],
+                "labels": [{"s": 1.2, "e": 4.8, "text": "*RUNS*"}]}
+        words = [W("go", 0.0, 1.0), W("now", 5.0, 5.5), W("run", 6.0, 9.9)]
+        note = hooks.check_music(pick, hooks.clip_words(pick, words))
+        self.assertIn("4.0s with no speech at 1.0-5.0s", note)
+        self.assertIsNone(hooks.check_music({**pick, "music": []}, words))
+        self.assertIsNone(hooks.check_music(pick, [W("a", 0, 2.5), W("b", 5, 7.5), W("c", 8, 10)]))
+        rep = hooks.check_picks([pick], {"research": "gta"}, words)
+        self.assertTrue(any("no `music` key" in n for n in rep["video 1"]["edit"]))
+        self.assertFalse(hooks.has_fails(rep))

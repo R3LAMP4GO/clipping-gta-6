@@ -90,9 +90,11 @@ def auto_fx(words, dur, payoff=None):
 
 
 def clip_fx(pick, words, dur):
-    """The pick's `fx` (source seconds, or clip seconds for a segment pick) in clip seconds; without `fx`, auto_fx."""
+    """The pick's `fx` (source seconds, or clip seconds for a segment pick) in clip seconds; without `fx`, auto_fx
+    (minus its sound hit when `music` is an explicit [], meaning no added audio). A hit keeps its `sound` id."""
     if pick.get("fx") is None:
-        return auto_fx(words, dur, pick.get("payoff_at"))
+        fx = auto_fx(words, dur, pick.get("payoff_at"))
+        return [f for f in fx if f["type"] != "hit"] if pick.get("music") == [] else fx
     off = float(pick.get("start") or 0)
     out = []
     for f in pick["fx"]:
@@ -102,6 +104,8 @@ def clip_fx(pick, words, dur):
             continue
         if f.get("type") in FX_TYPES and 0 <= t < dur:
             out.append({"t": round(t, 3), "type": f["type"]})
+            if f["type"] == "hit" and f.get("sound"):
+                out[-1]["sound"] = str(f["sound"])
     return sorted(out, key=lambda f: f["t"])
 
 

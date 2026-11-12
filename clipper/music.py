@@ -26,10 +26,13 @@ def usable(track, cfg):
     return track.get("approved") is True and (not track.get("claimable", True) or allow) and track["path"].exists()
 
 
-def choose(lib, cfg, kind, mood=None, seed=""):
-    """One usable track of that kind (and mood, for music), the same one for the same seed; None when none fits."""
+def choose(lib, cfg, kind, mood=None, seed="", want=None):
+    """One usable track of that kind (and mood, for music), the same one for the same seed; the `want` id when it's
+    usable; None when none fits."""
     fits = [t for t in lib if t.get("kind") == kind and usable(t, cfg)
             and (kind != "music" or t.get("mood") == mood)]
+    if want and any(t.get("id") == want for t in fits):
+        fits = [t for t in fits if t.get("id") == want]
     if not fits:
         return None
     return fits[int(hashlib.sha1(f"{seed}:{kind}:{mood}".encode()).hexdigest(), 16) % len(fits)]
@@ -79,7 +82,7 @@ def plan(pick, words, fx, dur, cfg, seed="", lib=None):
             out.append((t, w["s"], w["e"] - w["s"], "music"))
     for f in fx or []:
         if f["type"] == "hit" and f["t"] < dur:
-            t = choose(lib, cfg, "hit", seed=f"{seed}:{f['t']}")
+            t = choose(lib, cfg, "hit", seed=f"{seed}:{f['t']}", want=f.get("sound"))
             if t:
                 out.append((t, f["t"], min(2.0, dur - f["t"]), "hit"))
     return out

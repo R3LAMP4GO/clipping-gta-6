@@ -247,3 +247,41 @@ Each clip's audio was split with demucs (`htdemucs --two-stems vocals`, the `no_
 | Kai decides who to kill (0.14x) | whole clip | Steady sustained harmony at 0.5–1.1 kHz, ~78 BPM | Unidentified (likely the GTA V menu/score from the stream) | true |
 
 To use one: the user approves it, its file goes into `assets/music/local/`, and it's added to `library.yaml` with its mood (Skyrim theme: `epic`; the Tesla beat: `epic`; the Ray loop: `suspense`), `claimable: true` and `approved: true`. It still only plays once the profile sets `music: {allow_claimable: true}`.
+
+## Zylok channel survey (25 Shorts, 2026-11-12; measured by script, then checked on contact sheets and spectrograms)
+The channel has 2,866 Shorts with a median of 159k views. We took the 15 most viewed (22M–66M, 138–415x the median) and the 10 most recent (days old, 0.5–4.9x, so their views haven't settled yet). Each was downloaded at 480p. The audio was split with demucs (htdemucs, the vocals stem vs the rest). Video cuts came from ffmpeg `scene>0.35`. Flashes are brief (≤0.4s) jumps in luma (white) or in one colour channel (tint). Shake was measured by phase correlation at 216x384, ignoring the caption band; a freeze is ≥0.35s of almost no frame change. Sound effects are onsets in the no-vocals stem that **don't** fall within 0.12s of a video cut (most raw onsets were just the stream audio jumping at a cut). A boom is a 30–90 Hz rise ≥10 dB that is still ≥4 dB up 0.6s later; a hiss/whoosh is a 3–9 kHz rise ≥10 dB with no sub-bass rise. Music means a periodic beat (onset autocorrelation ≥0.3 over two 4s windows). That test misses non-percussive beds such as the Ray suspense loop above, so the music share is a floor.
+
+| Move | Clips with it (25) | Top 15 | Recent 10 | Built? |
+|---|---|---|---|---|
+| One word at a time captions + `*ACTION*` labels (`*GRABS*`, `*SHOCKED*`, `*LAUGHING*`, `*CONFUSED*`) | 25/25 (contact sheets) | 15/15 | 10/10 | yes |
+| Colour tint flash (red/orange 12, lime 6, purple 4 of 23; 1–3 frames, on a reaction or a cut) | 14 | 8 | 6 | partly: `flash` is lime only |
+| White flash (on a cut or the payoff) | 12 | 8 | 4 | no (lime only) |
+| Either flash | 19 (76%) | | | |
+| Sub-bass boom off a cut (vine-boom / bass-drop shape) | 14 (56%) | 9 | 5 | yes: `boom`, `hit` |
+| Short sub thump, no tail | 5 (20%) | 2 | 3 | yes: `hit` |
+| Hiss / whoosh off a cut | 5 (20%) | 3 | 2 | yes: `whoosh` |
+| Music with a beat | 5 (20%; ~4 added by the editor, km0e's beat is the stream's own challenge) | 3 | 2 | yes: music beds, approval gated |
+| Punch-in zoom on a face (visible on 6 of 7 sheets we read; the scale-match detector found 2) | most | | | yes: `zoom` |
+| Camera shake (editor jitter) | 0 (the 2 detections were handheld IRL footage) | 0 | 0 | no |
+| Freeze frame | 0 (the 1 detection was a white transition frame) | 0 | 0 | no |
+| Split screen (two speakers stacked) | 1 (wWP8) | 1 | 0 | no |
+
+**What the numbers say**
+- **The booms are the channel's sound.** There's 0.52 boom per 10s of clip, so about 1 per 19s, never more than 3 per clip. They're spread across the clip (7 in the first third, 9 in the middle, 9 at the end) and land on a punchline or a reaction. 7 of 25 coincide with a flash. So most clips get 1–3 booms, not one on every line.
+- **Flashes are cheap and frequent, but the colour varies:** white on hard cuts and the payoff (12 clips), and a coloured wash on a reaction or a cut. Of the 23 tint flashes, 12 are red/orange, 6 lime, 4 purple and 1 neutral. Lime (what `flash` draws today) is in the mix but isn't the main colour; white and red/orange together cover most flashes.
+- **Music is the exception, not the rule:** about 1 clip in 5, and then it's matched to the moment. m_Voeg ("Really Needed This", 220x) has a soft emotional bed and a desaturated look. HkyeWQ ("Peekaboo", 189x) has a playful loop under a clip that's 59% speech-free. gZ7p ("New Ram 3500" reveal) has a hype beat. The other 20 run on the stream's own audio plus booms. Talk-heavy clips (voice ≥90% of the time) almost never get music.
+- **No shake, no freezes.** Neither cleared the 20% bar, so neither was added to the renderer.
+- Top-15 clips cut a little faster than recent ones (0.40 vs 0.31 cuts/s) and carry a few more booms and white flashes. That's 15 vs 10 clips, so it's a hint, not a measurement.
+
+**Music candidates from the survey** (none named, none approved or downloaded). No description credits a track, there's no `track`/`artist` metadata, and no open fingerprinter is installed. We didn't send audio to an online recogniser without the user's go-ahead. What the stems show:
+
+| Clip (x median) | Where | What the stem shows | Mood | claimable |
+|---|---|---|---|---|
+| m_Voeg4izes "Rakai Really Needed This" (220x) | 0–15s, fades out | Steady ~107 BPM pulse, soft, under the speech | sad | true (unidentified) |
+| HkyeWQIhaUQ "Tota Playing Peekaboo" (189x) | 1.5–9s | ~67 BPM playful loop in the speech-free gaps | funny | true (unidentified) |
+| gZ7pHhbO2-I "Fanum Reveals His New Ram" (0.6x, days old) | 0–18s | ~80 BPM hip-hop beat with sub kicks under the reveal | epic | true (unidentified) |
+| kFP4nOHiSeQ "Reggie Hates Tylil" (4.9x, days old) | ~12–15s, the end | ~133 BPM beat comes in on the payoff | funny | true (unidentified) |
+
+Since none is named, there's nothing specific to approve. To use these moods, the user picks royalty-free or CC0 tracks per mood (or names one), and each goes through `library.yaml` approval as before.
+
+**Rule of thumb for our clips** (in `.claude/commands/clip.md`): a boom or hit on the payoff and on the 1–2 biggest reactions (≤1 per 4s); a flash on the payoff; zooms on shouted lines; music only on a 2s+ speech-free stretch or an emotional or tense build, in the mood of the moment; nothing on a clip that's already loud or wall-to-wall talk.
