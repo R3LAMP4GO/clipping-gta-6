@@ -29,8 +29,10 @@ GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. 
 ## Why this clipper
 
 - **Get the clips before anyone else.** Most clippers wait for the stream to end and scrub the VOD. This records your Twitch, Kick and YouTube creators the moment they go live on GTA 6, in gapless 30-minute chunks, and clips each finished chunk within about two hours. Your Shorts can be up while the stream is still going.
-- **Hooks backed by data, not vibes.** Every hook is checked against rules from 28 GTA Shorts with 500k–51M views, then ranked by its measured effect on 3,481 gaming Shorts. Weak hooks never ship: `clipper check` fails vague ones (0.67x), bare labels (0.88x) and spoilers.
+- **Hooks backed by data, not vibes.** Every hook is checked against rules from 28 GTA Shorts with 500k–51M views, then ranked by its measured effect on 3,481 gaming Shorts. Weak hooks never ship: `clipper check` fails vague ones (0.67x), bare labels (0.88x) and spoilers. Across a run, every video opens differently, so your feed never repeats one formula.
 - **It finds the moments for you.** Volume jumps, screams, hype words, laughter and YouTube's most-replayed data score every second, so a 3-hour stream turns into a short list of clip candidates.
+- **Edits, not re-uploads.** Besides single moments, it cuts story edits (setup, turn, payoff from one stream) and multi-streamer edits (the same cutscene from every stream, found by one line of dialogue). It never reuses footage you already exported, since the same footage gets no reach the second time.
+- **Runs unattended.** `/clip-daily` runs end to end with no questions, tested headless with the exact command the scheduler uses. Old recordings and downloads are deleted on a timer so the disk doesn't fill, and `clipper live health` flags a stream that's live but not recording.
 - **Runs inside your AI agent.** Claude Code or Codex does the judgment calls (which moment, which hook, which layout). Everything else runs locally and free: download, transcription, voice separation, speaker labels, captions and rendering.
 - **More than one niche.** Profiles keep each niche's creators, topic filter and hashtags apart. `gta6` and `gta-rp` (NoPixel) are included.
 
@@ -94,7 +96,7 @@ Setup copies the prompts to `~/.codex/prompts/`. After that use `/prompts:clip`,
 | Command | What it does |
 | --- | --- |
 | `/clip [url \| phrase]` | Find, review and render. Asks about voiceover, how many videos and how many hooks, then shows picks for your approval |
-| `/clip-daily` | The unattended run: clips new uploads and recorded live chunks using your saved preferences |
+| `/clip-daily` | The unattended run: clips new uploads and recorded live chunks using your saved preferences, then adds its report to the day's `index.md` |
 | `/clip-schedule [HH:MM]` | Runs `/clip-daily` every day. With live streams listed, it also records them as they go live and clips the chunks every 2 hours |
 | `/clip-creators [add @handle \| remove name]` | Choose which creators to watch |
 | `/clip-setup` | Installs the tools, models and commands |
@@ -111,7 +113,8 @@ python3 -m clipper frame <id> 100              # gridded frame to locate a facec
 python3 -m clipper voice-setup                 # save a Fish Audio key (macOS: key page + TextEdit note; Linux: hidden prompt)
 python3 -m clipper creators add @KaiCenat       # or: list / remove
 python3 -m clipper prefs set voice=auto videos_per_run=3 hooks_per_video=4
-python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs
+python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs (skips any that can't be downloaded)
+python3 -m clipper report "<markdown>"         # add a run report to exports/<profile>/<date>/index.md (never rewrites it)
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
 python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
@@ -130,11 +133,11 @@ python3 -m clipper setup [--install]           # check/install dependencies + gl
 python3 -m unittest discover -s tests
 ```
 
-Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights and clip length in `watchlist.yaml`. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
+Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights, clip length and disk settings in `watchlist.yaml` (`keep_live_sources_hours: 3` and `keep_sources_days: 2` for when old video and audio are deleted, `null` keeps them; `min_free_gb` for the health check). Transcripts, picks and exports are never deleted. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
 
 A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first.
 
-Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included).
+Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included). Captions in other alphabets (Cyrillic, Greek, ...) switch automatically to a bundled font that can draw them. `transcript.json` has one word per line, so the agent can search it for any second.
 
 </details>
 
