@@ -90,8 +90,8 @@ FX_TYPES = ("flash", "zoom", "hit")
 
 
 def auto_fx(words, dur, payoff=None):
-    """Default beats: a punch-in on shouted words ("!", at most one per 3s) and a flash plus a hit where a segment
-    pick's last segment (the payoff) starts."""
+    """Default beats: a punch-in on shouted words ("!", at most one per 3s) and a white flash plus a hit where a
+    segment pick's last segment (the payoff) starts (white is what Zylok's payoff flashes mostly use)."""
     fx, last = [], -ZOOM_GAP_S
     for w in words or []:
         if not w.get("label") and str(w["w"]).rstrip("\"')").endswith("!") and w["s"] - last >= ZOOM_GAP_S \
@@ -99,7 +99,8 @@ def auto_fx(words, dur, payoff=None):
             fx.append({"t": round(w["s"], 3), "type": "zoom"})
             last = w["s"]
     if payoff is not None and 0 < payoff < dur:
-        fx += [{"t": round(payoff, 3), "type": "flash"}, {"t": round(payoff, 3), "type": "hit"}]
+        fx += [{"t": round(payoff, 3), "type": "flash", "color": FLASH_COLOURS["white"]},
+               {"t": round(payoff, 3), "type": "hit"}]
     return sorted(fx, key=lambda f: f["t"])
 
 

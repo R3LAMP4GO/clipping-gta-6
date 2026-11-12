@@ -1694,11 +1694,12 @@ class FlashColourTests(unittest.TestCase):
             self.assertIn(f"color={hexv}@0.45:t=fill:enable='between(t,5.000,5.120)'", f)
             self.assertIn(f"color={hexv}@0.2:t=fill:enable='between(t,5.120,5.250)'", f)
 
-    def test_flash_without_colour_stays_lime_and_auto_fx_unchanged(self):
+    def test_flash_without_colour_stays_lime_and_the_auto_payoff_flash_is_white(self):
         from clipper import render
         self.assertIn("color=0x9EFF00@0.45", render.fx_filter([{"t": 5.0, "type": "flash"}], 10.0))
         auto = render.clip_fx({"start": 0.0, "end": 10.0, "payoff_at": 6.0}, [], 10.0)
-        self.assertEqual(auto, [{"t": 6.0, "type": "flash"}, {"t": 6.0, "type": "hit"}])
+        self.assertEqual(auto, [{"t": 6.0, "type": "flash", "color": "0xFFFFFF"}, {"t": 6.0, "type": "hit"}])
+        self.assertIn("color=0xFFFFFF@0.45", render.fx_filter(auto, 10.0))
         pick = {"start": 100.0, "end": 110.0, "fx": [{"t": 104, "type": "flash"}, {"t": 105, "type": "flash",
                                                                                    "color": "red"}]}
         self.assertEqual(render.clip_fx(pick, [], 10.0),

@@ -285,3 +285,16 @@ The channel has 2,866 Shorts with a median of 159k views. We took the 15 most vi
 Since none is named, there's nothing specific to approve. To use these moods, the user picks royalty-free or CC0 tracks per mood (or names one), and each goes through `library.yaml` approval as before.
 
 **Rule of thumb for our clips** (in `.claude/commands/clip.md`): a boom or hit on the payoff and on the 1–2 biggest reactions (≤1 per 4s); a flash on the payoff; zooms on shouted lines; music only on a 2s+ speech-free stretch or an emotional or tense build, in the mood of the moment; nothing on a clip that's already loud or wall-to-wall talk.
+
+### CC0 mood tracks (2026-11-12; candidates awaiting the user's approval, nothing downloaded)
+FreePD (the usual public-domain source) has shut down. These are from OpenGameArt, and the licence on each track page was checked as CC0 (Quirky Jazz is dual CC0 / OGA-BY; we'd take CC0). They'd go into `assets/music/` with `claimable: false` once approved. CC0 means no Content ID registration by the author, but a third party can still wrongly claim a CC0 track, so watch the first uploads.
+
+| Mood | Track (author) | Page | Fits the survey's |
+|---|---|---|---|
+| sad | Emotional piano loop (extenz) | https://opengameart.org/content/emotional-piano-loop | m_Voeg soft emotional bed |
+| funny | Quirky Jazz (Spring Spring) | https://opengameart.org/content/quirky-jazz | Peekaboo playful loop |
+| funny (alt) | Catch me if you can! (poinl) | https://opengameart.org/content/catch-me-if-you-can | goofy chase |
+| epic | Determined Pursuit, epic orchestra loop (Emma_MA) | https://opengameart.org/content/determined-pursuit-epic-orchestra-loop | big launch / reveal |
+| epic (alt, hype beat) | Trance / trap / electronic (Dizzy Crow) | https://opengameart.org/content/trance-trap-electronic-237 | Ram 3500 reveal beat |
+| suspense | Night of the Streets (nene) | https://opengameart.org/content/night-of-the-streets-horrorsuspense | build before a reveal |
+| sneaky | Acid Detective (obscure music) | https://opengameart.org/content/acid-detective | silent follow / chase |
