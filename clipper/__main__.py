@@ -125,6 +125,8 @@ def main(argv=None):
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
     lv.add_argument("--any-title", action="store_true", help="add: record even if the title isn't on the profile's topic")
     lv.add_argument("--replace", type=int, help="record: the old recorder's pid, stopped once this one is recording")
+    rp = sub.add_parser("report", help="append a run report to exports/<profile>/<date>/index.md (never rewrites it)")
+    rp.add_argument("text", help="the report, in Markdown")
     cl = sub.add_parser("cleanup", help="delete old job video/audio (keep_live_sources_hours, keep_sources_days); "
                                         "transcripts, picks and exports stay")
     cl.add_argument("--dry-run", action="store_true", help="list what would be deleted, delete nothing")
@@ -249,6 +251,8 @@ def main(argv=None):
             sys.exit(0 if ready else 1)
         else:
             print(json.dumps([live_mod.mark_done(j) for j in refs]))
+    elif args.cmd == "report":
+        print(f"report added to {render_mod.append_report(cfg, args.text)}")
     elif args.cmd == "cleanup":
         print(json.dumps(cleanup_mod.run(cfg, args.dry_run), indent=2))
     elif args.cmd == "bench":

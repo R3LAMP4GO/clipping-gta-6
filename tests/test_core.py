@@ -1376,3 +1376,23 @@ class TranscriptFileTests(unittest.TestCase):
         self.assertTrue(any(line.startswith('{"w": "Hello", "s": 843.1') for line in lines))  # Grep finds a second
         self.assertEqual(len(lines), 4)
         self.assertEqual(json.loads(transcribe.dumps_transcript({"words": []})), {"words": []})
+
+
+class ReportTests(unittest.TestCase):
+    def test_reports_append_and_never_drop_the_video_list(self):
+        from unittest import mock
+        from clipper import render
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(render, "EXPORTS", Path(d)):
+            cfg = {"profile": "gta-rp"}
+            index = render.export_dir(cfg) / "index.md"
+            index.parent.mkdir(parents=True)
+            index.write_text("- **video 1**: POV: xQc Breaks Into The Wrong House · xQc · 5 hooks\n")
+            render.append_report(cfg, "## Run 1\n5 videos from xQc.")
+            render.append_report(cfg, "## Run 2\nNo clips: all candidates weak.")
+            text = index.read_text()
+            self.assertTrue(text.startswith("- **video 1**"))
+            self.assertLess(text.index("## Run 1"), text.index("## Run 2"))
+        for prompt in (".claude/commands/clip-daily.md", ".codex/prompts/clip-daily.md"):
+            body = Path(prompt).read_text()
+            self.assertIn("python3 -m clipper report", body)
+            self.assertIn("never Write or Edit `index.md`", body)

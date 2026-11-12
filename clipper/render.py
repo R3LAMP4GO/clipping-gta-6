@@ -376,6 +376,16 @@ def export_dir(cfg, day=None):
     return EXPORTS / cfg.get("profile", config.PROFILE) / (day or date.today()).isoformat()
 
 
+def append_report(cfg, text, day=None):
+    """Add a run report to the end of the day's index.md: it also lists the rendered videos and earlier runs'
+    reports, so it's never rewritten (an unattended agent once overwrote it)."""
+    index = export_dir(cfg, day) / "index.md"
+    index.parent.mkdir(parents=True, exist_ok=True)
+    old = index.read_text(encoding="utf-8") if index.exists() else ""
+    index.write_text(old + ("\n" if old and not old.endswith("\n\n") else "") + text.strip() + "\n", encoding="utf-8")
+    return index
+
+
 def next_video_number(out_dir):
     nums = [int(m.group(1)) for p in out_dir.glob("video *") if (m := re.fullmatch(r"video (\d+)", p.name))]
     return max(nums, default=0) + 1
