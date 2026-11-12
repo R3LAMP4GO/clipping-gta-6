@@ -1331,3 +1331,13 @@ class LiveHealthTests(unittest.TestCase):
                 os.utime(seg)
                 issues = live.health({"max_recorders": 1, "min_free_gb": 1})
                 self.assertEqual(sorted(issues), ["analysis_failed"])
+
+
+class CaptionFontTests(unittest.TestCase):
+    def test_non_latin_captions_switch_to_a_font_that_draws_them(self):
+        from clipper import captions
+        bebas = captions.font("bebas", 116)
+        self.assertTrue(captions.covers(bebas, "Y'ALL MISSED THAT ¿AÑO?"))
+        self.assertFalse(captions.covers(bebas, "НЕЕЕТ"))  # Bebas has no Cyrillic: it drew empty boxes
+        self.assertIs(captions.font_for("bebas", 116, "NOOOO"), bebas)  # Latin keeps the style's font
+        self.assertTrue(captions.covers(captions.font_for("bebas", 116, "ВЫ ПРОПУСТИЛИ ВСЁ"), "ВЫ ПРОПУСТИЛИ ВСЁ"))

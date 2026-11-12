@@ -57,6 +57,28 @@ def font(name, size):
     return _fonts[(name, size)]
 
 
+def covers(f, text):
+    """Whether a font draws every character of text: a missing glyph renders as the font's .notdef box."""
+    def shape(c):
+        m = f.getmask(c)
+        return m.size, bytes(m)
+    missing = shape("\ue000")  # private use: no font draws it
+    return all(c.isspace() or shape(c) != missing for c in set(text))
+
+
+def font_for(name, size, text):
+    """The style's font, or the nearest bundled one that can draw the text (Bebas and Luckiest Guy have no
+    Cyrillic, Greek, ...), scaled to the same visual size; else the system fallback."""
+    f = font(name, size)
+    if covers(f, text):
+        return f
+    for alt in ("montserrat-black", "tiktok-bold"):
+        g = font(alt, round(size * FONT_SIZES[alt] / FONT_SIZES.get(name, size)))
+        if covers(g, text):
+            return g
+    return next((ImageFont.truetype(p, size) for p in SYSTEM_FALLBACK if Path(p).exists()), f)
+
+
 def chunk_words(words, max_words=3, max_gap=0.45):
     chunks, cur = [], []
     for i, w in enumerate(words):
@@ -140,8 +162,8 @@ def render_state(state, path, caption_y, multi, style="bold"):
     top = None
     for k, (spk, words, active) in enumerate(state):
         name, size, base, act = speaker_look(spk, style, multi)
-        f = font(name, size)
         words = [w.upper().strip(",.") or w for w in words]
+        f = font_for(name, size, " ".join(words))
         lines = _wrap(words, f, 960)
         lh = int(size * 1.18)
         block = lh * len(lines)
@@ -184,8 +206,8 @@ def render_hook(text, path, style="box", layout="fit"):
         img.save(path)
         return
     tokens = parse_markup(text)
-    f = font(st["font"], st["size"])
     words = [w.upper() if st["upper"] else w for w, _ in tokens]
+    f = font_for(st["font"], st["size"], " ".join(words))
     lines = _wrap(words, f, 900)[:3]
     lh = int(st["size"] * 1.2)
     centre = LAYOUTS.get(layout, LAYOUTS["fit"])["hook_y"]
