@@ -34,6 +34,7 @@ GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. 
 - **Edits, not re-uploads.** Besides single moments, it cuts story edits (setup, turn, payoff from one stream) and multi-streamer edits (the same cutscene from every stream, found by one line of dialogue). It never reuses footage you already exported, since the same footage gets no reach the second time.
 - **Runs unattended.** `/clip-daily` runs end to end with no questions, tested headless with the exact command the scheduler uses. Old recordings and downloads are deleted on a timer so the disk doesn't fill, and `clipper live health` flags a stream that's live but not recording.
 - **Runs inside your AI agent.** Claude Code or Codex does the judgment calls (which moment, which hook, which layout). Everything else runs locally and free: download, transcription, voice separation, speaker labels, captions and rendering.
+- **Dub into other languages, in the streamer's own voice.** `clipper dub` re-renders a clip in Russian, Spanish or any language Fish Audio speaks. Each speaker is cloned from their own lines, and the emotion carries over: every line is measured for pitch and loudness, voiced with cues like `[screaming]` or `[whispering]`, and set to the original line's volume. Captions follow in the new language, and the description ends with an AI-dub disclosure.
 - **More than one niche.** Profiles keep each niche's creators, topic filter and hashtags apart. `gta6` and `gta-rp` (NoPixel) are included.
 
 | Hook type | Example | Views vs channel average |
@@ -61,6 +62,12 @@ GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. 
 **3. You get one MP4 per hook, plus matching titles and a description** in `exports/<profile>/<date>/`:
 
 <p align="center"><img src="docs/claude-code-rendered.png" alt="Claude Code listing the rendered Shorts, hooks and titles" width="90%"></p>
+
+**4. Same clip, three languages.** `clipper dub` re-voices xQc's bank robbery in Spanish and Russian, cloned from each speaker's own voice, with the delivery and loudness of every line kept. Turn the sound on:
+
+<p align="center"><a href="docs/dub/xqc-bank-en.mp4"><img src="docs/dub/xqc-bank-preview.png" alt="The same xQc GTA RP clip rendered in English, Spanish and Russian" width="90%"></a></p>
+
+<p align="center">▶ <a href="docs/dub/xqc-bank-en.mp4"><strong>English (original)</strong></a> · <a href="docs/dub/xqc-bank-es.mp4"><strong>Español</strong></a> · <a href="docs/dub/xqc-bank-ru.mp4"><strong>Русский</strong></a></p>
 
 ## Get started
 
@@ -114,6 +121,8 @@ python3 -m clipper voice-setup                 # save a Fish Audio key (macOS: k
 python3 -m clipper creators add @KaiCenat       # or: list / remove
 python3 -m clipper prefs set voice=auto videos_per_run=3 hooks_per_video=4
 python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs (skips any that can't be downloaded)
+python3 -m clipper dub segments <id> --pick 1     # a clip's lines to translate, with speaker, pitch and loudness
+python3 -m clipper dub render <id> --pick 1 --lang ru --translation dub-ru.json   # exports/<profile>-ru/<date>/video N
 python3 -m clipper report "<markdown>"         # add a run report to exports/<profile>/<date>/index.md (never rewrites it)
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
@@ -137,7 +146,7 @@ Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`,
 
 A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first.
 
-Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included). Captions in other alphabets (Cyrillic, Greek, ...) switch automatically to a bundled font that can draw them. `transcript.json` has one word per line, so the agent can search it for any second.
+Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Dubs need the Fish key and Demucs (no system-voice fallback); the speaker split uses WhisperKit, so it's best on macOS. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included). Captions in other alphabets (Cyrillic, Greek, ...) switch automatically to a bundled font that can draw them. `transcript.json` has one word per line, so the agent can search it for any second.
 
 </details>
 

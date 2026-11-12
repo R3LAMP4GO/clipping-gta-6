@@ -9,6 +9,7 @@ from . import analyze as analyze_mod
 from . import config, hooks, library, render as render_mod, schedule, simulate, sources, voice_setup
 from . import bench as bench_mod
 from . import cleanup as cleanup_mod
+from . import dub as dub_mod
 from . import live as live_mod
 from . import setup as setup_mod
 
@@ -125,6 +126,12 @@ def main(argv=None):
     lv.add_argument("--chunk", type=int, default=30, help="minutes per chunk")
     lv.add_argument("--any-title", action="store_true", help="add: record even if the title isn't on the profile's topic")
     lv.add_argument("--replace", type=int, help="record: the old recorder's pid, stopped once this one is recording")
+    db = sub.add_parser("dub", help="re-render a clip in another language in each speaker's cloned voice (Fish Audio)")
+    db.add_argument("action", choices=["segments", "render"], help="segments: lines to translate; render: the dub")
+    db.add_argument("job")
+    db.add_argument("--pick", type=int, required=True, help="which pick in jobs/<id>/picks.json (1 = first)")
+    db.add_argument("--lang", help="render: the translation's language code, e.g. ru")
+    db.add_argument("--translation", help="render: the translation JSON (see `dub segments` for its template)")
     rp = sub.add_parser("report", help="append a run report to exports/<profile>/<date>/index.md (never rewrites it)")
     rp.add_argument("text", help="the report, in Markdown")
     cl = sub.add_parser("cleanup", help="delete old job video/audio (keep_live_sources_hours, keep_sources_days); "
@@ -251,6 +258,16 @@ def main(argv=None):
             sys.exit(0 if ready else 1)
         else:
             print(json.dumps([live_mod.mark_done(j) for j in refs]))
+    elif args.cmd == "dub":
+        job = config.job_dir(args.job)
+        if args.action == "segments":
+            out = dub_mod.segments_report(job, args.pick, cfg)
+        else:
+            if not (args.lang and args.translation):
+                raise SystemExit("[dub] render needs --lang and --translation")
+            tr = json.loads(Path(args.translation).read_text(encoding="utf-8"))
+            out = dub_mod.render_dub(job, args.pick, args.lang, tr, cfg)
+        print(json.dumps(out, indent=2, ensure_ascii=False, default=str))
     elif args.cmd == "report":
         print(f"report added to {render_mod.append_report(cfg, args.text)}")
     elif args.cmd == "cleanup":
