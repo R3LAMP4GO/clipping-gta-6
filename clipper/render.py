@@ -316,7 +316,7 @@ def build_segment_job(pick, job, cfg, out):
     lst.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
                     "-c", "copy", str(out / "source.mp4")], check=True)
-    (out / "transcript.json").write_text(json.dumps({"words": words}), encoding="utf-8")
+    (out / "transcript.json").write_text(transcribe.dumps_transcript({"words": words}), encoding="utf-8")
     # never cover a face: if any segment shows the facecam on top, the hook sits on the split seam
     as_ = (pick.get("layout") or {}).get("as") or ("split" if "split" in layouts else "fit")
     flat = {k: v for k, v in pick.items() if k != "segments"}

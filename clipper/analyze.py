@@ -147,7 +147,8 @@ def analyze(job, cfg, fast=False, force=False):
         else:
             print(f"[analyze] transcribing locally ({cfg.get('asr', 'parakeet')}) ...", flush=True)
             words, events, model = transcribe.transcribe(wav, job / "whisper", cfg, fast)
-        tpath.write_text(json.dumps({"model": model, "words": words, "events": events, **extra}), encoding="utf-8")
+        tpath.write_text(transcribe.dumps_transcript({"model": model, "events": events, **extra, "words": words}),
+                         encoding="utf-8")
     t = json.loads(tpath.read_text(encoding="utf-8"))
     words, events = transcribe.drop_repeats(t["words"]), t["events"]
     sentences = transcribe.group_sentences(words)

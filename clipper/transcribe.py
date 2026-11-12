@@ -56,6 +56,14 @@ def parakeet_model(name, quantization):
     return _PARAKEET[key]
 
 
+def dumps_transcript(data):
+    """transcript.json with one word per line: an agent can Grep `"s": 843.` for a moment and Read the lines around
+    it (a single 100 KB line is unreadable for its file tools). Still plain JSON."""
+    head = json.dumps({k: v for k, v in data.items() if k != "words"}, ensure_ascii=False)[:-1]
+    words = ",\n".join(json.dumps(w, ensure_ascii=False) for w in data.get("words") or [])
+    return head + (", " if head != "{" else "") + '"words": [\n' + words + "\n]}\n"
+
+
 def run_parakeet(wav, cfg):
     """(words, events) from Parakeet with voice-activity segmentation, so hour-long streams fit in memory."""
     import wave

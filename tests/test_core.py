@@ -1364,3 +1364,15 @@ class DailySkipsFailedDownloads(unittest.TestCase):
             out = cli.daily({}, limit=2)
         self.assertEqual([j["job"] for j in out["analyzed"]], ["good"])
         self.assertIn("bad", out["errors"][0]["source"])
+
+
+class TranscriptFileTests(unittest.TestCase):
+    def test_one_word_per_line_and_still_json(self):
+        import json
+        data = {"model": "m", "events": [{"t": 1.0}], "words": [W("Hello", 843.1, 843.4), W("ÿou", 843.5, 843.9)]}
+        text = transcribe.dumps_transcript(data)
+        self.assertEqual(json.loads(text), data)
+        lines = text.splitlines()
+        self.assertTrue(any(line.startswith('{"w": "Hello", "s": 843.1') for line in lines))  # Grep finds a second
+        self.assertEqual(len(lines), 4)
+        self.assertEqual(json.loads(transcribe.dumps_transcript({"words": []})), {"words": []})
