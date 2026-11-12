@@ -63,11 +63,15 @@ GTA Clipper turns GTA 6 streams and uploads into ready-to-post vertical Shorts. 
 
 <p align="center"><img src="docs/claude-code-rendered.png" alt="Claude Code listing the rendered Shorts, hooks and titles" width="90%"></p>
 
-**4. Same clip, three languages.** `clipper dub` re-voices xQc's bank robbery in Spanish and Russian, cloned from each speaker's own voice, with the delivery and loudness of every line kept. Turn the sound on:
+**4. Same clip, three languages.** `clipper dub` re-voices xQc's bank robbery in Spanish and Russian, cloned from each speaker's own voice, with the delivery and loudness of every line kept. Press play with the sound on:
 
-<p align="center"><a href="docs/dub/xqc-bank-en.mp4"><img src="docs/dub/xqc-bank-preview.png" alt="The same xQc GTA RP clip rendered in English, Spanish and Russian" width="90%"></a></p>
-
-<p align="center">▶ <a href="docs/dub/xqc-bank-en.mp4"><strong>English (original)</strong></a> · <a href="docs/dub/xqc-bank-es.mp4"><strong>Español</strong></a> · <a href="docs/dub/xqc-bank-ru.mp4"><strong>Русский</strong></a></p>
+<table>
+  <tr>
+    <td align="center" width="33%"><strong>English (original)</strong><br><video src="https://github.com/user-attachments/assets/353ff5ad-22a6-4eca-bdc7-a10aee9c624c" controls></video></td>
+    <td align="center" width="33%"><strong>Español</strong><br><video src="https://github.com/user-attachments/assets/93bfbbaf-643c-4e91-b03b-3c2c10ad1223" controls></video></td>
+    <td align="center" width="33%"><strong>Русский</strong><br><video src="https://github.com/user-attachments/assets/08e11c03-f7e4-4771-ba80-f43dac454baf" controls></video></td>
+  </tr>
+</table>
 
 ## Get started
 
