@@ -40,6 +40,9 @@ VERDICT = re.compile(r"\b(legit|fair|cheat\w*|wrong|right|real|fake|better|worse
 STAKE = re.compile(r"\d|\$|\b(one|two|three|four|five|ten|hundred|thousand|million|billion|grand|dead|dies?|died|kill\w*|"
                    r"shot|shoots?|arrest\w*|banned|fired|rob\w*|crash\w*|hostage|cheat\w*|hack\w*|jail|prison|sued|"
                    r"broke|quit\w*|kicked|caught|exposed)\b", re.I)
+STARTERS = {"when", "why", "how", "what", "who", "whose", "where", "which", "pov", "me", "us", "nobody", "wait",
+            "should", "did", "does", "is", "was", "are", "were", "can", "could", "would", "will", "never", "only",
+            "everyone", "someone", "half", "even", "watch", "look", "guess", "imagine", "every", "you", "your"}
 NOT_A_STAKE = {"GTA", "RP", "VI", "POV", "NPC", "I", "OK", "PD", "NoPixel", "Rockstar"}
 STREAMERS = {"xqc", "kai", "cenat", "caseoh", "speed", "ishowspeed", "jynxzi", "ninja", "timthetatman", "nickmercs",
              "swagg", "sypherpk", "darkviperau", "chat"}
@@ -106,7 +109,10 @@ def has_stake(hook, names=()):
     if STAKE.search(text):
         return True
     skip = STREAMERS | {n.lower() for n in names}
-    words = re.findall(r"[A-Za-z][A-Za-z0-9']*", text)[1:]
+    words = re.findall(r"[A-Za-z][A-Za-z0-9']*", text)
+    first = re.sub(r"'(s|re|ll|ve|d)$", "", words[0]).lower() if words else ""
+    if words and (first in STOP or first in STARTERS):  # sentence case, not a name
+        words = words[1:]
     return any(w[0].isupper() and w not in NOT_A_STAKE and not w.isupper() and re.sub(r"'s$", "", w).lower() not in skip
                for w in words)
 

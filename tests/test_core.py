@@ -1800,10 +1800,11 @@ class StakeRuleTest(unittest.TestCase):
     def test_stakes_from_our_top_and_bottom_shorts(self):
         from clipper import hooks
         for h in ["Kai Cenat was NOT ready for *Trevor*", "Kai did NOT expect him to be *13*",
-                  "Wait for Kai's *$500K* painting...", "Did CaseOh catch a GTA 6 *cheater*?!"]:
+                  "Wait for Kai's *$500K* painting...", "Did CaseOh catch a GTA 6 *cheater*?!",
+                  "Ray won't forgive xQc's *betrayal*"]:
             self.assertTrue(hooks.has_stake(h), h)
         for h in ["What's on xQc's *USB*?", "When someone hands you a *marlin*", "How did xQc's crew take the *betrayal*?",
-                  "CaseOh couldn't tell this was *GTA 6*"]:
+                  "CaseOh couldn't tell this was *GTA 6*", "When someone hands you a *marlin*", "Why is xQc sniffing it?"]:
             self.assertFalse(hooks.has_stake(h), h)
         notes = hooks.check_hook("What's on xQc's *USB*?")[1]
         self.assertTrue(any("concrete stake" in n for n in notes))
