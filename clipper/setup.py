@@ -164,8 +164,8 @@ def run(install=False, dry_run=False):
     names = BREW if IS_MAC else {**APT, "yt-dlp": ""}
     if uses_whisper() and not IS_MAC:
         names["whisper-cli"] = ""
-    if not uses_whisper():
-        names = {k: v for k, v in names.items() if k != "whisper-cli"}
+    if not uses_whisper():  # same build-tool exemption as missing()
+        names = {k: v for k, v in names.items() if k != "whisper-cli" and (IS_MAC or k not in ("cmake", "c++"))}
     checks = [*((t, bool(shutil.which(t))) for t in names), *((PIP[m], m not in mods) for m in PIP),
               ("demucs (voice separation, optional)", not demucs)]
     if uses_whisper():

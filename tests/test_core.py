@@ -1832,3 +1832,15 @@ class SetupSudoTest(unittest.TestCase):
         self.assertNotIn("cmake", tools)
         self.assertNotIn("c++", tools)
         self.assertIn("ffmpeg", tools)
+
+    def test_parakeet_setup_report_doesnt_list_build_tools(self):
+        from unittest import mock
+        from clipper import setup
+        with mock.patch.object(setup, "IS_MAC", False), mock.patch.object(setup, "uses_whisper", return_value=False), \
+                mock.patch.object(setup, "missing", return_value=([], [], False, False)), \
+                mock.patch.object(setup, "linux_plan", return_value=([], [])), \
+                mock.patch.object(setup, "youtube_fix", return_value=([], [], [])), \
+                mock.patch.object(setup, "install_commands", return_value=[]):
+            out = setup.run()
+        self.assertNotIn("cmake", out)
+        self.assertIn("ffmpeg", out)
