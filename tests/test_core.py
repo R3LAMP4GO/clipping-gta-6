@@ -501,7 +501,8 @@ class LinuxPortTests(unittest.TestCase):
         def plan(asr):
             with mock.patch.object(setup, "IS_MAC", False), mock.patch.object(setup.shutil, "which", return_value=None), \
                     mock.patch.object(setup.sys, "prefix", "/venv"), mock.patch.object(setup, "uses_whisper",
-                                                                                    return_value=asr == "whisper"):
+                                                                                    return_value=asr == "whisper"), \
+                    mock.patch.object(setup.subprocess, "run", return_value=mock.Mock(returncode=0)):
                 return [" ".join(c) for c in setup.linux_plan(list(setup.APT), ["onnx_asr"], True)[0]]
         flat = plan("parakeet")
         self.assertTrue(any(c.startswith("sudo apt-get install -y") and "ffmpeg" in c for c in flat))
@@ -1809,3 +1810,25 @@ class StakeRuleTest(unittest.TestCase):
         notes = hooks.check_hook("What's on xQc's *USB*?")[1]
         self.assertTrue(any("concrete stake" in n for n in notes))
         self.assertEqual(hooks.check_hook("What's on xQc's *USB*?")[0], [])
+
+
+class SetupSudoTest(unittest.TestCase):
+    def test_apt_step_needing_a_password_is_listed_not_run(self):
+        from unittest import mock
+        from clipper import setup
+        with mock.patch.object(setup, "IS_MAC", False), mock.patch.object(setup.sys, "prefix", "/venv"), \
+                mock.patch.object(setup.os, "geteuid", return_value=1000), \
+                mock.patch.object(setup.subprocess, "run", return_value=mock.Mock(returncode=1)):
+            plan, lines = setup.linux_plan(["ffmpeg"], [], False)
+        self.assertFalse(any(c[:2] == ["sudo", "apt-get"] for c in plan))
+        self.assertTrue(any("sudo apt-get install -y ffmpeg" in l for l in lines))
+
+    def test_parakeet_setup_doesnt_need_build_tools(self):
+        from unittest import mock
+        from clipper import setup
+        with mock.patch.object(setup, "IS_MAC", False), mock.patch.object(setup, "uses_whisper", return_value=False), \
+                mock.patch.object(setup.shutil, "which", return_value=None):
+            tools = setup.missing()[0]
+        self.assertNotIn("cmake", tools)
+        self.assertNotIn("c++", tools)
+        self.assertIn("ffmpeg", tools)

@@ -1,4 +1,5 @@
 """Check and install everything the clipper needs, and install its agent commands for Claude Code and Codex."""
+import os
 import shutil
 import subprocess
 import sys
@@ -71,8 +72,11 @@ def youtube_fix():
 
 def missing():
     need = dict(BREW if IS_MAC else APT)
-    if IS_MAC and not uses_whisper():  # Parakeet is the default; whisper.cpp only for `asr: whisper`
+    if not uses_whisper():  # Parakeet is the default; whisper.cpp (and building it) only for `asr: whisper`
         need.pop("whisper-cli", None)
+        if not IS_MAC:
+            for build_tool in ("cmake", "c++"):
+                need.pop(build_tool, None)
     tools = [b for b in need if not shutil.which(b)]
     mods = [m for m in PIP if not _has_module(m)]
     demucs = not shutil.which("demucs")
@@ -112,7 +116,11 @@ def install_commands(dry_run=False):
 def linux_plan(tools, mods, demucs):
     plan, lines = [], []
     if tools:
-        plan.append(["sudo", "apt-get", "install", "-y", *sorted({APT[t] for t in tools}), "fonts-dejavu-core"])
+        apt = ["sudo", "apt-get", "install", "-y", *sorted({APT[t] for t in tools}), "fonts-dejavu-core"]
+        if os.geteuid() == 0 or subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode == 0:
+            plan.append(apt)
+        else:  # over SSH or from a scheduler nobody can type the sudo password; don't stop the other steps
+            lines.append("needs your sudo password, run it yourself:  " + " ".join(apt))
     managed = list(Path(sys.base_prefix, "lib").glob("python3*/EXTERNALLY-MANAGED"))
     if managed and sys.prefix == sys.base_prefix:
         lines.append(f"This Python is system-managed: create a venv first, then rerun setup with it:\n"
