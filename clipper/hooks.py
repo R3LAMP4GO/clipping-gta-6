@@ -421,6 +421,43 @@ def check_picks(picks, cfg=None, words=None, load=None):
     return report
 
 
+# First 1.5 s of the source: our dark openings (USB, calling, Mickey) measured 21-39 brightness and flopped; our top
+# Shorts opened at 75-98 with motion 7-18, our static flops at 0.7-2.9 (frames 32x56 grey, 8 fps, 0-255).
+DARK_OPENING, STATIC_OPENING = 45, 3.5
+
+
+def opening_frames(src, start, secs=1.5):
+    """(brightness, motion) of the first `secs` of a clip from its source video; None when it can't be read."""
+    import subprocess
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-ss", f"{float(start):.3f}", "-t", str(secs),
+                          "-i", str(src), "-vf", "scale=32:56,fps=8", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                         capture_output=True).stdout
+    if len(raw) < 2 * 32 * 56:
+        return None
+    f = np.frombuffer(raw[:len(raw) // (32 * 56) * 32 * 56], np.uint8).reshape(-1, 56, 32).astype(float)
+    return round(float(f.mean()), 1), round(float(np.abs(np.diff(f, axis=0)).mean()), 2)
+
+
+def check_opening_frames(pick, job_dir):
+    """{'fails': [...], 'notes': [...]} for a clip that opens dark (fail) or static (note); {} when it opens fine."""
+    from .config import job_dir as resolve
+    first = (pick.get("segments") or [pick])[0]
+    src = (resolve(first["job"]) if first.get("job") else job_dir) / "source.mp4"
+    got = src.exists() and opening_frames(src, first["start"])
+    if not got:
+        return {}
+    bright, motion = got
+    out = {}
+    if bright < DARK_OPENING:
+        out["fails"] = [f"opens dark (brightness {bright:.0f}, our flops 21-39, top Shorts 75-98): start on a lit "
+                        "moment, the face reacting or visible action, or drop the clip"]
+    if motion < STATIC_OPENING:
+        out["notes"] = [f"opens static (motion {motion:.1f}, our flops 0.7-2.9, top Shorts 7-18): start where something "
+                        "visibly happens or the streamer reacts, not on driving or standing around"]
+    return out
+
+
 def is_debate(text):
     """A verdict question the viewer can argue in the comments."""
     t = plain(text)
@@ -429,4 +466,5 @@ def is_debate(text):
 
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
+        or any((e.get("opening") or {}).get("fails") for e in report.values()) \
         or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e for e in report.values())

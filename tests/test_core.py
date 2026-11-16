@@ -1844,3 +1844,43 @@ class SetupSudoTest(unittest.TestCase):
             out = setup.run()
         self.assertNotIn("cmake", out)
         self.assertIn("ffmpeg", out)
+
+
+class BiggerFaceBigHookOpeningTest(unittest.TestCase):
+    def test_split_gives_face_45_percent_and_zooms_gameplay(self):
+        from clipper import render
+        vf = render.video_filter({"type": "split", "face": [0, 0, 0.2, 0.3]}, (1920, 1080))
+        self.assertIn("crop=1080:864[top]", vf)
+        self.assertIn("scale=-2:1372,crop=1080:1056", vf)  # 1056 * 1.3 zoom
+
+    def test_big_hook_fits_two_lines_below_the_seam(self):
+        import numpy as np
+        from PIL import Image
+        from clipper import captions
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "h.png"
+            captions.render_hook("Ray won't forgive *xQc*", p, "big", "split")
+            short = np.array(Image.open(p))[:, :, 3]
+            captions.render_hook("CaseOh won't believe this is *controller*", p, "big", "split")
+            long_ = np.array(Image.open(p))[:, :, 3]
+        rows = np.where(short.max(axis=1) > 0)[0]
+        self.assertGreaterEqual(rows.min(), captions.SPLIT_TOP)  # never over the face
+        self.assertLess(rows.max() - rows.min(), 2 * 112 * 1.2 + 60)  # a short hook: big, 2 lines
+        self.assertGreater(np.ptp(np.where(long_.max(axis=1) > 0)[0]), 2 * 80 * 1.2)  # a long one keeps its 3rd line
+
+    def test_opening_check_fails_dark_and_notes_static(self):
+        import subprocess
+        from clipper import hooks
+        with tempfile.TemporaryDirectory() as d:
+            job = Path(d)
+            for name, src in (("dark", "color=c=0x101010:s=320x180:d=3"), ("busy", "testsrc2=s=320x180:d=3")):
+                (job / name).mkdir()
+                subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-f", "lavfi", "-i", src, "-pix_fmt",
+                                "yuv420p", str(job / name / "source.mp4")], check=True)
+            dark = hooks.check_opening_frames({"start": 0, "end": 2}, job / "dark")
+            busy = hooks.check_opening_frames({"start": 0, "end": 2}, job / "busy")
+        self.assertIn("opens dark", dark["fails"][0])
+        self.assertIn("opens static", dark["notes"][0])
+        self.assertEqual(busy, {})
+        self.assertTrue(hooks.has_fails({"video 1": {"opening": dark}}))
+        self.assertFalse(hooks.has_fails({"video 1": {"opening": {"notes": ["x"]}}}))

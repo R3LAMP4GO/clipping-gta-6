@@ -36,10 +36,14 @@ HOOK_STYLES = {
             "keyword": (30, 120, 255), "stroke": 0, "shadow": False, "box": True},
     "label": {"font": "tiktok-semibold", "size": 70, "upper": False, "fill": (255, 255, 255),
               "keyword": (200, 90, 255), "stroke": 5, "shadow": False, "box": False},
+    # the 1M+ clip channels' look: a big bold premise at the top, 2 lines when it fits (never drops a word)
+    "big": {"font": "montserrat-black", "size": 112, "min_size": 80, "max_lines": 2, "upper": True,
+            "fill": (255, 255, 255), "keyword": (255, 225, 60), "stroke": 7, "shadow": True, "box": False},
 }
-# Vertical positions: "fit" = 16:9 game centred; "split" = facecam top 768px, game below.
-# In split the hook sits on the seam so it never covers the streamer's face.
-LAYOUTS = {"fit": {"hook_y": 400, "caption_y": 1420}, "split": {"hook_y": 768, "caption_y": 1380}}
+# Vertical positions: "fit" = 16:9 game centred; "split" = facecam on top (45%, like Variety Roleplay's clips), game below.
+# In split the hook hangs from the seam (top of the gameplay) so it never covers the streamer's face.
+SPLIT_TOP = 864
+LAYOUTS = {"fit": {"hook_y": 330, "caption_y": 1420}, "split": {"hook_y": SPLIT_TOP, "caption_y": 1500}}
 _fonts = {}
 
 
@@ -263,12 +267,24 @@ def render_hook(text, path, style="box", layout="fit"):
         return
     tokens = parse_markup(text)
     words = [w.upper() if st["upper"] else w for w, _ in tokens]
-    f = font_for(st["font"], st["size"], " ".join(words))
-    lines = _wrap(words, f, 900)[:3]
-    lh = int(st["size"] * 1.2)
+    width = 980 if st.get("max_lines") else 900
+
+    def fit(size, max_lines):  # the largest size from `size` down to min_size whose wrap fits max_lines
+        while True:
+            f = font_for(st["font"], size, " ".join(words))
+            lines = _wrap(words, f, width)
+            if len(lines) <= max_lines or size <= st.get("min_size", size):
+                return size, f, lines
+            size -= 4
+    size, f, lines = fit(st["size"], st.get("max_lines", 3))
+    if len(lines) > st.get("max_lines", 3):  # a long hook keeps every word: 3 lines, still as big as fits
+        size, f, lines = fit(st["size"], 3)
+    lines = lines[:3]
+    lh = int(size * 1.2)
     centre = LAYOUTS.get(layout, LAYOUTS["fit"])["hook_y"]
     box_h = lh * len(lines) + 50
-    top = centre - box_h // 2
+    # split: hang below the seam so the face stays clear; fit: centred on its spot
+    top = centre + 12 if layout == "split" else centre - box_h // 2
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))

@@ -48,10 +48,13 @@ def video_filter(layout, size):
     if layout.get("type") == "split":
         sw, sh = size
         fx, fy, fw, fh = layout["face"]
-        gx = layout.get("game_x", 0.5)
+        gx, gy = layout.get("game_x", 0.5), layout.get("game_y", 0.5)
+        top, bot = captions.SPLIT_TOP, 1920 - captions.SPLIT_TOP
+        zoom = float(layout.get("game_zoom", 1.3))  # tight on the characters, not the whole wide shot
         return (f"[0:v]split[a][b];[a]crop={_even(fw * sw)}:{_even(fh * sh)}:{int(fx * sw)}:{int(fy * sh)},"
-                "scale=1080:768:force_original_aspect_ratio=increase,crop=1080:768[top];"
-                f"[b]scale=-2:1152,crop=1080:1152:(iw-1080)*{gx}:0[bot];[top][bot]vstack[v1]")
+                f"scale=1080:{top}:force_original_aspect_ratio=increase,crop=1080:{top}[top];"
+                f"[b]scale=-2:{_even(bot * zoom)},crop=1080:{bot}:(iw-1080)*{gx}:(ih-{bot})*{gy}[bot];"
+                "[top][bot]vstack[v1]")
     return ("[0:v]split[a][b];[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
             "gblur=sigma=40,eq=brightness=-0.18[bg];[b]scale=1080:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[v1]")
 
@@ -508,7 +511,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
         if first_hook_only:
             hooks = hooks[:1]
         titles = pick.get("titles") or [pick.get("title") or hooks[0]]
-        if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.33)):
+        if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.5)):
             print(f"[render] video {n}: no-hook arm (one MP4, no banner, best title)", flush=True)
             hooks, titles = [""], titles[:1]
         folder = out_dir / f"video {n}"

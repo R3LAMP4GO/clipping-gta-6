@@ -7,7 +7,7 @@ PLAYBOOK = {
         "hooks": ["relatable situation", "withheld / negation", "question", "tease"],
         "examples": ["Me watching *GTA 6* with my mom in the room", "Kai was NOT ready for *this*",
                      "Why couldn't Kai watch this?", "Wait for Kai's face at the end..."],
-        "hook_style": "bold", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
+        "hook_style": "big", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
         "length": "9–25s", "evidence": "Kai Cenat Live 6.8M / 1.2M: face + 1-word Bebas captions, no narrator",
     },
     "comedy": {
@@ -15,7 +15,7 @@ PLAYBOOK = {
         "hooks": ["relatable situation", "withheld / negation", "question", "tease"],
         "examples": ["POV: you're the hostage in *GTA 6*", "Nobody expected the hostages to *SING*",
                      "Why are the hostages singing?", "Wait until the hostages start singing..."],
-        "hook_style": "box", "caption_style": "comic", "voiceover": False, "layout": "fit",
+        "hook_style": "big", "caption_style": "comic", "voiceover": False, "layout": "fit",
         "length": "15–40s (let the bit land)",
         "evidence": "RDCworld1 5M: meme box 'How Playing GTA 6 Is Gonna Be 😂'; Jaden Williams 2M skit",
     },
@@ -24,7 +24,7 @@ PLAYBOOK = {
         "hooks": ["number promise", "shock fact", "withheld / negation", "question"],
         "examples": ["4 NEW features coming in *GTA 6*", "The *GTA 6* map is 2x BIGGER",
                      "Kids CAN'T play *GTA 6*", "What happens if you shoot the moon?"],
-        "hook_style": "bold", "caption_style": "bold", "voiceover": "if nobody narrates", "layout": "fit",
+        "hook_style": "big", "caption_style": "bold", "voiceover": "if nobody narrates", "layout": "fit",
         "length": "30–58s", "evidence": "MrBossFTW 51M / 10M / 9.7M: Montserrat Black caps pinned all video",
     },
     "gameplay": {
@@ -32,7 +32,7 @@ PLAYBOOK = {
         "hooks": ["shock fact", "superlative", "question", "tease"],
         "examples": ["He beat it in 3 minutes", "The craziest *GTA 6* escape ever",
                      "How did he survive that fall?", "Watch the cop car at the end..."],
-        "hook_style": "label", "caption_style": "comic", "voiceover": False, "layout": "split if facecam",
+        "hook_style": "big", "caption_style": "comic", "voiceover": False, "layout": "split if facecam",
         "length": "9–25s", "evidence": "shock fact 1.68x, question 1.24x on GTA Shorts; Typical Gamer 1.3M comic captions",
     },
     "showcase": {
@@ -40,7 +40,7 @@ PLAYBOOK = {
         "hooks": ["shock fact", "number promise", "question", "tease"],
         "examples": ["Rockstar spent 10 years on *this*", "3 details you missed in *GTA 6*",
                      "Are these *GTA 6* graphics real?", "Look at the water physics in *GTA 6*..."],
-        "hook_style": "bold", "caption_style": "bold", "voiceover": True, "layout": "fit",
+        "hook_style": "big", "caption_style": "bold", "voiceover": True, "layout": "fit",
         "length": "20–45s", "evidence": "MrBossFTW 'GTA 6 GRAPHICS' 1.2M, Rockstar cover art 16M",
     },
     "scenario": {
@@ -51,7 +51,7 @@ PLAYBOOK = {
         "hooks": ["question", "withheld / negation", "tease", "relatable situation"],
         "examples": ["What new *combo* did Kai just invent?", "Nobody's seen Kai's new *getaway car*",
                      "Wait till you see the room Kai *built*...", "Me showing my friends my new *setup*"],
-        "hook_style": "bold", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
+        "hook_style": "big", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
         "length": "15–55s (cut on the reveal; 60s max)",
         "evidence": "Mitro 'Kai Just Invented A New Sauce' 1.5M on 39.6k subs (18s, near silent); "
                     "Kai Cenat Live 'Visits The AMP House In GTA RP' 3.7M (55s tour)",

@@ -212,6 +212,11 @@ def main(argv=None):
         report = hooks.check_picks(picks, cfg, job_words(args.job) if args.job else None, job_words)
         for n, reused in reused_footage(picks, args.job, cfg).items():
             report.setdefault(f"video {n}", {})["footage"] = reused
+        if args.job:
+            for n, pick in enumerate(picks, 1):
+                opening = hooks.check_opening_frames(pick, config.job_dir(args.job))
+                if opening:
+                    report.setdefault(f"video {n}", {})["opening"] = opening
         failing = hooks.has_fails(report)
         if report:
             print(json.dumps(report, indent=2, ensure_ascii=False))
