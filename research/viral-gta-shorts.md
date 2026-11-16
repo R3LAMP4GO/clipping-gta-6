@@ -152,6 +152,21 @@ The 12 biggest streamer-clip outliers in the dataset (12–117x their channel's 
 
 **Strong reactions, not fake controversy (2026-11-14):** a keyword pass on the 3,481 titles (vs the rest of the same set): verdict questions (cheat, legit, fair, wrong, who's right) ~1.28x (36 titles, thin), outrage words (caught, exposed, toxic) ~1.1x (53), emotional words/emoji (😭, wholesome, heartbreak) ~1.07x (126), rage-bait opinions (overrated, worst, trash, ruined, hate) ~0.84x (97). So provoke by handing the viewer a real verdict and by pushing the clip's one true emotion; insults and invented disputes lose.
 
+## Why our Shorts stall near 1-2k views (2026-11-16)
+Our channel (50 public Shorts, 11 subs): median 1,191 views, none past 10k (best 8,960). Nearly every upload stops at 1,100-1,800: YouTube's first test audience, then no push. Compared against clip channels on the same streamers and server, measured the same way (frames every 3 s, Apple Vision for faces and text):
+
+| | Median views | Passes 10k | Layout | Hook banner | Cuts per 10 s |
+|---|---|---|---|---|---|
+| Spaceboy Shorts / Cheeto Head (1M+ sample) | 1-3M | 100% | full-screen gameplay, no facecam | big bold premise at the top | 3.5 |
+| Variety Roleplay (3.6k subs, xQc NoPixel clips) | 22,500 | 74% | big face top half, tight gameplay crop | none, word-by-word captions only | 0.85 |
+| Us | 1,191 | 0% | face top, wide gameplay | small white box mid-screen | 0.23 |
+
+- **The swipe decides it.** Of our analytics metrics, the share of viewers who stay past the first moment (engaged views / views, ~53%) tracks views best (Spearman +0.47, n=23); average % viewed +0.22; 3-second hold +0.04. In the Shorts feed the first frame and sound are judged before the title is read.
+- **Titles barely matter after posting.** Retitling 9 weak Shorts on Nov 15 added +0 to +7 views a day to the older ones; only uploads still in their first test moved.
+- **Zero shares** on every one of our Shorts with analytics: nothing in them is worth sending to a friend.
+- **Same streamer, same server, 20x the views:** Variety Roleplay clips the same xQc NoPixel stream we do, so the topic isn't the bottleneck. They show a bigger face, crop the gameplay tight on the characters, and post no hook banner at all.
+- **Weak moments get posted.** Our bottom Shorts open on a car driving, a dark room or a black screen; the 1M+ ones open on something visibly absurd happening.
+
 ## Hits vs flops inside the same channel (2026-11-14)
 From the 3,481-Short dataset, the 3 highest-lift and 3 lowest-lift Shorts from each of 19 channels (104 downloaded and measured; data in `hits-vs-flops.json`, no media kept). Same channel = same face, audience and editor, so only the video differs. Frames were measured automatically: cuts and flashes from frame differences, on-screen text and faces with Apple Vision every 3 s. Titles were labelled blind (the hit/flop group hidden) for emotion, arousal, concrete stake and verdict question. "Channels" counts how many channels' hits had more of the feature than their flops. With 17 channels, none of these is statistically conclusive alone; read them as directions.
 
