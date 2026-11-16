@@ -8,8 +8,14 @@ SENTENCE_END = (".", "?", "!")
 
 
 def extract_audio(src, wav):
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vn", "-ac", "1",
-                    "-ar", "16000", "-c:a", "pcm_s16le", str(wav)], check=True)
+    try:
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vn", "-ac", "1",
+                        "-ar", "16000", "-c:a", "pcm_s16le", str(wav)], check=True)
+    except subprocess.CalledProcessError:
+        # a half-written wav would be reused by the next analyze and yield an empty transcript
+        if os.path.exists(wav):
+            os.remove(wav)
+        raise
 
 
 PARAKEET = "nemo-parakeet-tdt-0.6b-v3"  # NVIDIA Parakeet TDT 0.6B v3 via onnx-asr: CPU-fast, 25 languages

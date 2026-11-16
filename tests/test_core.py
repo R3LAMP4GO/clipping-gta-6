@@ -1367,6 +1367,43 @@ class DailySkipsFailedDownloads(unittest.TestCase):
         self.assertIn("bad", out["errors"][0]["source"])
 
 
+    def test_unreadable_audio_is_skipped_not_fatal(self):
+        import subprocess
+        from unittest import mock
+        from clipper import __main__ as cli
+        vids = [{"id": "bad", "processed": False, "source": "c", "duration": 60, "title": "a", "channel": "x"},
+                {"id": "good", "processed": False, "source": "c", "duration": 60, "title": "b", "channel": "x"}]
+
+        def analyze(job, cfg):
+            if job.name == "bad":
+                raise subprocess.CalledProcessError(234, ["ffmpeg"])
+            return {"candidates": [], "recommended": 1}
+        with mock.patch.object(cli.library, "load_prefs", return_value={}), \
+                mock.patch.object(cli.cleanup_mod, "run", return_value={"files": 0, "gb": 0}), \
+                mock.patch.object(cli.sources, "watch", return_value=(vids, [], 0)), \
+                mock.patch.object(cli.sources, "fetch", side_effect=lambda vid, section=None: (Path("/tmp") / vid, {})), \
+                mock.patch.object(cli.analyze_mod, "analyze", side_effect=analyze):
+            out = cli.daily({}, limit=2)
+        self.assertEqual([j["job"] for j in out["analyzed"]], ["good"])
+        self.assertEqual(out["errors"][0]["source"], "bad")
+        self.assertIn("analysis failed", out["errors"][0]["error"])
+
+
+    def test_failed_audio_extraction_leaves_no_partial_wav(self):
+        import subprocess
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as d:
+            wav = Path(d) / "audio.wav"
+
+            def run(cmd, check):
+                wav.write_bytes(b"RIFF partial")
+                raise subprocess.CalledProcessError(234, cmd)
+            with mock.patch.object(transcribe.subprocess, "run", side_effect=run):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    transcribe.extract_audio(Path(d) / "source.mp4", wav)
+            self.assertFalse(wav.exists())
+
+
 class TranscriptFileTests(unittest.TestCase):
     def test_one_word_per_line_and_still_json(self):
         import json

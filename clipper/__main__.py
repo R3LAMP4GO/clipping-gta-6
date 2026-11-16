@@ -64,7 +64,11 @@ def daily(cfg, limit=None):
         except subprocess.CalledProcessError as e:  # age-restricted, private or removed: skip, don't end the run
             errors.append({"source": v["id"], "error": f"download failed: {e}"})
             continue
-        res = analyze_mod.analyze(job, cfg)
+        try:
+            res = analyze_mod.analyze(job, cfg)
+        except subprocess.CalledProcessError as e:  # unreadable audio etc.: skip this source, keep the run going
+            errors.append({"source": v["id"], "error": f"analysis failed: {e}"})
+            continue
         jobs.append({"job": v["id"], "title": v["title"], "channel": v["channel"], "section": section,
                      "minutes": round(v["duration"] / 60), "candidates_md": str(job / "candidates.md"),
                      "candidates": len(res["candidates"]), "recommended": res["recommended"]})
