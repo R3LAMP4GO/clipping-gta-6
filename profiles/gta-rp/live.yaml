@@ -8,4 +8,5 @@ streams:
   topic_only: true
 - name: kaicenat-twitch
   url: https://www.twitch.tv/kaicenat
+  priority: 10
   topic_only: true

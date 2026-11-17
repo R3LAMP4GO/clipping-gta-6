@@ -167,6 +167,28 @@ Our channel (50 public Shorts, 11 subs): median 1,191 views, none past 10k (best
 - **Same streamer, same server, 20x the views:** Variety Roleplay clips the same xQc NoPixel stream we do, so the topic isn't the bottleneck. They show a bigger face, crop the gameplay tight on the characters, and post no hook banner at all.
 - **Weak moments get posted.** Our bottom Shorts open on a car driving, a dark room or a black screen; the 1M+ ones open on something visibly absurd happening.
 
+## 500K+ gaming clip Shorts vs ours (2026-11-17)
+45 streamer-gaming Shorts with 500K+ views (0.5M-29M), posted since May 2026 by third-party clip channels like ours (Zylok, Stream Vortex, Snickerly, iboclips, OnShortz, DaPlug...), at most 3 per channel; art, animation, ranking compilations and non-English Shorts left out. Found through the YouTube API (16 searches by view count), each one downloaded and measured with Apple Vision (on-screen text at 0.3 s, 1.5 s and every 2 s; face size at 0.3 s), then the banners checked by eye on a contact sheet. Ours: all 47 uploads, measured the same way. Data: `clip-hooks-500k.json` (no media kept).
+
+| | 500K+ clip Shorts | Our top 5 (2k+ views) | Our other 42 |
+|---|---|---|---|
+| Face on screen at 0.3 s | 40 of 45 (89%) | 3 of 5 | 26 of 42 (62%) |
+| Face size at 0.3 s (share of frame) | 0.041 | 0.015 | 0.021 |
+| Hook banner on screen | 10 of 45 (22%) | 5 of 5 | 42 of 42 |
+| Asterisk context captions | ~11 of 45, mostly in quiet stretches | 0 | 0 |
+| Length (median; 30 s or less) | 23 s; 32 of 45 | 23 s; 3 of 5 | 32 s; 20 of 42 |
+| "NOT / NEVER / can't / nobody" in the title | 1 of 45 | 3 of 5 | 21 of 45 |
+| Question title | 0 of 45 | 0 of 5 | 12 of 42 |
+| Emoji in the title | 43 of 45 | 3 of 5 | 27 of 42 |
+| Streamer named first | 44 of 45 (Kai 11, CaseOh 6, Speed 6) | 4 of 5 (all Kai) | most (xQc) |
+| Two or more streamers named | 17 of 45 | 0 | few |
+
+- **The hook is the face, not a banner.** Nearly every 500K+ clip opens on the streamer's face mid-reaction, about 2-3x bigger in frame than ours. Only 1 in 5 has a banner; the rest rely on word-by-word captions. When a banner is there it states the setup plainly ("CHAT TOLD CASEOH TO SPAM THE KITTY...", "HE ASKED THEM TO SPELL OBESITY", "SPEED IS IN GTA 6?!").
+- **Titles narrate what happened.** "[Streamer] [past-tense verb] [what happened]! 😭": "Kai Cenat Finds ICE SPICE In GTA 5 😂", "Jamal Tried To Kill Kai Cenat When IShowSpeed Went AFK! 😂✌️", "Speed Realizes How Bad Kai Cenat Is In Roblox 😭🤣". Almost none use our negation or question formulas (1 of 45 vs 24 of 50 of ours), so those rules, measured on creators' own channels, don't carry over to clip channels.
+- **Who is in it.** Kai Cenat, IShowSpeed and CaseOh lead, and clips pairing two big streamers (Kai + Speed) reach tens of millions. That matches ours: 4 of our 5 best Shorts are Kai.
+- **Where we already match:** our top 5 have the same 23 s median as the 500K+ clips. Our other uploads run longer (32 s).
+- **Asterisk captions are a minority tool in gaming:** about 1 in 4 of the 500K+ clips (`*CONFUSED*`, `*FOLLOWS*`, `*LAST MISSION*`), mostly over silent stretches. The two references that use them throughout are non-gaming (NFL, sneaker convention).
+
 ## Hits vs flops inside the same channel (2026-11-14)
 From the 3,481-Short dataset, the 3 highest-lift and 3 lowest-lift Shorts from each of 19 channels (104 downloaded and measured; data in `hits-vs-flops.json`, no media kept). Same channel = same face, audience and editor, so only the video differs. Frames were measured automatically: cuts and flashes from frame differences, on-screen text and faces with Apple Vision every 3 s. Titles were labelled blind (the hit/flop group hidden) for emotion, arousal, concrete stake and verdict question. "Channels" counts how many channels' hits had more of the feature than their flops. With 17 channels, none of these is statistically conclusive alone; read them as directions.
 

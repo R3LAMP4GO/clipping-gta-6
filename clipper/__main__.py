@@ -47,14 +47,24 @@ def reused_footage(picks, job_ref, cfg):
     return out
 
 
+def is_favored(channel, cfg):
+    """A source from one of the profile's `favor_creators` (Kai Cenat: 4 of our 5 best Shorts)."""
+    ch = str(channel or "").lower()
+    return any(str(name).lower() in ch for name in cfg.get("favor_creators") or [] if str(name).strip())
+
+
+def favored_first(found, cfg):
+    """Favored creators first, then the other creators, then searches; newest order kept within each."""
+    return sorted(found, key=lambda v: (not is_favored(v.get("channel"), cfg), v["source"].startswith("search:")))
+
+
 def daily(cfg, limit=None):
     """Pick the newest unprocessed GTA 6 uploads from the creators list and analyze them."""
     prefs = library.load_prefs()
     cleaned = cleanup_mod.run(cfg)  # old downloads go before new ones arrive
     limit = limit or int(prefs.get("sources_per_day", 2))
     found, errors, skipped = sources.watch(cfg, per_channel=6)
-    fresh = [v for v in found if not v["processed"]]
-    fresh.sort(key=lambda v: v["source"].startswith("search:"))  # creators first, then searches
+    fresh = favored_first([v for v in found if not v["processed"]], cfg)
     max_s = int(prefs.get("daily_max_minutes", 90)) * 60
     jobs = []
     for v in fresh[:limit]:
@@ -70,6 +80,7 @@ def daily(cfg, limit=None):
             errors.append({"source": v["id"], "error": f"analysis failed: {e}"})
             continue
         jobs.append({"job": v["id"], "title": v["title"], "channel": v["channel"], "section": section,
+                     "favored": is_favored(v["channel"], cfg),
                      "minutes": round(v["duration"] / 60), "candidates_md": str(job / "candidates.md"),
                      "candidates": len(res["candidates"]), "recommended": res["recommended"]})
     want = prefs.get("videos_per_run", "auto")

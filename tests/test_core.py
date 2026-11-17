@@ -659,12 +659,14 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual(len(hooks.check_labels(bad)), 3)  # 5 words, outside the clip, nothing in the first 3 s
         self.assertTrue(hooks.has_fails(hooks.check_picks([bad])))
 
-    def test_clips_are_capped_at_60s(self):
+    def test_clips_are_capped_at_45s(self):
         from clipper import hooks
-        base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 70}
+        base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 55}
         self.assertNotIn("length", hooks.check_picks([base]).get("video 1", {}))
-        long = {**base, "end": 72}
-        self.assertIn("60s maximum", hooks.check_picks([long])["video 1"]["length"])
+        self.assertIn("aim for 15-30s", hooks.check_picks([base])["video 1"]["length_note"])  # a note, not a fail
+        self.assertNotIn("length_note", hooks.check_picks([{**base, "end": 38}]).get("video 1", {}))
+        long = {**base, "end": 57}
+        self.assertIn("45s maximum", hooks.check_picks([long])["video 1"]["length"])
         self.assertTrue(hooks.has_fails(hooks.check_picks([long])))
         import json
         import tempfile
@@ -675,7 +677,7 @@ class LinuxPortTests(unittest.TestCase):
         with mock.patch.object(cli.render_mod, "render") as rj, mock.patch.object(cli.config, "job_dir"), \
                 self.assertRaises(SystemExit) as e:
             cli.main(["render", "anyjob", "--picks", f.name])
-        self.assertIn("60s maximum", str(e.exception))
+        self.assertIn("45s maximum", str(e.exception))
         rj.assert_not_called()
 
     def test_live_clip_cmd_replaces_claude(self):
@@ -921,9 +923,9 @@ class SegmentPickTests(unittest.TestCase):
         pick = {"hooks": ["Why did Kai's game crash?"], "segments": [{"start": 0, "end": 40}, {"start": 100, "end": 125}],
                 "labels": [{"s": 0.5, "e": 2, "text": "*game freezes*"}, {"s": 41, "e": 43, "text": "*BLACKOUT*"}]}
         self.assertIn("65s is over", hooks.check_length(pick))
-        ok = {**pick, "segments": [{"start": 0, "end": 30}, {"start": 100, "end": 125}]}
+        ok = {**pick, "segments": [{"start": 0, "end": 20}, {"start": 100, "end": 125}]}
         self.assertIsNone(hooks.check_length(ok))
-        self.assertEqual(hooks.check_labels(ok), [])  # 41-43 s lies inside the 55 s clip
+        self.assertEqual(hooks.check_labels(ok), [])  # 41-43 s lies inside the 45 s clip
         self.assertIn("segment 1", hooks.check_length({"segments": [{"start": 5}]}))
 
 
@@ -1959,3 +1961,18 @@ class ContextCaptionsAndFacecamTest(unittest.TestCase):
             self.assertEqual(hooks.check_facecam(fit, root / "comp", cams), [])  # no cam known for that channel
             seen = hooks.known_facecams(root, [(root / "comp", [split])])  # the picks being checked count too
             self.assertIn("RP Central", seen)
+
+
+class FavorCreatorsTest(unittest.TestCase):
+    def test_daily_clips_favored_creators_first(self):
+        from clipper import __main__ as cli
+        from clipper import config
+        found = [{"id": "a", "channel": "xQc", "source": "creator:xQc"},
+                 {"id": "b", "channel": "Some Search Hit", "source": "search:gta rp"},
+                 {"id": "c", "channel": "Kai Cenat Live", "source": "creator:Kai Cenat"}]
+        cfg = {"favor_creators": ["Kai Cenat"]}
+        self.assertEqual([v["id"] for v in cli.favored_first(found, cfg)], ["c", "a", "b"])
+        self.assertEqual([v["id"] for v in cli.favored_first(found, {})], ["a", "c", "b"])
+        self.assertFalse(cli.is_favored("Kai Cenat Live", {"favor_creators": [""]}))
+        for prof in ("gta-rp", "gta6"):
+            self.assertEqual(config.load(profile=prof)["favor_creators"], ["Kai Cenat"])

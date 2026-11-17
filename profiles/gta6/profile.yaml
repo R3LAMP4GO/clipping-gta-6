@@ -3,6 +3,9 @@
 # Hooks, titles and the clip-type playbook follow the GTA research (research/viral-gta-shorts.md).
 research: gta
 
+# Clipped first in `clipper daily` (a substring of the channel name): Kai Cenat made 4 of our 5 best Shorts.
+favor_creators: ["Kai Cenat"]
+
 # A title matching any of these counts as on-topic for channels with match: keywords.
 keywords: [gta 6, gta vi, gta, grand theft auto, vice city, leonida, rockstar, nopixel,
   rp, heist, trailer]

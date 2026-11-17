@@ -4,6 +4,9 @@
 # GTA research rules for hooks and titles, with RP examples below.
 research: gta
 
+# Clipped first in `clipper daily` (a substring of the channel name): Kai Cenat made 4 of our 5 best Shorts.
+favor_creators: ["Kai Cenat"]
+
 keywords: [gta rp, gtarp, nopixel, no pixel, roleplay, rp, gta, heist, cops, server]
 
 hashtags: ["#gtarp", "#nopixel", "#shorts"]

@@ -184,7 +184,8 @@ def opening_type(first_line):
     return "statement"
 
 
-MAX_CLIP_S = 60  # our cap; YouTube Shorts allow longer
+MAX_CLIP_S = 45  # our cap; YouTube Shorts allow longer
+AIM_CLIP_S = 30  # 500K+ clip Shorts: median 23 s, 32 of 45 at 30 s or less; our 40 s+ uploads: median ~1.1k views
 
 
 def pick_duration(pick):
@@ -218,6 +219,20 @@ def check_length(pick):
 
 
 OPENING_LABEL_S = 3.0  # strangers swipe when the first seconds don't say what's going on
+
+
+def check_length_note(pick):
+    """A note (not a fail) for a clip over 30 s: long clips lose viewers before the payoff."""
+    if check_segments(pick):
+        return None
+    try:
+        d = pick_duration(pick)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if AIM_CLIP_S < d <= MAX_CLIP_S:
+        return (f"{d:.0f}s: aim for 15-{AIM_CLIP_S}s (500K+ clip Shorts median 23 s); keep it longer only while a "
+                "streak or story keeps escalating")
+    return None
 
 
 def check_labels(pick):
@@ -409,6 +424,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
                             f"{key} '{pick[key]}' differs from the {kind} default '{play[key]}': keep it only on purpose")
         if check_length(pick):
             entry["length"] = check_length(pick)
+        elif check_length_note(pick):
+            entry["length_note"] = check_length_note(pick)
         if check_labels(pick):
             entry["labels"] = check_labels(pick)
         if check_fx(pick):
