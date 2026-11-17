@@ -643,18 +643,20 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual(analyze.trim_ads({"start": 28.0, "end": 52.0}, ads, 9), {"start": 30.0, "end": 52.0})
         self.assertIsNone(analyze.trim_ads({"start": 60.0, "end": 90.0}, ads, 9))  # an ad inside the clip
 
-    def test_action_labels_fill_quiet_stretches_on_their_own(self):
+    def test_action_labels_win_over_speech_on_their_own(self):
         from clipper import captions, hooks, render
         pick = {"start": 100, "end": 112, "labels": [{"s": 101, "e": 103, "text": "*enters*"},
                                                       {"s": 104, "e": 105, "text": "*talks over*"},
                                                       {"s": 108, "e": 110, "text": "*gets closer*"}]}
         speech = [{"w": "yo", "s": 4.0, "e": 4.5, "spk": 0}, {"w": "bro", "s": 4.5, "e": 5.0, "spk": 0}]
         words = render.action_labels(pick, speech)
-        self.assertEqual([w["w"] for w in words], ["*ENTERS*", "yo", "bro", "*GETS CLOSER*"])  # speech wins
-        self.assertEqual(captions.chunk_words(words)[0], [words[0]])  # a label is never merged with speech
+        self.assertEqual([w["w"] for w in words], ["*ENTERS*", "*TALKS OVER*", "*GETS CLOSER*"])  # labels win
+        later = render.action_labels({**pick, "labels": pick["labels"][2:]}, speech)
+        self.assertEqual([w["w"] for w in later], ["yo", "bro", "*GETS CLOSER*"])  # speech shows outside labels
+        self.assertEqual(captions.chunk_words(later)[-1], [later[-1]])  # a label is never merged with speech
         self.assertEqual(hooks.check_labels(pick), [])
-        bad = {**pick, "labels": [{"s": 99, "e": 101, "text": "*he walks in slowly*"}]}
-        self.assertEqual(len(hooks.check_labels(bad)), 2)
+        bad = {**pick, "labels": [{"s": 99, "e": 101, "text": "*he walks in really slowly*"}]}
+        self.assertEqual(len(hooks.check_labels(bad)), 3)  # 5 words, outside the clip, nothing in the first 3 s
         self.assertTrue(hooks.has_fails(hooks.check_picks([bad])))
 
     def test_clips_are_capped_at_60s(self):
@@ -917,7 +919,7 @@ class SegmentPickTests(unittest.TestCase):
     def test_segment_length_and_labels_use_the_finished_clip(self):
         from clipper import hooks
         pick = {"hooks": ["Why did Kai's game crash?"], "segments": [{"start": 0, "end": 40}, {"start": 100, "end": 125}],
-                "labels": [{"s": 41, "e": 43, "text": "*BLACKOUT*"}]}
+                "labels": [{"s": 0.5, "e": 2, "text": "*game freezes*"}, {"s": 41, "e": 43, "text": "*BLACKOUT*"}]}
         self.assertIn("65s is over", hooks.check_length(pick))
         ok = {**pick, "segments": [{"start": 0, "end": 30}, {"start": 100, "end": 125}]}
         self.assertIsNone(hooks.check_length(ok))
@@ -1921,3 +1923,39 @@ class BiggerFaceBigHookOpeningTest(unittest.TestCase):
         self.assertEqual(busy, {})
         self.assertTrue(hooks.has_fails({"video 1": {"opening": dark}}))
         self.assertFalse(hooks.has_fails({"video 1": {"opening": {"notes": ["x"]}}}))
+
+
+class ContextCaptionsAndFacecamTest(unittest.TestCase):
+    def test_every_clip_needs_a_context_caption_in_the_first_3s(self):
+        from clipper import hooks
+        pick = {"start": 100, "end": 120, "labels": [{"s": 110, "e": 111, "text": "*in disbelief*"}]}
+        self.assertIn("first 3 s", hooks.check_labels(pick)[0])
+        self.assertIn("first 3 s", hooks.check_labels({"start": 100, "end": 120})[0])
+        opens = {**pick, "labels": [{"s": 101, "e": 102.5, "text": "*Tyreek Hill mocks them*"}]}  # 4 words is fine
+        self.assertEqual(hooks.check_labels(opens), [])
+        self.assertTrue(hooks.has_fails(hooks.check_picks([pick])))
+        self.assertEqual(hooks.check_labels({"hooks": ["Why is Kai shaking?"]}), [])  # no clip timing yet
+
+    def test_fit_clip_fails_when_the_channel_has_a_facecam(self):
+        import json
+        from clipper import hooks
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for job, channel, layout in (("old", "xQc", {"type": "split", "face": [0, 0, 0.3, 0.28]}),
+                                         ("new", "xQc", {"type": "fit"}), ("comp", "RP Central", {"type": "fit"})):
+                (root / job).mkdir()
+                (root / job / "job.json").write_text(json.dumps({"channel": channel}))
+                (root / job / "picks.json").write_text(json.dumps([{"start": 0, "end": 20, "layout": layout}]))
+            cams = hooks.known_facecams(root)
+            self.assertEqual(cams, {"xQc": ("old", [0, 0, 0.3, 0.28])})
+            fit = {"start": 0, "end": 20, "layout": {"type": "fit"}}
+            fails = hooks.check_facecam(fit, root / "new", cams)
+            self.assertIn("xQc's streams have a facecam", fails[0])
+            self.assertTrue(hooks.has_fails({"video 1": {"facecam": fails}}))
+            hidden = {**fit, "layout": {"type": "fit", "facecam": "hidden"}}
+            self.assertEqual(hooks.check_facecam(hidden, root / "new", cams), [])
+            split = {**fit, "layout": {"type": "split", "face": [0, 0, 0.3, 0.28]}}
+            self.assertEqual(hooks.check_facecam(split, root / "new", cams), [])
+            self.assertEqual(hooks.check_facecam(fit, root / "comp", cams), [])  # no cam known for that channel
+            seen = hooks.known_facecams(root, [(root / "comp", [split])])  # the picks being checked count too
+            self.assertIn("RP Central", seen)

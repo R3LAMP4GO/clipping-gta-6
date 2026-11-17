@@ -61,16 +61,16 @@ def video_filter(layout, size):
 
 def action_labels(pick, words):
     """The pick's `labels` ({s, e, text} in source seconds) as caption words relative to the clip, each shown on its
-    own; speech wins where they overlap, so labels only fill the quiet stretches."""
+    own; a label wins over speech, whose captions hide while it's up (the 1M+ context-caption look)."""
     s, e = float(pick["start"]), float(pick["end"])
     out = []
     for lab in pick.get("labels") or []:
         a, b = max(float(lab["s"]), s) - s, min(float(lab["e"]), e) - s
-        if b - a >= 0.2 and str(lab.get("text") or "").strip() and not any(
-                w["s"] < b and w["e"] > a for w in words):
+        if b - a >= 0.2 and str(lab.get("text") or "").strip():
             out.append({"w": str(lab["text"]).strip().upper(), "s": round(a, 3), "e": round(b, 3), "spk": 0,
                         "label": True})
-    return sorted(words + out, key=lambda w: w["s"])
+    speech = [w for w in words if not any(w["s"] < x["e"] and w["e"] > x["s"] for x in out)]
+    return sorted(speech + out, key=lambda w: w["s"])
 
 
 FLASH_COLOUR = "0x9EFF00"  # lime, the default wash

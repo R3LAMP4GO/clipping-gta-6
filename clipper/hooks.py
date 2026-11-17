@@ -3,6 +3,7 @@
 Every structure below appeared on a 500k+ video; a hook passes if it uses at least one. Labels pass with a note
 (they only worked as a creator's series tag, with the spoken first line carrying the loop)."""
 import re
+from pathlib import Path
 
 STRUCTURES = [
     # name, pattern, sample it came from
@@ -216,10 +217,13 @@ def check_length(pick):
     return None
 
 
+OPENING_LABEL_S = 3.0  # strangers swipe when the first seconds don't say what's going on
+
+
 def check_labels(pick):
-    """Action captions must sit inside the clip and stay short: 1-3 words, e.g. *GETS CLOSER*. A segment pick's
-    labels use seconds of the finished clip (0 = its first frame)."""
-    bad = []
+    """Context captions must sit inside the clip and stay short (1-4 words, e.g. *in disbelief*), and one must start
+    in the first 3 s. A segment pick's labels use seconds of the finished clip (0 = its first frame)."""
+    bad, opens = [], False
     lo, hi = (0.0, pick_duration(pick)) if pick.get("segments") and not check_segments(pick) else \
         (pick.get("start"), pick.get("end"))
     for lab in pick.get("labels") or []:
@@ -228,10 +232,15 @@ def check_labels(pick):
         except (KeyError, TypeError, ValueError):
             bad.append(f"label {lab!r} needs s, e (source seconds) and text")
             continue
-        if not text or len(text.strip("*").split()) > 3:
-            bad.append(f"label \"{text}\": 1-3 words, e.g. *GETS CLOSER*")
+        if not text or len(text.strip("*").split()) > 4:
+            bad.append(f"label \"{text}\": 1-4 words, e.g. *in disbelief*")
         if not (float(a if lo is None else lo) <= a < b <= float(b if hi is None else hi)):
             bad.append(f"label \"{text}\" ({a}-{b}s) must sit inside the clip ({lo}-{hi}s)")
+        elif lo is None or a < float(lo) + OPENING_LABEL_S:
+            opens = True
+    if not opens and (pick.get("segments") or pick.get("start") is not None):  # a hook-only check has no clip yet
+        bad.append(f"no context caption in the first {OPENING_LABEL_S:g} s: add a label that says what's happening "
+                   "(*put in handcuffs*, *in disbelief*, *confirms $50*) so a stranger knows the story with sound off")
     return bad
 
 
@@ -458,6 +467,56 @@ def check_opening_frames(pick, job_dir):
     return out
 
 
+def known_facecams(jobs_root, extra=()):
+    """{channel: (job, face box)} from split picks in earlier jobs (newest wins), plus `extra` (job_dir, picks)."""
+    import json
+    found = []
+    for pf in Path(jobs_root).glob("*/picks.json"):
+        try:
+            found.append((pf.stat().st_mtime, pf.parent, json.loads(pf.read_text(encoding="utf-8"))))
+        except (OSError, ValueError):
+            continue
+    found.sort(key=lambda x: x[0])
+    out = {}
+    for _, jd, picks in found + [(0, Path(j), p) for j, p in extra]:
+        channel = job_channel(jd)
+        for pick in picks if channel and isinstance(picks, list) else []:
+            for seg in (pick.get("segments") or [pick]) if isinstance(pick, dict) else []:
+                lay = seg.get("layout") or pick.get("layout") or {}
+                if lay.get("type") == "split" and lay.get("face") and not seg.get("job"):
+                    out[channel] = (jd.name, lay["face"])
+    return out
+
+
+def job_channel(jd):
+    import json
+    try:
+        return json.loads((Path(jd) / "job.json").read_text(encoding="utf-8")).get("channel")
+    except (OSError, ValueError):
+        return None
+
+
+def check_facecam(pick, job_dir, known):
+    """Fails for a letterboxed (fit) clip from a channel whose earlier clips used the facecam: the faceless openings
+    kept 38% of viewers vs 50% with a face. `"facecam": "hidden"` in the layout says the cam is off in that stretch."""
+    from .config import job_dir as resolve
+    fails = []
+    for seg in pick.get("segments") or [pick]:
+        lay = seg.get("layout") or pick.get("layout") or {"type": "fit"}
+        if lay.get("type", "fit") != "fit" or lay.get("facecam") in ("hidden", "none"):
+            continue
+        jd = resolve(seg["job"]) if seg.get("job") else Path(job_dir)
+        channel = job_channel(jd)
+        if channel in known:
+            job, face = known[channel]
+            msg = (f"letterbox with no face, but {channel}'s streams have a facecam (job {job} used face {face}): "
+                   f"run `clipper frame {jd.name} <s>` and use {{\"type\": \"split\", \"face\": [x, y, w, h]}}, or "
+                   "add \"facecam\": \"hidden\" to the layout if the cam is off in this stretch")
+            if msg not in fails:
+                fails.append(msg)
+    return fails
+
+
 def is_debate(text):
     """A verdict question the viewer can argue in the comments."""
     t = plain(text)
@@ -467,4 +526,5 @@ def is_debate(text):
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \
-        or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e for e in report.values())
+        or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e
+               for e in report.values())

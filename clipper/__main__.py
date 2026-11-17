@@ -217,10 +217,15 @@ def main(argv=None):
         for n, reused in reused_footage(picks, args.job, cfg).items():
             report.setdefault(f"video {n}", {})["footage"] = reused
         if args.job:
+            jd = config.job_dir(args.job)
+            cams = hooks.known_facecams(config.JOBS, [(jd, picks)])
             for n, pick in enumerate(picks, 1):
-                opening = hooks.check_opening_frames(pick, config.job_dir(args.job))
+                opening = hooks.check_opening_frames(pick, jd)
                 if opening:
                     report.setdefault(f"video {n}", {})["opening"] = opening
+                facecam = hooks.check_facecam(pick, jd, cams)
+                if facecam:
+                    report.setdefault(f"video {n}", {})["facecam"] = facecam
         failing = hooks.has_fails(report)
         if report:
             print(json.dumps(report, indent=2, ensure_ascii=False))
