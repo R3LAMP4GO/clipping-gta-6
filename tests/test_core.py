@@ -467,11 +467,16 @@ class DataBackedRuleTests(unittest.TestCase):
 
 
 class StrategyTests(unittest.TestCase):
-    def test_title_must_match_hook_type(self):
+    def test_titles_narrate_instead_of_matching_the_hook(self):
         from clipper import hooks
         rep = hooks.check_picks([{"hooks": ["Why is xQc making the hostages sing?"],
-                                  "titles": ["xQc Hostage Harmony In GTA RP"]}])
-        self.assertIn("pairing", rep["video 1"])
+                                  "titles": ["xQc Made The Hostages Sing In GTA RP 😭"]}])
+        self.assertNotIn("pairing", rep.get("video 1", {}))
+        self.assertEqual(hooks.check_title("xQc Made The Hostages Sing In GTA RP 😭", topic=None)[1], [])
+        for t in ("xQc Did NOT Plan The Escape 💀 | GTA RP", "Why Is xQc Driving In Scuba Gear?! | GTA RP"):
+            self.assertIn("narrate what happened", hooks.check_title(t, topic=None)[1][0])
+            self.assertEqual(hooks.check_title(t, topic=None)[0], [])  # a note, not a fail
+            self.assertEqual(hooks.check_title(t, topic=None, narrate=False)[1], [])  # non-GTA profiles
 
     def test_forcing_every_type_loses_to_best_three(self):
         from clipper import simulate
@@ -656,7 +661,7 @@ class LinuxPortTests(unittest.TestCase):
         self.assertEqual(captions.chunk_words(later)[-1], [later[-1]])  # a label is never merged with speech
         self.assertEqual(hooks.check_labels(pick), [])
         bad = {**pick, "labels": [{"s": 99, "e": 101, "text": "*he walks in really slowly*"}]}
-        self.assertEqual(len(hooks.check_labels(bad)), 3)  # 5 words, outside the clip, nothing in the first 3 s
+        self.assertEqual(len(hooks.check_labels(bad)), 2)  # 5 words, outside the clip
         self.assertTrue(hooks.has_fails(hooks.check_picks([bad])))
 
     def test_clips_are_capped_at_45s(self):
@@ -1888,11 +1893,11 @@ class SetupSudoTest(unittest.TestCase):
 
 
 class BiggerFaceBigHookOpeningTest(unittest.TestCase):
-    def test_split_gives_face_45_percent_and_zooms_gameplay(self):
+    def test_split_gives_face_half_the_frame_and_zooms_gameplay(self):
         from clipper import render
         vf = render.video_filter({"type": "split", "face": [0, 0, 0.2, 0.3]}, (1920, 1080))
-        self.assertIn("crop=1080:864[top]", vf)
-        self.assertIn("scale=-2:1372,crop=1080:1056", vf)  # 1056 * 1.3 zoom
+        self.assertIn("crop=1080:960[top]", vf)
+        self.assertIn("scale=-2:1248,crop=1080:960", vf)  # 960 * 1.3 zoom
 
     def test_big_hook_fits_two_lines_below_the_seam(self):
         import numpy as np
@@ -1928,15 +1933,17 @@ class BiggerFaceBigHookOpeningTest(unittest.TestCase):
 
 
 class ContextCaptionsAndFacecamTest(unittest.TestCase):
-    def test_every_clip_needs_a_context_caption_in_the_first_3s(self):
+    def test_no_opening_context_caption_is_a_note_not_a_fail(self):
         from clipper import hooks
         pick = {"start": 100, "end": 120, "labels": [{"s": 110, "e": 111, "text": "*in disbelief*"}]}
-        self.assertIn("first 3 s", hooks.check_labels(pick)[0])
-        self.assertIn("first 3 s", hooks.check_labels({"start": 100, "end": 120})[0])
+        self.assertEqual(hooks.check_labels(pick), [])
+        self.assertIn("first 3 s", hooks.check_context_note(pick))
+        self.assertIn("first 3 s", hooks.check_picks([{"start": 100, "end": 120}])["video 1"]["context_note"])
+        self.assertFalse(hooks.has_fails({"video 1": {"context_note": hooks.check_context_note(pick)}}))
         opens = {**pick, "labels": [{"s": 101, "e": 102.5, "text": "*Tyreek Hill mocks them*"}]}  # 4 words is fine
         self.assertEqual(hooks.check_labels(opens), [])
-        self.assertTrue(hooks.has_fails(hooks.check_picks([pick])))
-        self.assertEqual(hooks.check_labels({"hooks": ["Why is Kai shaking?"]}), [])  # no clip timing yet
+        self.assertIsNone(hooks.check_context_note(opens))
+        self.assertIsNone(hooks.check_context_note({"hooks": ["Why is Kai shaking?"]}))  # no clip timing yet
 
     def test_fit_clip_fails_when_the_channel_has_a_facecam(self):
         import json

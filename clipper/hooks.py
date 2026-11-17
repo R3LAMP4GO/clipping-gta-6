@@ -156,7 +156,7 @@ def check_hook(hook, gta=True, names=()):
     return fails, notes
 
 
-def check_title(title, hashtags=(), topic=GTA6_TITLE):
+def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
     fails, notes = [], []
     if len(title) > 100:
         fails.append(f"{len(title)} chars (max 100)")
@@ -165,6 +165,9 @@ def check_title(title, hashtags=(), topic=GTA6_TITLE):
         fails.append(f"{len(caps)} CAPS words: emphasise 1-2 (\"Cost HOW MUCH!?\")")
     if re.search("[A-Z]", title) and not re.search("[a-z]", title):
         fails.append("all-caps title (0.90x on 3,481 gaming Shorts, 0.68x on GTA): capitalise 1-2 words")
+    if narrate and (re.search(r"\b(NOT|NEVER|CAN'?T|WON'?T|DIDN'?T|NOBODY)\b", title) or "?" in title):
+        notes.append("500K+ clip Shorts narrate what happened (1 of 45 used NOT/nobody, 0 asked a question): "
+                     "\"Kai Cenat Finds ICE SPICE In GTA 5 😂\"; keep the twist in the hook, not the title")
     if re.search(r"\b(update|announce\w*|explained|patch|now live|available now)\b", title, re.I):
         notes.append("announcement wording measured 0.85x: lead with what changed (\"GTA 6 Map Is 2x BIGGER\")")
     if topic and not re.search(topic["pattern"], title, re.I):
@@ -235,12 +238,31 @@ def check_length_note(pick):
     return None
 
 
-def check_labels(pick):
-    """Context captions must sit inside the clip and stay short (1-4 words, e.g. *in disbelief*), and one must start
-    in the first 3 s. A segment pick's labels use seconds of the finished clip (0 = its first frame)."""
-    bad, opens = [], False
-    lo, hi = (0.0, pick_duration(pick)) if pick.get("segments") and not check_segments(pick) else \
+def clip_bounds(pick):
+    return (0.0, pick_duration(pick)) if pick.get("segments") and not check_segments(pick) else \
         (pick.get("start"), pick.get("end"))
+
+
+def check_context_note(pick):
+    """A note (not a fail) when no context caption starts in the first 3 s: ~1 in 4 500K+ gaming clips use them."""
+    if not (pick.get("segments") or pick.get("start") is not None):
+        return None
+    lo, _ = clip_bounds(pick)
+    for lab in pick.get("labels") or []:
+        try:
+            if float(lab["s"]) < float(lo or 0) + OPENING_LABEL_S:
+                return None
+        except (KeyError, TypeError, ValueError):
+            continue
+    return (f"no context caption in the first {OPENING_LABEL_S:g} s: if nobody talks or the situation isn't obvious, "
+            "add a label that says what's happening (*put in handcuffs*, *in disbelief*)")
+
+
+def check_labels(pick):
+    """Context captions must sit inside the clip and stay short: 1-4 words, e.g. *in disbelief*. A segment pick's
+    labels use seconds of the finished clip (0 = its first frame)."""
+    bad = []
+    lo, hi = clip_bounds(pick)
     for lab in pick.get("labels") or []:
         try:
             a, b, text = float(lab["s"]), float(lab["e"]), str(lab["text"]).strip()
@@ -251,11 +273,6 @@ def check_labels(pick):
             bad.append(f"label \"{text}\": 1-4 words, e.g. *in disbelief*")
         if not (float(a if lo is None else lo) <= a < b <= float(b if hi is None else hi)):
             bad.append(f"label \"{text}\" ({a}-{b}s) must sit inside the clip ({lo}-{hi}s)")
-        elif lo is None or a < float(lo) + OPENING_LABEL_S:
-            opens = True
-    if not opens and (pick.get("segments") or pick.get("start") is not None):  # a hook-only check has no clip yet
-        bad.append(f"no context caption in the first {OPENING_LABEL_S:g} s: add a label that says what's happening "
-                   "(*put in handcuffs*, *in disbelief*, *confirms $50*) so a stranger knows the story with sound off")
     return bad
 
 
@@ -398,15 +415,10 @@ def check_picks(picks, cfg=None, words=None, load=None):
                 entry.setdefault("hooks", {})[h] = {"fails": f, "notes": nt} if nt else {"fails": f}
         tags = pick.get("hashtags") or []
         for t in pick.get("titles") or []:
-            f, nt = check_title(t, tags, topic)
+            f, nt = check_title(t, tags, topic, gta)
             if f or nt:
                 entry.setdefault("titles", {})[t] = {"fails": f, "notes": nt} if nt else {"fails": f}
         hs, ts = pick.get("hooks") or [], pick.get("titles") or []
-        if hs and len(ts) == len(hs):
-            for h, t in zip(hs, ts):
-                if structures(h) and not set(structures(h)) & set(structures(t)):
-                    entry.setdefault("pairing", []).append(
-                        f"title \"{t}\" doesn't use its hook's type ({', '.join(structures(h))})")
         used = {s for h in pick.get("hooks") or [] for s in structures(h)}
         kind = pick.get("clip_type")
         if kind:
@@ -428,6 +440,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["length_note"] = check_length_note(pick)
         if check_labels(pick):
             entry["labels"] = check_labels(pick)
+        if check_context_note(pick):
+            entry["context_note"] = check_context_note(pick)
         if check_fx(pick):
             entry["fx"] = check_fx(pick)
         edit = check_spoiler(pick, None)

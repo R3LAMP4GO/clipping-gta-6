@@ -40,10 +40,10 @@ HOOK_STYLES = {
     "big": {"font": "montserrat-black", "size": 112, "min_size": 80, "max_lines": 2, "upper": True,
             "fill": (255, 255, 255), "keyword": (255, 225, 60), "stroke": 7, "shadow": True, "box": False},
 }
-# Vertical positions: "fit" = 16:9 game centred; "split" = facecam on top (45%, like Variety Roleplay's clips), game below.
-# In split the hook hangs from the seam (top of the gameplay) so it never covers the streamer's face.
-SPLIT_TOP = 864
-LAYOUTS = {"fit": {"hook_y": 330, "caption_y": 1420}, "split": {"hook_y": SPLIT_TOP, "caption_y": 1500}}
+# Vertical positions: "fit" = 16:9 game centred; "split" = facecam on top (half the frame: 500K+ clip Shorts show the
+# face 2-3x bigger than ours), game below. In split the hook hangs from the seam so it never covers the face.
+SPLIT_TOP = 960
+LAYOUTS = {"fit": {"hook_y": 330, "caption_y": 1420}, "split": {"hook_y": SPLIT_TOP, "caption_y": 1580}}
 _fonts = {}
 
 
