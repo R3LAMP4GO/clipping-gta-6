@@ -12,3 +12,12 @@ streams:
 - name: KaiCenat-youtube
   url: https://www.youtube.com/@KaiCenat/live
   topic_only: true
+- name: IShowSpeed-youtube
+  url: https://www.youtube.com/@IShowSpeed/live
+  topic_only: true
+- name: jynxzi-twitch
+  url: https://www.twitch.tv/jynxzi
+  topic_only: true
+- name: agent00-twitch
+  url: https://www.twitch.tv/agent00
+  topic_only: true
