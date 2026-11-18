@@ -94,6 +94,7 @@ Rule of thumb: geometric heavy sans (Montserrat Black) for news and info hooks, 
 - **Add one** when the clip needs context in the first 2s and nobody says it: silent or music-only gameplay, trailer footage, news/info clips, or a moment that starts mid-conversation. Keep it to one punchy line (≤10 words) in the hook angle: "He waited twelve years for this."
 - **Skip it** when the creator's own voice or reaction *is* the hook: streamer reactions, screaming, punchlines. A narrator talking over Kai Cenat kills the moment, and none of the top reaction Shorts in the sample used one.
 - Never narrate over the payoff. The voiceover ends before the peak moment.
+- **Exception, narrated explainers (2026-11-18):** a story that needs context can be narrated through its setup (`"narrate": true`), then hands over to the streamer's own payoff line. This is the "did you know" format the story-game outliers use (3–18M views). First test: xQc's marlin traffic stop, which flopped un-narrated (26 views).
 
 ## Playbook: which hook fits which clip
 Pick the clip type first, then use its hook structures in order. The first two matter most, and `clipper check` flags a clip whose hooks skip both. The type is a property of the *moment*, not the channel: a Kai Cenat reaction stream can contain a comedy bit, and an xQc RP stream is mostly comedy.

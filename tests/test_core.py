@@ -1999,3 +1999,34 @@ class RequireFacecamTest(unittest.TestCase):
             self.assertEqual(len(hooks.check_facecam(mixed, Path(d), {}, require=True)), 1)
         self.assertTrue(config.load(profile="gta-rp").get("require_facecam"))
         self.assertFalse(config.load(profile="gta6").get("require_facecam"))
+
+
+class NarrationTest(unittest.TestCase):
+    def test_captions_follow_the_narrator_then_the_streamer(self):
+        from clipper import render
+        narr = [{"w": "Did", "s": 0.1, "e": 0.3}, {"w": "you", "s": 0.3, "e": 0.5}, {"w": "know?", "s": 0.5, "e": 0.9}]
+        speech = [{"w": "fishy", "s": 0.4, "e": 0.8, "spk": 0}, {"w": "ranger", "s": 5.0, "e": 5.4, "spk": 0}]
+        self.assertEqual([w["w"] for w in render.merge_narration(narr, speech, 4.0)], ["Did", "you", "know?", "ranger"])
+
+    def test_narration_must_fit_and_leave_the_payoff(self):
+        from clipper import hooks
+        base = {"start": 0, "end": 30, "narrate": True}
+        self.assertIn("needs a voiceover", hooks.check_narration(base)[0])
+        self.assertIn("runs about", hooks.check_narration({**base, "voiceover": "word " * 90})[0])  # ~35 s
+        self.assertIn("payoff line", hooks.check_narration({**base, "voiceover": "word " * 72})[0])  # ~28 s
+        self.assertEqual(hooks.check_narration({**base, "voiceover": "word " * 60}), [])               # ~23 s
+        self.assertEqual(hooks.check_narration({"start": 0, "end": 30, "voiceover": "x " * 90}), [])  # not narrated
+        self.assertTrue(hooks.has_fails({"video 1": {"narration": ["x"]}}))
+
+
+class AlignScriptTest(unittest.TestCase):
+    def test_script_words_keep_their_spelling_with_heard_timings(self):
+        from clipper import render
+        heard = [{"w": "Did", "s": 0.0, "e": 0.2}, {"w": "a", "s": 0.3, "e": 0.4}, {"w": "no", "s": 0.5, "e": 0.7},
+                 {"w": "pixel", "s": 0.7, "e": 1.0}, {"w": "cop", "s": 1.1, "e": 1.4}, {"w": "XQC", "s": 1.5, "e": 2.0}]
+        out = render.align_script("Did a NoPixel cop xQc", heard)
+        self.assertEqual([w["w"] for w in out], ["Did", "a", "NoPixel", "cop", "xQc"])
+        self.assertEqual((out[3]["s"], out[3]["e"]), (1.1, 1.4))       # matched word keeps its time
+        self.assertTrue(0.4 <= out[2]["s"] < out[2]["e"] <= 1.1)       # unmatched one fits between its neighbours
+        self.assertTrue(out[4]["s"] >= out[3]["e"])
+        self.assertEqual(render.align_script("", heard), heard)

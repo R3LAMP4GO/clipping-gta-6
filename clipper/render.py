@@ -148,6 +148,51 @@ def fx_filter(fx, dur):
     return ",".join(parts)
 
 
+def narration_words(vo_path, tmp, cfg):
+    """The narrator's own words with timings (clip seconds), transcribed from the voiceover file."""
+    wav = tmp / "vo16k.wav"
+    transcribe.extract_audio(vo_path, wav)
+    words, _, _ = transcribe.transcribe(wav, tmp / "vo", cfg)
+    return [dict(w, spk=0) for w in words]
+
+
+def align_script(script, heard):
+    """The script's own words (names spelled as written) timed from the transcribed narration: matched words take
+    their heard times; the rest are spread evenly between their matched neighbours."""
+    import difflib
+    toks = script.split()
+    if not toks or not heard:
+        return heard
+    norm = lambda w: re.sub(r"[^a-z0-9]", "", w.lower())
+    times = [None] * len(toks)
+    sm = difflib.SequenceMatcher(None, [norm(t) for t in toks], [norm(w["w"]) for w in heard], autojunk=False)
+    for a, b, n in sm.get_matching_blocks():
+        for k in range(n):
+            times[a + k] = (heard[b + k]["s"], heard[b + k]["e"])
+    known = [i for i, t in enumerate(times) if t]
+    if not known:
+        return heard
+    end = heard[-1]["e"]
+    out = []
+    for i, tok in enumerate(toks):
+        if times[i] is None:
+            lo = max((k for k in known if k < i), default=None)
+            hi = min((k for k in known if k > i), default=None)
+            t0 = times[lo][1] if lo is not None else 0.0
+            t1 = times[hi][0] if hi is not None else end
+            gap_n = (hi if hi is not None else len(toks)) - (lo if lo is not None else -1) - 1
+            pos = i - (lo if lo is not None else -1) - 1
+            step = max(t1 - t0, 0.0) / max(gap_n, 1)
+            times[i] = (round(t0 + pos * step, 3), round(t0 + (pos + 1) * step, 3))
+        out.append({"w": tok, "s": times[i][0], "e": times[i][1], "spk": 0})
+    return out
+
+
+def merge_narration(narration, speech, vo_dur, gap=0.2):
+    """Narration captions while the voice talks, then the streamer's own words once it stops."""
+    return narration + [w for w in speech if w["s"] >= vo_dur + gap]
+
+
 def prepare_clip(job, pick, fallback_words, cfg, tmp):
     """Per-clip work shared by every hook variant: voice separation, diarized captions, audio bed, voiceover."""
     s, e = float(pick["start"]), float(pick["end"])
@@ -172,6 +217,16 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
                         "[0:a][g]amix=inputs=2:duration=first:normalize=0", str(bed)], check=True)
     # the pick's own fixes win over the profile's (both whole words, any case)
     words = captions.apply_fixes(words, {**(cfg.get("caption_fixes") or {}), **(pick.get("caption_fixes") or {})})
+    vo = None
+    if pick.get("voiceover"):
+        vo_path = tmp / "vo.wav"
+        vo_dur, provider = tts.synth(pick["voiceover"], cfg, vo_path)
+        vo = {"path": vo_path, "duration": vo_dur, "provider": provider}
+        if pick.get("narrate"):  # a narrated explainer: captions follow the narrator, then the streamer again
+            fixes = {**(cfg.get("caption_fixes") or {}), **(pick.get("caption_fixes") or {})}
+            heard = align_script(pick["voiceover"], narration_words(vo_path, tmp, cfg))
+            words = merge_narration(captions.apply_fixes(heard, fixes), words, vo_dur)
+            source += " + narration captions"
     if pick.get("labels"):
         words = action_labels(pick, words)
         source += " + action captions"
@@ -179,11 +234,6 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
     caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", caption_layout(layout),
                                   pick.get("caption_style") or cfg.get("caption_style", "bold"),
                                   cfg.get("censor_captions", True))
-    vo = None
-    if pick.get("voiceover"):
-        vo_path = tmp / "vo.wav"
-        vo_dur, provider = tts.synth(pick["voiceover"], cfg, vo_path)
-        vo = {"path": vo_path, "duration": vo_dur, "provider": provider}
     fx = clip_fx(pick, words, dur)
     # music and hits go into the bed once per clip, so every hook variant gets the same mix before loudnorm
     layers = music.plan(pick, words, fx, dur, cfg, seed=f"{job.name}:{s:.2f}")

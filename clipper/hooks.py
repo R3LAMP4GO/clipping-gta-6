@@ -258,6 +258,29 @@ def check_context_note(pick):
             "add a label that says what's happening (*put in handcuffs*, *in disbelief*)")
 
 
+NARRATION_WPS = 2.6  # Fish Audio's pace, about 2.6 words a second
+
+
+def check_narration(pick):
+    """Fails for `narrate` without a voiceover or with narration longer than the clip; notes one that leaves no time
+    for the streamer's own payoff line (the research rule: never narrate over the payoff)."""
+    if not pick.get("narrate"):
+        return []
+    text = str(pick.get("voiceover") or "").strip()
+    if not text:
+        return ["narrate needs a voiceover: the narrator's script"]
+    try:
+        d = pick_duration(pick)
+    except (KeyError, TypeError, ValueError):
+        return []
+    est = len(text.split()) / NARRATION_WPS
+    if est > d:
+        return [f"narration runs about {est:.0f}s for a {d:.0f}s clip: cut the script or lengthen the clip"]
+    if d - est < 3:
+        return [f"narration ends about {d - est:.1f}s before the end: leave 3-8s for the streamer's own payoff line"]
+    return []
+
+
 def check_labels(pick):
     """Context captions must sit inside the clip and stay short: 1-4 words, e.g. *in disbelief*. A segment pick's
     labels use seconds of the finished clip (0 = its first frame)."""
@@ -440,6 +463,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["length_note"] = check_length_note(pick)
         if check_labels(pick):
             entry["labels"] = check_labels(pick)
+        if check_narration(pick):
+            entry["narration"] = check_narration(pick)
         if check_context_note(pick):
             entry["context_note"] = check_context_note(pick)
         if check_fx(pick):
@@ -568,5 +593,5 @@ def is_debate(text):
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \
-        or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e
+        or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e or "narration" in e
                for e in report.values())
