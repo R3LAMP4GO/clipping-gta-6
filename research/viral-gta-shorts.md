@@ -167,6 +167,48 @@ Our channel (50 public Shorts, 11 subs): median 1,191 views, none past 10k (best
 - **Same streamer, same server, 20x the views:** Variety Roleplay clips the same xQc NoPixel stream we do, so the topic isn't the bottleneck. They show a bigger face, crop the gameplay tight on the characters, and post no hook banner at all.
 - **Weak moments get posted.** Our bottom Shorts open on a car driving, a dark room or a black screen; the 1M+ ones open on something visibly absurd happening.
 
+## Story-game Shorts outliers: Red Dead 2, GTA and similar (2026-11-18)
+**Method.** 15 YouTube API searches (Red Dead Redemption 2, RDR2 Arthur Morgan, GTA 5 / San Andreas, Skyrim, Elden Ring, Cyberpunk 2077, The Last of Us, God of War, Ghost of Tsushima, Spider-Man, Fallout, Minecraft, Hogwarts Legacy), Shorts posted since Nov 2025, kept at **100K+ views and 20K+ likes** (503 Shorts, 250 channels). Each was compared with the median of the 30 Shorts its channel posted around it: **306 beat their channel by 5× or more** (195 channels; some multipliers are huge because the channel's normal is tiny). 20 representative outliers, weighted to Red Dead and GTA, were downloaded and measured: on-screen text (Apple Vision at 0.3 s, 1.5 s, every 2 s), faces, and a full transcript (Parakeet) to tell narration from game audio. Data: `gaming-shorts-outliers.json`.
+
+**Formats (by title, 306 outliers vs 196 below 5×):**
+| Format | Outliers | Below 5× |
+|---|---|---|
+| Story / character moment ("Jack Took Books Too Seriously", "The Moment Joel Found Out") | 19% | 6% |
+| Then vs now / comparison ("RDR1 vs RDR2", "PS3 vs PS4 vs PS5") | 14% | 11% |
+| Meme / relatable joke ("Men are so hard to gift… Me: GTA fans") | 10% | 9% |
+| Hidden detail / easter egg ("The Devs Knew We'd Notice This") | 9% | 2% |
+| List / top N ("3 largest animals you can hunt") | 3% | 0% |
+| Median length | 30 s | 59 s |
+
+**Three mechanisms, measured on the 20:**
+1. **Narrated "did you know" (Fish Audio territory).** A voice talks over 95–100% of the runtime, with word-by-word captions on full-screen footage. These run *long* and still explode: "Seven years later… a new mystery in RDR2" (148 s, 18.1M views, 13,000× its channel), "Did you know GTA San Andreas girlfriends give you cool benefits?" (108 s, 12M, 569K likes), "Here are the three largest animals you can hunt in RDR2" (41 s, 8M), "RDR1 vs RDR2 hidden details" (44 s, 3M), the Fallout 4 voice-acting fact (17 s, 4.7M). **The first spoken line is the whole promise:** a time + discovery ("Seven years later, they've just uncovered…"), "Did you know [surprising benefit]", "Here are the N [biggest/best]…", "If you [do X], [unexpected result]". Each item is a payoff, and the best is saved for last. Viewers get social currency: a fact to repeat or a secret to try themselves.
+2. **Wordless character moment.** 6–24 s, one beloved character doing one human thing, no narration, almost no text: "Arthur Morgan Loves Jellybeans" (8 s, 13.5M), "Jack Took Books Too Seriously" (20 s, 26M), "Javier Wants Jack To Go Play" (24 s, 6.6M), "Arthur take his last breath" (7 s), "The Moment Joel Found Out" (23 s, 9.2M), "Five Finger Fillet" (39 s, 80M). The character's face is the face; attachment from a 60-hour story does the work, and the clip loops before you notice.
+3. **Text-only surprise over music.** A caps statement at the top, no speech: "THE DEVELOPERS ACTUALLY PUT THIS IN THE GAME" (18 s, 7.2M, 294K likes), "WHAT IN THE ELDEN RING?!" (30 s, 4.8M), "When your hotbar is set up wrong…" (34 s, 102M). A statement of surprise, never a negation.
+
+**Compared with ours:**
+| | Story-game outliers | Ours (streamer clips) |
+|---|---|---|
+| Who is the "face" | A game character in close-up (Arthur, Sadie, Joel), full vertical frame | The streamer's facecam on top |
+| Narration | Half of the 20 have a voice explaining (5 of them 95%+ of runtime) | None |
+| Opening line | The promise itself ("Did you know…", "Here are the 3…", "Seven years later…") | Whatever the streamer says first |
+| Length | 30 s median; narrated lists 40–148 s; character moments 6–24 s | 25–35 s |
+| Payoff | Knowledge to repeat, or an emotion about a character people love | A funny reaction |
+| Comments per 1K views | 0.19 (they're watched and liked, not argued about) | ~0 shares, few comments |
+
+**Our concepts:**
+1. **NoPixel lore explainers (Fish Audio narrator):** "Did you know xQc's Jean Paul is banned from the tow yard for life? Here's why." Our stream footage under a narrator who tells the story in 35–60 s, word-by-word captions, the best beat last. The facecam still shows when xQc reacts.
+2. **"Did you know" GTA 6 / GTA 5 facts (gta6 profile):** "Here are the 3 things GTA 6 copied from Red Dead 2" over trailer footage plus a streamer's reaction face, narrated.
+3. **Then vs now:** "xQc in NoPixel 3.0 vs NoPixel 4.0 vs 5.0", the same situation across years, labelled with the year like the "480p / 2001" outliers.
+
+**Execution (concept 1):**
+- 0.0–1.5 s: the narrator's first line *is* the hook, in the "Did you know / If you / N years later" form, over the most striking frame (the facecam reacting, or the crash).
+- Body: 3 beats, each a payoff (what happened → why → the twist), word-by-word captions, footage changes with every sentence.
+- End: the best fact last, then a one-line loop back to the opening ("…and that's why he can never work there again").
+- Voice: Fish Audio (the clipper's `voiceover` field and `voice: auto` already wire it in; the key comes from `clipper voice-setup`); game audio ducked under it.
+- Length: 35–60 s (narrated outliers hold attention longer than reaction clips).
+
+**Test:** post 3 narrated explainers next to normal clips of the same stream. Compare the share who stay past the first moment, average % viewed and shares at 48 h. If narrated clips keep more viewers past the first moment, make every clip whose moment needs context a narrated one; if not, keep narration only for lore stories.
+
 ## 500K+ gaming clip Shorts vs ours (2026-11-17)
 45 streamer-gaming Shorts with 500K+ views (0.5M-29M), posted since May 2026 by third-party clip channels like ours (Zylok, Stream Vortex, Snickerly, iboclips, OnShortz, DaPlug...), at most 3 per channel; art, animation, ranking compilations and non-English Shorts left out. Found through the YouTube API (16 searches by view count), each one downloaded and measured with Apple Vision (on-screen text at 0.3 s, 1.5 s and every 2 s; face size at 0.3 s), then the banners checked by eye on a contact sheet. Ours: all 47 uploads, measured the same way. Data: `clip-hooks-500k.json` (no media kept).
 
