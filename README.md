@@ -130,6 +130,8 @@ python3 -m clipper dub render <id> --pick 1 --lang ru --translation dub-ru.json 
 python3 -m clipper report "<markdown>"         # add a run report to exports/<profile>/<date>/index.md (never rewrites it)
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
+python3 -m clipper long check jobs/long-x.json  # long-form running-bit supercut spec (see /clip-long)
+python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg; never auto-posted)
 python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper check picks.json --job <id>  # research rules + fail picks reusing exported footage

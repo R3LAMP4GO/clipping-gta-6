@@ -10,6 +10,7 @@ from . import config, hooks, library, render as render_mod, schedule, simulate, 
 from . import bench as bench_mod
 from . import cleanup as cleanup_mod
 from . import dub as dub_mod
+from . import longform
 from . import live as live_mod
 from . import setup as setup_mod
 
@@ -183,6 +184,10 @@ def main(argv=None):
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
+    lg = sub.add_parser("long", help="long-form running-bit supercut (16:9, 8-10 min): check or render a spec")
+    lg.add_argument("action", choices=["check", "render"])
+    lg.add_argument("spec", help="JSON spec (see /clip-long)")
+    lg.add_argument("--out", help="output folder (default exports/<profile>/<today>; `long N` numbering continues)")
     args = p.parse_args(argv)
     config.load_env()
     cfg = config.load(args.config, args.profile)
@@ -344,6 +349,13 @@ def main(argv=None):
             print(f"no line matching '{args.pattern}' in the last {args.hours:g} h")
     elif args.cmd == "frame":
         print(analyze_mod.grid_frame(config.job_dir(args.job), args.seconds))
+    elif args.cmd == "long":
+        spec = json.loads(open(args.spec, encoding="utf-8").read())
+        if args.action == "check":
+            report = longform.check_long(spec)
+            print(json.dumps(report, indent=2, ensure_ascii=False) if report else "long-form spec passes")
+            sys.exit(1 if report.get("fails") else 0)
+        print(json.dumps(longform.render_long(spec, cfg, args.out), indent=2))
 
 
 if __name__ == "__main__":
