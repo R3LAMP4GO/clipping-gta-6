@@ -527,14 +527,25 @@ def job_channel(jd):
         return None
 
 
-def check_facecam(pick, job_dir, known):
+REQUIRE_FACE_FAIL = ("no face on screen: this profile needs the streamer's face in every clip (split clips kept 50% of "
+                     "viewers vs 38% faceless, half the views): pick a moment where the facecam is on, or skip it")
+
+
+def check_facecam(pick, job_dir, known, require=False):
     """Fails for a letterboxed (fit) clip from a channel whose earlier clips used the facecam: the faceless openings
-    kept 38% of viewers vs 50% with a face. `"facecam": "hidden"` in the layout says the cam is off in that stretch."""
+    kept 38% of viewers vs 50% with a face. `"facecam": "hidden"` in the layout says the cam is off in that stretch;
+    with `require` (the profile's `require_facecam`) every fit clip fails, hidden cam or not."""
     from .config import job_dir as resolve
     fails = []
     for seg in pick.get("segments") or [pick]:
         lay = seg.get("layout") or pick.get("layout") or {"type": "fit"}
-        if lay.get("type", "fit") != "fit" or lay.get("facecam") in ("hidden", "none"):
+        if lay.get("type", "fit") != "fit":
+            continue
+        if require:
+            if REQUIRE_FACE_FAIL not in fails:
+                fails.append(REQUIRE_FACE_FAIL)
+            continue
+        if lay.get("facecam") in ("hidden", "none"):
             continue
         jd = resolve(seg["job"]) if seg.get("job") else Path(job_dir)
         channel = job_channel(jd)

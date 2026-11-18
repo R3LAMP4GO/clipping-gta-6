@@ -7,6 +7,10 @@ research: gta
 # Clipped first in `clipper daily` (a substring of the channel name): Kai Cenat made 4 of our 5 best Shorts.
 favor_creators: ["Kai Cenat"]
 
+# Every clip shows the streamer's face (split layout): faceless clips kept 38% of viewers vs 50%, half the views.
+# `clipper check --job` fails a fit clip, even when the cam is off in that stretch: skip those moments.
+require_facecam: true
+
 keywords: [gta rp, gtarp, nopixel, no pixel, roleplay, rp, gta, heist, cops, server]
 
 hashtags: ["#gtarp", "#nopixel", "#shorts"]

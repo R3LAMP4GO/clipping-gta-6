@@ -234,7 +234,7 @@ def main(argv=None):
                 opening = hooks.check_opening_frames(pick, jd)
                 if opening:
                     report.setdefault(f"video {n}", {})["opening"] = opening
-                facecam = hooks.check_facecam(pick, jd, cams)
+                facecam = hooks.check_facecam(pick, jd, cams, bool(cfg.get("require_facecam")))
                 if facecam:
                     report.setdefault(f"video {n}", {})["facecam"] = facecam
         failing = hooks.has_fails(report)

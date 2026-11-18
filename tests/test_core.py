@@ -1983,3 +1983,19 @@ class FavorCreatorsTest(unittest.TestCase):
         self.assertFalse(cli.is_favored("Kai Cenat Live", {"favor_creators": [""]}))
         for prof in ("gta-rp", "gta6"):
             self.assertEqual(config.load(profile=prof)["favor_creators"], ["Kai Cenat"])
+
+
+class RequireFacecamTest(unittest.TestCase):
+    def test_profile_can_require_the_face_in_every_clip(self):
+        from clipper import config, hooks
+        hidden = {"start": 0, "end": 20, "layout": {"type": "fit", "facecam": "hidden"}}
+        split = {"start": 0, "end": 20, "layout": {"type": "split", "face": [0, 0, 0.3, 0.28]}}
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(hooks.check_facecam(hidden, Path(d), {}), [])  # allowed by default
+            self.assertIn("no face on screen", hooks.check_facecam(hidden, Path(d), {}, require=True)[0])
+            self.assertEqual(hooks.check_facecam(split, Path(d), {}, require=True), [])
+            mixed = {"segments": [{"start": 0, "end": 5, "layout": split["layout"]}, {"start": 9, "end": 14}],
+                     "layout": {"type": "fit"}}
+            self.assertEqual(len(hooks.check_facecam(mixed, Path(d), {}, require=True)), 1)
+        self.assertTrue(config.load(profile="gta-rp").get("require_facecam"))
+        self.assertFalse(config.load(profile="gta6").get("require_facecam"))
