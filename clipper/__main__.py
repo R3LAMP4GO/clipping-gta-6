@@ -187,6 +187,18 @@ def main(argv=None):
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
+    vr = sub.add_parser("viral", help="what outliers (3x their channel's median) have in common: collect Shorts, "
+                                      "measure with code, optional Gemini scores, compare and validate; raw YouTube "
+                                      "data in viral/ is deleted after 30 days")
+    vr.add_argument("action", choices=["collect", "measure", "score", "report", "purge"])
+    vr.add_argument("--own", type=int, default=100, help="collect: our last N uploads (Shorts kept)")
+    vr.add_argument("--per-channel", type=int, default=40, help="collect: each clip channel's last N uploads")
+    vr.add_argument("--limit", type=int, help="measure/score: at most N videos this run")
+    vr.add_argument("--prompt", default="full", help="score: a prompt name (full, short1-short5) or all")
+    vr.add_argument("--model", default=None, help="score: Gemini model (default $GEMINI_MODEL or gemini-2.5-flash)")
+    vr.add_argument("--runs", type=int, default=50, help="report: validation runs")
+    vr.add_argument("--sample", type=int, default=30, help="report: videos with views hidden per run")
+    vr.add_argument("--seed", type=int, default=7)
     sa = sub.add_parser("stats", help="our uploads' views, engaged share and retention joined to their upload.json "
                                       "(read-only YouTube OAuth); saves research/own-stats.json + simulate's own data")
     sa.add_argument("--no-save", action="store_true", help="print the report, write nothing")
@@ -359,6 +371,11 @@ def main(argv=None):
             print(f"no line matching '{args.pattern}' in the last {args.hours:g} h")
     elif args.cmd == "frame":
         print(analyze_mod.grid_frame(config.job_dir(args.job), args.seconds))
+    elif args.cmd == "viral":
+        from . import viral
+        args.model = args.model or os.environ.get("GEMINI_MODEL") or viral.GEMINI_MODEL
+        out = viral.run(args.action, cfg, args)
+        print(out if isinstance(out, str) else json.dumps(out, indent=2))
     elif args.cmd == "stats":
         print(stats_mod.run(save=not args.no_save))
     elif args.cmd == "long":

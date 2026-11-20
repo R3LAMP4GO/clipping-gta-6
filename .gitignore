@@ -14,3 +14,7 @@ profiles/*/learned-weights.yaml
 .gg/
 # approved meme tracks: copied to each machine by hand, never committed (Content ID claimable)
 assets/music/local/
+# `clipper viral` raw YouTube data + downloads: deleted after 30 days (YouTube API policy), never committed
+viral/
+# compiled helpers (apple-asr)
+.cache/

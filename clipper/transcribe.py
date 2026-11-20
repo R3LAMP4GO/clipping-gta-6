@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+from pathlib import Path
 
 EVENT_RE = re.compile(r"^[\[\(\*].*[\]\)\*]$")
 SENTENCE_END = (".", "?", "!")
@@ -87,8 +88,37 @@ def run_parakeet(wav, cfg):
     return words, []  # Parakeet doesn't tag sound events like (screaming); loudness signals cover those moments
 
 
+APPLE_SRC = Path(__file__).with_name("apple_asr.swift")
+
+
+def apple_binary():
+    """The Swift helper for Apple's on-device model, compiled once (again when its source changes)."""
+    from .config import ROOT
+    exe = ROOT / ".cache" / "apple-asr"
+    if not exe.exists() or exe.stat().st_mtime < APPLE_SRC.stat().st_mtime:
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        res = subprocess.run(["swiftc", "-O", "-o", str(exe), str(APPLE_SRC)], capture_output=True, text=True)
+        if res.returncode != 0:
+            raise SystemExit("apple-asr build failed (needs macOS 26+ and Xcode's swiftc):\n" + res.stderr[-1500:])
+    return exe
+
+
+def run_apple(wav, cfg):
+    """Apple's on-device speech model (SpeechAnalyzer/SpeechTranscriber): words with times, no sound events."""
+    res = subprocess.run([str(apple_binary()), str(wav), cfg.get("apple_locale", "en-US")],
+                         capture_output=True, text=True)
+    if res.returncode != 0:
+        raise SystemExit("apple-asr failed: " + res.stderr.strip()[-500:])
+    words = [{"w": w["w"], "s": round(w["s"], 2), "e": round(w["e"], 2)} for w in json.loads(res.stdout)["words"]]
+    return words, []
+
+
 def transcribe(wav, prefix, cfg, fast=False):
-    """(words, events, model name): Parakeet by default, whisper.cpp when `asr: whisper` or onnx-asr is missing."""
+    """(words, events, model name): Parakeet by default, Apple's on-device model with `asr: apple`, whisper.cpp when
+    `asr: whisper` or onnx-asr is missing."""
+    if cfg.get("asr") == "apple":
+        words, events = run_apple(wav, cfg)
+        return words, events, "apple-speechtranscriber"
     if cfg.get("asr", "parakeet") == "parakeet":
         try:
             words, events = run_parakeet(wav, cfg)

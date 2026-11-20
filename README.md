@@ -146,6 +146,7 @@ python3 -m clipper cleanup [--dry-run]         # delete old job video/audio (als
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper bench --moments              # moment signals scored on 100K+ outliers vs same-channel flops
 python3 -m clipper stats [--no-save]            # our uploads' views/engaged/retention joined to their upload.json
+python3 -m clipper viral collect|measure|score|report  # outliers (3x channel median) vs the rest: code metrics, optional Gemini scores (GEMINI_API_KEY), 50-run hidden-views validation; viral/ data deleted after 30 days
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
 python3 -m unittest discover -s tests
 ```
