@@ -12,6 +12,11 @@ def W(text, s, e):
     return {"w": text, "s": s, "e": e}
 
 
+# every pick names its turn, a cold premise, its open loop and the payoff (`clipper check` fails it otherwise)
+TURN = {"turn": "meeting", "cold_premise": "Kai meets a kid who says he is 13", "loop": "how old is he really?",
+        "payoff_at": 9.0}
+
+
 class TranscriptTests(unittest.TestCase):
     def test_parse_words_splits_events(self):
         data = {"transcription": [
@@ -50,7 +55,8 @@ class CaptionTests(unittest.TestCase):
         tl = captions.timeline(words, 9.0, 20.0)
         self.assertEqual(tl[0][:2], (1.0, 1.3))
         self.assertTrue(all(a[1] <= b[0] + 1e-6 for a, b in zip(tl, tl[1:])))
-        self.assertEqual(tl[2][4], ["no", "way", "bro."])
+        self.assertEqual(tl[1][4], ["no", "way"])  # 1-2 words at a time, like the 500K+ clip captions
+        self.assertEqual(tl[2][4], ["bro."])
 
 
 if __name__ == "__main__":
@@ -472,7 +478,8 @@ class StrategyTests(unittest.TestCase):
         rep = hooks.check_picks([{"hooks": ["Why is xQc making the hostages sing?"],
                                   "titles": ["xQc Made The Hostages Sing In GTA RP 😭"]}])
         self.assertNotIn("pairing", rep.get("video 1", {}))
-        self.assertEqual(hooks.check_title("xQc Made The Hostages Sing In GTA RP 😭", topic=None)[1], [])
+        notes = hooks.check_title("xQc Made The Hostages Sing In GTA RP 😭", topic=None)[1]
+        self.assertFalse([n for n in notes if "narrate what happened" in n])  # only the open-loop note may show
         for t in ("xQc Did NOT Plan The Escape 💀 | GTA RP", "Why Is xQc Driving In Scuba Gear?! | GTA RP"):
             self.assertIn("narrate what happened", hooks.check_title(t, topic=None)[1][0])
             self.assertEqual(hooks.check_title(t, topic=None)[0], [])  # a note, not a fail
@@ -754,7 +761,7 @@ class ProfileTests(unittest.TestCase):
         self.assertIn("nopixel", cfg["exclude_title_patterns"])
         self.assertEqual(cfg["search"], ["GTA 6 reaction", "GTA 6 gameplay funny"])
         self.assertIn("xQc", [c["name"] for c in cfg["channels"]])
-        self.assertEqual(cfg["weights"]["loudness"], 0.30)
+        self.assertEqual(cfg["weights"]["loudness"], 0.40)
 
     def test_env_picks_profile_and_unknown_profile_fails(self):
         import os
@@ -805,8 +812,8 @@ class ProfileTests(unittest.TestCase):
         from clipper import hooks, playbook, simulate
         gta, other = {"research": "gta"}, {"hashtags": ["#minecraft"]}
         self.assertTrue(hooks.check_picks([{"hooks": ["Why is Kai shaking?"], "titles": ["Why Is Kai Shaking?"]}], gta))
-        self.assertEqual(hooks.check_picks([{"hooks": ["Why is Kai shaking?"], "titles": ["Why Is Kai Shaking?"]}],
-                                           other), {})
+        self.assertEqual(hooks.check_picks([{"hooks": ["Why is Kai shaking?"], "titles": ["Why Is Kai Shaking?"],
+                                             **TURN}], other), {})
         self.assertEqual(playbook.for_profile(gta), playbook.PLAYBOOK)
         generic = playbook.for_profile({**other, "playbook": {"comedy": {"caption_style": "boxed"}}})
         self.assertEqual(generic["comedy"]["caption_style"], "boxed")
@@ -829,7 +836,9 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(topic_evidence("xQc becomes a cop on NoPixel 4.0", "", [], rp), "title")
         self.assertIsNone(topic_evidence("Kai Cenat Reacts To GTA 6 Trailer", "", [], rp))
         self.assertIsNone(topic_evidence("Fortnite tournament", "", [], rp))
-        self.assertEqual(hooks.check_title("xQc Robs the Bank in GTA RP", ["#gtarp"], hooks.title_topic(rp)), ([], []))
+        fails, notes = hooks.check_title("xQc Robs the Bank in GTA RP", ["#gtarp"], hooks.title_topic(rp))
+        self.assertEqual(fails, [])
+        self.assertTrue(all("open loop" in n for n in notes))  # the topic is found; only the open-loop note may show
         for play in playbook.for_profile(rp).values():
             for ex in play["examples"]:
                 self.assertEqual(hooks.check_hook(ex)[0], [], ex)
@@ -1243,7 +1252,7 @@ class LearningSafeguardTests(unittest.TestCase):
             with mock.patch.object(config, "PROFILES", Path(d)), mock.patch.dict(os.environ, {}, clear=False):
                 os.environ.pop("CLIPPER_NO_LEARNED", None)
                 w = config.load(None, "gta-rp")["weights"]
-                self.assertEqual((w["jump"], w["loudness"], w["speech_rate"]), (0.25, 0.45, 0.05))  # 1.5x / 0.5x caps
+                self.assertEqual((w["jump"], w["loudness"], w["speech_rate"]), (0.25, 0.6, 0.05))  # 1.5x / 0.5x caps
                 self.assertNotIn("bogus", w)
                 os.environ["CLIPPER_NO_LEARNED"] = "1"
                 self.assertEqual(config.load(None, "gta-rp")["weights"]["jump"], 0.2)
@@ -1721,7 +1730,7 @@ class SoundAndQuietTests(unittest.TestCase):
     def test_quiet_stretch_without_music_key_gets_an_edit_note(self):
         from clipper import hooks
         pick = {"start": 0.0, "end": 10.0, "hooks": ["Why did Kai *run*?"],
-                "labels": [{"s": 1.2, "e": 4.8, "text": "*RUNS*"}]}
+                "labels": [{"s": 1.2, "e": 4.8, "text": "*RUNS*"}], **TURN}
         words = [W("go", 0.0, 1.0), W("now", 5.0, 5.5), W("run", 6.0, 9.9)]
         note = hooks.check_music(pick, hooks.clip_words(pick, words))
         self.assertIn("4.0s with no speech at 1.0-5.0s", note)
@@ -1791,7 +1800,7 @@ class DebateRuleTest(unittest.TestCase):
         self.assertFalse(hooks.is_debate("Why is Kai shaking?"))
         self.assertTrue(hooks.is_debate("Does Jason look like *Arthur Morgan*?"))
         plain = {"hooks": ["Why is Kai shaking?", "Kai was NOT ready for *this*"],
-                 "titles": ["Why Is Kai Shaking At GTA 6?", "Kai Was NOT Ready For GTA 6"]}
+                 "titles": ["Why Is Kai Shaking At GTA 6?", "Kai Was NOT Ready For GTA 6"], **TURN}
         self.assertIn("debate", hooks.check_picks([plain])["video 1"])
         judged = {**plain, "hooks": ["Is xQc's aim *legit*?!", "Kai was NOT ready for *this*"]}
         self.assertNotIn("debate", hooks.check_picks([judged]).get("video 1", {}))
@@ -1897,9 +1906,9 @@ class BiggerFaceBigHookOpeningTest(unittest.TestCase):
         from clipper import render
         vf = render.video_filter({"type": "split", "face": [0, 0, 0.2, 0.3]}, (1920, 1080))
         self.assertIn("crop=1080:960[top]", vf)
-        self.assertIn("scale=-2:1248,crop=1080:960", vf)  # 960 * 1.3 zoom
+        self.assertIn("scale=-2:1056,crop=1080:960", vf)  # 960 * 1.1 zoom (1.3 cropped signs out)
 
-    def test_big_hook_fits_two_lines_below_the_seam(self):
+    def test_big_hook_fits_two_lines_on_the_seam(self):
         import numpy as np
         from PIL import Image
         from clipper import captions
@@ -1910,9 +1919,24 @@ class BiggerFaceBigHookOpeningTest(unittest.TestCase):
             captions.render_hook("CaseOh won't believe this is *controller*", p, "big", "split")
             long_ = np.array(Image.open(p))[:, :, 3]
         rows = np.where(short.max(axis=1) > 0)[0]
-        self.assertGreaterEqual(rows.min(), captions.SPLIT_TOP)  # never over the face
-        self.assertLess(rows.max() - rows.min(), 2 * 112 * 1.2 + 60)  # a short hook: big, 2 lines
-        self.assertGreater(np.ptp(np.where(long_.max(axis=1) > 0)[0]), 2 * 80 * 1.2)  # a long one keeps its 3rd line
+        self.assertLess(rows.max(), captions.SPLIT_TOP)  # never over the gameplay
+        self.assertGreater(rows.min(), captions.SPLIT_TOP - 320)  # the facecam's lower third (chest/desk), not the face
+        self.assertLess(rows.max() - rows.min(), 2 * 72 * 1.2 + 60)  # a short hook: 2 lines
+        self.assertGreater(np.ptp(np.where(long_.max(axis=1) > 0)[0]), 2 * 56 * 1.2)  # a long one keeps its 3rd line
+
+    def test_split_hook_and_captions_leave_the_game_clear(self):
+        # regression: the old hook hung into the game and captions sat mid-game, covering 22-28% of it
+        import numpy as np
+        from PIL import Image
+        from clipper import captions
+        with tempfile.TemporaryDirectory() as d:
+            hp, cp = Path(d) / "h.png", Path(d) / "c.png"
+            for style, cstyle in (("big", "boxed"), ("box", "comic"), ("bold", "bold")):
+                captions.render_hook("CaseOh won't believe this GTA 6 aim is on *controller*", hp, style, "split")
+                captions.render_state(((0, ("WAIT", "WHAT"), 1),), cp, captions.LAYOUTS["split"]["caption_y"], False,
+                                      cstyle)
+                ink = np.maximum(np.array(Image.open(hp))[:, :, 3], np.array(Image.open(cp))[:, :, 3])
+                self.assertLess((ink[captions.SPLIT_TOP:] > 0).mean(), 0.06, style)
 
     def test_opening_check_fails_dark_and_notes_static(self):
         import subprocess
@@ -1981,8 +2005,8 @@ class FavorCreatorsTest(unittest.TestCase):
         self.assertEqual([v["id"] for v in cli.favored_first(found, cfg)], ["c", "a", "b"])
         self.assertEqual([v["id"] for v in cli.favored_first(found, {})], ["a", "c", "b"])
         self.assertFalse(cli.is_favored("Kai Cenat Live", {"favor_creators": [""]}))
-        for prof in ("gta-rp", "gta6"):
-            self.assertEqual(config.load(profile=prof)["favor_creators"], ["Kai Cenat"])
+        self.assertEqual(config.load(profile="gta-rp")["favor_creators"], ["Kai Cenat"])
+        self.assertEqual(config.load(profile="gta6")["favor_creators"], ["Kai Cenat", "IShowSpeed", "CaseOh"])
 
 
 class RequireFacecamTest(unittest.TestCase):

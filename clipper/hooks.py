@@ -118,6 +118,53 @@ def has_stake(hook, names=()):
                for w in words)
 
 
+# Characters a cold viewer knows; roleplay names (Mickey, Marty, Avery) aren't. Our hooks naming them got 164-840 views
+# vs a 1.2k median for the rest (research "Cold hooks", 2026-11-19).
+KNOWN_CHARACTERS = {"jason", "lucia", "trevor", "franklin", "michael", "lamar", "cj", "niko", "tommy", "arthur", "dutch",
+                    "lester", "smoke", "ice", "spice"}
+NAME_SKIP = {"Season", "Episode", "Part", "Chapter", "Week", "Day", "Mr", "Mrs", "Ms", "Dr"}
+# Proper nouns everyone knows: places, nationalities, brands, figures.
+KNOWN_WORDS = set("""vice city leonida florida miami los santos liberty america american usa mexico mexican spanish english
+latina latino french chinese japanese uber lambo lamborghini ferrari corvette tesla bugatti walmart mcdonald playstation
+xbox nintendo rockstar twitch youtube tiktok instagram discord bigfoot santa god jesus christmas halloween""".split())
+LORE = re.compile(r"\b(\w+'s|his|her|their) (crew|gang|faction|war)\b|\bthe betrayal\b", re.I)
+
+
+def unknown_names(text, names=()):
+    """Capitalised names in sentence-case text that aren't a known streamer, creator or game character."""
+    words = re.findall(r"[A-Za-z][A-Za-z0-9']*", re.sub(r"#\S+", "", plain(text)))
+    if not words or sum(w[0].isupper() for w in words) > len(words) / 2:  # Title Case: capitals don't mark names
+        return []
+    first = re.sub(r"'s$", "", words[0])
+    if first == words[0] or first.lower() in STOP | STARTERS:  # sentence case capitalises it; "Mickey's crew…" counts
+        words = words[1:]
+    skip = STREAMERS | KNOWN_CHARACTERS | {n.lower() for n in names}
+    skip |= KNOWN_WORDS
+    out = [re.sub(r"'s$", "", w) for w in words  # NPCs/PS5 are acronyms, I'm/I'll aren't names
+           if w[0].isupper() and not w[:2].isupper() and not re.match(r"I'", w) and w not in NOT_A_STAKE | NAME_SKIP]
+    return list(dict.fromkeys(w for w in out if w.lower() not in skip))
+
+
+def check_cold(pick, names=()):
+    """Notes when a hook, title or premise needs prior knowledge: a name a stranger won't know or crew lore."""
+    if pick.get("campaign"):
+        return []
+    notes, seen = [], []
+    for field in (pick.get("hooks") or [pick.get("hook", "")]) + [pick.get("cold_premise") or "", pick.get("turn") or ""]:
+        seen += [n for n in unknown_names(field, names) if n not in seen]
+    hooks_titles = (pick.get("hooks") or [pick.get("hook", "")]) + (pick.get("titles") or [])
+    named = [n for n in seen if any(re.search(rf"\b{re.escape(n)}\b", x or "", re.I) for x in hooks_titles)]
+    if named:
+        notes.append(f"names {', '.join(named)}: a stranger won't know who that is. Say who they are in plain words "
+                     "(\"a 13-year-old\", \"his old boss\") unless it's a famous streamer or game character; our hooks "
+                     "naming roleplay characters (Mickey, Marty, Avery) got 164-840 views vs a 1.2k median")
+    lore = [x for x in hooks_titles if x and LORE.search(x)]
+    if lore:
+        notes.append(f"leans on lore ({LORE.search(lore[0]).group(0)!r}): a stranger doesn't know the crew or what came "
+                     "before; name the act itself (\"xQc steals a Corvette with cops searching\")")
+    return notes
+
+
 def check_hook(hook, gta=True, names=()):
     """(fails, notes): fails break a rule every 500k+ hook followed; notes are judgment calls."""
     text = plain(hook)
@@ -136,9 +183,11 @@ def check_hook(hook, gta=True, names=()):
         notes.append("a CAPS word alone measured 0.97x: the premise works when it names the streamer "
                      "(\"xQc forces the hostages to *SING*\", 1.21x) or adds a question/negation")
     if gta and found and not has_stake(hook, names):
-        notes.append("no concrete stake: name the number, amount, consequence or character at stake (\"NOT ready for "
+        notes.append("no concrete stake: name the number, amount, consequence or a character viewers already know (\"NOT ready for "
                      "*Trevor*\", \"him to be *13*\", \"$500K painting\"); our flops named only a vague object "
                      "(\"USB\", \"marlin\", \"the betrayal\")")
+    if DID_YOU_KNOW.search(text):
+        notes.append(DID_YOU_KNOW_NOTE)
     if RAGE_BAIT.search(text):
         notes.append("rage-bait wording measured ~0.84x on 3,481 gaming Shorts: ask the viewer for a verdict instead "
                      "(\"Is xQc's aim *legit*?!\")")
@@ -150,10 +199,88 @@ def check_hook(hook, gta=True, names=()):
         elif len(words) <= 4:
             fails.append("topic label (no structure measured 0.88x on GTA Shorts): turn it into a question, number, "
                          "negation or relatable line (\"GTA 6 GRAPHICS\" -> \"Are these *GTA 6* graphics real?\")")
-        else:
-            fails.append("plain statement: use a structure (question, tease, withheld/negation, number promise, "
-                         "shock fact, first-person claim, relatable situation)")
+        elif gta and loop_frame(hook) == "closed":
+            notes.append("plain statement with no open loop: tell the setup and hold back how it ends (\"Ron tried to "
+                         "surprise Lacy with a *PS5 Pro*\", \"He took a hostage and only asked for *two bags of chips*\")")
+        else:  # 100K+ clip channels narrate what happened ("Kai Cenat Pranked Lil RT! 😭"); this check failed 82% of them
+            notes.append("plain statement: fine when it tells the setup and withholds how it ends (\"He took a hostage "
+                         "and only asked for *two bags of chips*\"); it fails the loop if it says the outcome")
     return fails, notes
+
+
+TURN_MAX_WORDS = 12
+
+# Open-loop frames, measured against each channel's own norm (research "Open loops", 2026-11-19): hypotheticals 1.12x
+# on 30 story-game channels, a told setup with the ending withheld 1.13x on 27 streamer-clip channels, "did you know"
+# 0.71x and teases 0.86x on story-game channels, questions 0.87x on clip channels.
+LOOP_FRAMES = [
+    ("hypothetical", re.compile(r"^(what (happens|would happen|if)|what if)\b|\b(happens|would happen) (if|when)\b|"
+                                r"^if (you|he|she|they|i|\w+) ", re.I)),
+    ("did you know", re.compile(r"did you know|didn'?t know|never knew|nobody (knows|noticed)|you missed|hidden detail|"
+                                r"easter egg", re.I)),
+    ("setup, ending withheld", re.compile(r"\b(tried to|wanted to|tries to|attempts? to|almost|thought (he|she|they|it)|"
+                                          r"didn'?t expect|did not expect|(was|were|is)n'?t ready|was not ready|accidentally|"
+                                          r"got (tricked|fooled|pranked|caught|exposed)|finds? out|found out|realiz(es|ed)|"
+                                          r"only (asked|wanted|had)|then|until|before (he|she|they))\b", re.I)),
+    ("tease", re.compile(r"\.\.\.|…|\bwait (for|till|until)\b|\bwatch (till|until|this)\b", re.I)),
+    ("question", re.compile(r"\?|^(why|how|who|is|did|does|was|can|would|should|which)\b", re.I)),
+]
+DID_YOU_KNOW = LOOP_FRAMES[1][1]
+DID_YOU_KNOW_NOTE = ("\"did you know\" / hidden-detail framing measured 0.71x on 30 story-game channels: name the extreme "
+                     "fact itself and withhold the outcome")
+
+
+def loop_frame(text):
+    """The open-loop frame a hook or title uses ('closed' when none): recorded per upload so `clipper stats` can
+    compare frames on our own channel."""
+    t = re.sub(r"#\S+", "", plain(text))
+    return next((name for name, pat in LOOP_FRAMES if pat.search(t)), "closed")
+
+
+def check_loop(pick):
+    """(fails, notes) for the reframe: the pick names the question a viewer is left with after the first second
+    (`loop`) and the moment the clip answers it (`payoff_at`, source seconds; clip seconds for a segment pick, like
+    labels). A loop the footage never closes is the clickbait the research bans; one closed early loses the viewer."""
+    fails, notes = [], []
+    if not str(pick.get("loop") or "").strip():
+        fails.append("no `loop`: the question a stranger has after the first second (\"will they really pay a ransom of "
+                     "chips?\"); the hook opens it, the clip closes it")
+    at = pick.get("payoff_at")
+    if at is None:
+        fails.append("no `payoff_at`: when the clip answers the loop (no payoff in the footage, no clip)")
+        return fails, notes
+    try:
+        at = float(at)
+    except (TypeError, ValueError):
+        return fails + [f"payoff_at {pick.get('payoff_at')!r} must be seconds"], notes
+    lo, hi = clip_bounds(pick)
+    if lo is None or hi is None:
+        return fails, notes
+    lo, hi = float(lo), float(hi)
+    if not lo <= at <= hi:
+        fails.append(f"payoff_at {at:g}s is outside the clip ({lo:g}-{hi:g}s): the loop never closes on screen")
+    elif hi > lo and (at - lo) / (hi - lo) < 0.5:
+        notes.append(f"the loop closes {at - lo:.0f}s into a {hi - lo:.0f}s clip: viewers leave once it's answered; end "
+                     "a few seconds after the payoff or start later on the setup line")
+    return fails, notes
+
+
+def check_stranger(pick):
+    """Fails unless the pick names its turn (what changes between people, or the visible act at stake) and a cold
+    premise a stranger gets in one read. Our flops needed lore ("OG ordered", "Lee's USB"); every 100K+ outlier didn't."""
+    fails = []
+    if pick.get("campaign"):  # the brand chose the stream and timestamps
+        return fails
+    if not str(pick.get("turn") or "").strip():
+        fails.append("no `turn`: name what changes between people (a gift, prank, betrayal, meeting, confrontation) or "
+                     "the visible act at stake (a theft, a chase, money spent); no turn, no clip")
+    premise = str(pick.get("cold_premise") or "").strip()
+    if not premise:
+        fails.append("no `cold_premise`: the premise in <=12 words for someone who never saw the stream")
+    elif len(premise.split()) > TURN_MAX_WORDS:
+        fails.append(f"cold_premise is {len(premise.split())} words: a stranger must get it in one read "
+                     f"(<= {TURN_MAX_WORDS}); if it needs backstory, skip the clip")
+    return fails
 
 
 def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
@@ -168,6 +295,15 @@ def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
     if narrate and (re.search(r"\b(NOT|NEVER|CAN'?T|WON'?T|DIDN'?T|NOBODY)\b", title) or "?" in title):
         notes.append("500K+ clip Shorts narrate what happened (1 of 45 used NOT/nobody, 0 asked a question): "
                      "\"Kai Cenat Finds ICE SPICE In GTA 5 😂\"; keep the twist in the hook, not the title")
+    if DID_YOU_KNOW.search(title):
+        notes.append(DID_YOU_KNOW_NOTE)
+    if narrate and re.match(r"\s*(me|us|pov|when (you|your|ur))\b", title, re.I):
+        notes.append("\"Me…\" / \"POV:\" / \"When you…\" hides the streamer and names a mood, not a moment: tell the "
+                     "setup with the streamer first and withhold the ending (\"Kai Cenat Tried To Steal A Car Off A "
+                     "Moving Truck In GTA 6 😱\")")
+    elif narrate and loop_frame(title) == "closed":
+        notes.append("no open loop: tell the setup on the clip's most extreme fact and hold back how it ends "
+                     "(\"xQc Refused To Give An Armed Robber $5 In GTA 6 😭\"), or ask what happens if…")
     if re.search(r"\b(update|announce\w*|explained|patch|now live|available now)\b", title, re.I):
         notes.append("announcement wording measured 0.85x: lead with what changed (\"GTA 6 Map Is 2x BIGGER\")")
     if topic and not re.search(topic["pattern"], title, re.I):
@@ -469,6 +605,13 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["context_note"] = check_context_note(pick)
         if check_fx(pick):
             entry["fx"] = check_fx(pick)
+        if check_stranger(pick):
+            entry["stranger"] = check_stranger(pick)
+        if gta and check_cold(pick, names):
+            entry["cold"] = check_cold(pick, names)
+        loop_fails, loop_notes = check_loop(pick)
+        if loop_fails or loop_notes:
+            entry["loop"] = {"fails": loop_fails, "notes": loop_notes} if loop_notes else {"fails": loop_fails}
         edit = check_spoiler(pick, None)
         cw = clip_words(pick, words, load) if words is not None and not check_segments(pick) else None
         if cw is not None:
@@ -594,4 +737,5 @@ def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \
         or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e or "narration" in e
+               or "stranger" in e or (e.get("loop") or {}).get("fails")
                for e in report.values())

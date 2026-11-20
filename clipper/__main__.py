@@ -13,6 +13,7 @@ from . import dub as dub_mod
 from . import longform
 from . import live as live_mod
 from . import setup as setup_mod
+from . import stats as stats_mod
 
 
 def _picks_from_ids(job, ids):
@@ -161,6 +162,8 @@ def main(argv=None):
     cl.add_argument("--dry-run", action="store_true", help="list what would be deleted, delete nothing")
     bn = sub.add_parser("bench", help="measure this machine and how many live creators it can keep up with")
     bn.add_argument("--seconds", type=int, default=60)
+    bn.add_argument("--moments", action="store_true", help="instead: score the moment finder's signals on 83 "
+                                                         "outlier-vs-flop pairs (research/moment-pairs.json)")
     cr = sub.add_parser("creators", help="list / add / remove watched creators")
     cr.add_argument("action", choices=["list", "add", "remove"])
     cr.add_argument("refs", nargs="*", help="@handle, handle, or channel URL")
@@ -184,6 +187,9 @@ def main(argv=None):
     fr = sub.add_parser("frame", help="grab a gridded frame to locate the facecam for split layout")
     fr.add_argument("job")
     fr.add_argument("seconds", type=float)
+    sa = sub.add_parser("stats", help="our uploads' views, engaged share and retention joined to their upload.json "
+                                      "(read-only YouTube OAuth); saves research/own-stats.json + simulate's own data")
+    sa.add_argument("--no-save", action="store_true", help="print the report, write nothing")
     lg = sub.add_parser("long", help="long-form running-bit supercut (16:9, 8-10 min): check or render a spec")
     lg.add_argument("action", choices=["check", "render"])
     lg.add_argument("spec", help="JSON spec (see /clip-long)")
@@ -309,7 +315,11 @@ def main(argv=None):
     elif args.cmd == "cleanup":
         print(json.dumps(cleanup_mod.run(cfg, args.dry_run), indent=2))
     elif args.cmd == "bench":
-        print(bench_mod.run(cfg, args.seconds))
+        if args.moments:
+            from . import moments_eval
+            print(moments_eval.run(cfg)[1])
+        else:
+            print(bench_mod.run(cfg, args.seconds))
     elif args.cmd == "creators":
         if args.action == "list":
             for c in library.load_creators():
@@ -349,6 +359,8 @@ def main(argv=None):
             print(f"no line matching '{args.pattern}' in the last {args.hours:g} h")
     elif args.cmd == "frame":
         print(analyze_mod.grid_frame(config.job_dir(args.job), args.seconds))
+    elif args.cmd == "stats":
+        print(stats_mod.run(save=not args.no_save))
     elif args.cmd == "long":
         spec = json.loads(open(args.spec, encoding="utf-8").read())
         if args.action == "check":

@@ -18,32 +18,35 @@ SYSTEM_FALLBACK = ["/System/Library/Fonts/Supplemental/Arial Black.ttf",
                    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                    "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"]
 
+# Sized like the 500K+ clip channels' small 1-2 word captions (research "Text over the game", 2026-11-19), not the
+# 8-10%-of-frame captions of the creators' own channels, which covered the gameplay we clip.
 CAPTION_STYLES = {
-    "bold": {"font": "montserrat-black", "size": 84, "stroke": 8, "box": False},
-    "boxed": {"font": "bebas", "size": 116, "stroke": 0, "box": True},
-    "comic": {"font": "luckiest", "size": 96, "stroke": 11, "box": False},
+    "bold": {"font": "montserrat-black", "size": 64, "stroke": 6, "box": False},
+    "boxed": {"font": "bebas", "size": 80, "stroke": 0, "box": True},
+    "comic": {"font": "luckiest", "size": 70, "stroke": 8, "box": False},
 }
 # Each extra speaker gets its own colour and a different font so crosstalk is easy to follow.
 SPEAKER_COLOURS = [((255, 255, 255), (255, 225, 60)), ((110, 215, 255), (255, 255, 255)),
                    ((255, 140, 205), (255, 255, 255)), ((150, 255, 140), (255, 255, 255))]
 SPEAKER_FONTS = ["bebas", "luckiest", "tiktok-bold", "montserrat-black"]
-FONT_SIZES = {"montserrat-black": 84, "bebas": 116, "luckiest": 96, "tiktok-bold": 90, "tiktok-semibold": 90}
+FONT_SIZES = {"montserrat-black": 64, "bebas": 80, "luckiest": 70, "tiktok-bold": 66, "tiktok-semibold": 66}
 
 HOOK_STYLES = {
-    "bold": {"font": "montserrat-black", "size": 88, "upper": True, "fill": (255, 255, 255),
+    "bold": {"font": "montserrat-black", "size": 72, "upper": True, "fill": (255, 255, 255),
              "keyword": (255, 225, 60), "stroke": 3, "shadow": True, "box": False},
-    "box": {"font": "tiktok-bold", "size": 66, "upper": False, "fill": (15, 15, 15),
+    "box": {"font": "tiktok-bold", "size": 58, "upper": False, "fill": (15, 15, 15),
             "keyword": (30, 120, 255), "stroke": 0, "shadow": False, "box": True},
-    "label": {"font": "tiktok-semibold", "size": 70, "upper": False, "fill": (255, 255, 255),
+    "label": {"font": "tiktok-semibold", "size": 60, "upper": False, "fill": (255, 255, 255),
               "keyword": (200, 90, 255), "stroke": 5, "shadow": False, "box": False},
-    # the 1M+ clip channels' look: a big bold premise at the top, 2 lines when it fits (never drops a word)
-    "big": {"font": "montserrat-black", "size": 112, "min_size": 80, "max_lines": 2, "upper": True,
-            "fill": (255, 255, 255), "keyword": (255, 225, 60), "stroke": 7, "shadow": True, "box": False},
+    # the 1M+ clip channels' look: a bold premise, 2 lines when it fits (never drops a word)
+    "big": {"font": "montserrat-black", "size": 72, "min_size": 56, "max_lines": 2, "upper": True,
+            "fill": (255, 255, 255), "keyword": (255, 225, 60), "stroke": 5, "shadow": True, "box": False},
 }
 # Vertical positions: "fit" = 16:9 game centred; "split" = facecam on top (half the frame: 500K+ clip Shorts show the
-# face 2-3x bigger than ours), game below. In split the hook hangs from the seam so it never covers the face.
+# face 2-3x bigger than ours), game below. In split the hook stands on the seam over the bottom of the facecam (chest
+# and desk), and captions sit on the game's top edge, so neither covers the gameplay viewers are reacting to.
 SPLIT_TOP = 960
-LAYOUTS = {"fit": {"hook_y": 330, "caption_y": 1420}, "split": {"hook_y": SPLIT_TOP, "caption_y": 1580}}
+LAYOUTS = {"fit": {"hook_y": 330, "caption_y": 1420}, "split": {"hook_y": SPLIT_TOP, "caption_y": SPLIT_TOP + 56}}
 _fonts = {}
 
 
@@ -139,7 +142,7 @@ def apply_fixes(words, fixes):
     return out
 
 
-def chunk_words(words, max_words=3, max_gap=0.45):
+def chunk_words(words, max_words=2, max_gap=0.45):
     chunks, cur = [], []
     for i, w in enumerate(words):
         cur.append(w)
@@ -283,8 +286,8 @@ def render_hook(text, path, style="box", layout="fit"):
     lh = int(size * 1.2)
     centre = LAYOUTS.get(layout, LAYOUTS["fit"])["hook_y"]
     box_h = lh * len(lines) + 50
-    # split: hang below the seam so the face stays clear; fit: centred on its spot
-    top = centre + 12 if layout == "split" else centre - box_h // 2
+    # split: stand on the seam (bottom of the facecam) so the game stays clear; fit: centred on its spot
+    top = centre - 8 - box_h if layout == "split" else centre - box_h // 2
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))

@@ -50,7 +50,7 @@ def video_filter(layout, size):
         fx, fy, fw, fh = layout["face"]
         gx, gy = layout.get("game_x", 0.5), layout.get("game_y", 0.5)
         top, bot = captions.SPLIT_TOP, 1920 - captions.SPLIT_TOP
-        zoom = float(layout.get("game_zoom", 1.3))  # tight on the characters, not the whole wide shot
+        zoom = float(layout.get("game_zoom", 1.1))  # a little tighter than the wide shot; 1.3 cropped out signs and HUD
         return (f"[0:v]split[a][b];[a]crop={_even(fw * sw)}:{_even(fh * sh)}:{int(fx * sw)}:{int(fy * sh)},"
                 f"scale=1080:{top}:force_original_aspect_ratio=increase,crop=1080:{top}[top];"
                 f"[b]scale=-2:{_even(bot * zoom)},crop=1080:{bot}:(iw-1080)*{gx}:(ih-{bot})*{gy}[bot];"
@@ -230,6 +230,9 @@ def prepare_clip(job, pick, fallback_words, cfg, tmp):
     if pick.get("labels"):
         words = action_labels(pick, words)
         source += " + action captions"
+    if pick.get("captions") is False:  # the source already burns in subtitles: two sets would stack
+        words = [w for w in words if w.get("label")]
+        source += " (speech captions off)"
     layout = pick.get("layout") or {"type": "fit"}
     caps = captions.write_overlay(words, 0.0, dur, tmp / "caps", caption_layout(layout),
                                   pick.get("caption_style") or cfg.get("caption_style", "bold"),
@@ -499,7 +502,7 @@ def no_hook_arm(pick, job, meta, share):
 def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None):
     """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
     (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
-    from .hooks import structures
+    from .hooks import loop_frame, structures
     from .simulate import MODIFIERS, effect_table
     table = effect_table()
     creds = creds or credits(pick, job, meta)
@@ -517,8 +520,12 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
                     "hook_type": "none" if none else max(types, key=lambda t: table[t][0]) if types else None,
                     "arm": "no-hook" if none else "hook",
                     "title": (titles[i] if len(titles) == len(variants) else titles[0])[:100],
+                    "hook_frame": "none" if none else loop_frame(v["hook"]),
+                    "title_frame": loop_frame(titles[i] if len(titles) == len(variants) else titles[0]),
                     "description": post_description(desc, creds, tags),
                     "hashtags": pick.get("hashtags") or [], "clip_type": pick.get("clip_type"),
+                    "turn": pick.get("turn"), "cold_premise": pick.get("cold_premise"),
+                    "loop": pick.get("loop"), "payoff_at": pick.get("payoff_at"),
                     "campaign": pick.get("campaign"),
                     "source": creds[0][1], "sources": [link for _, link in creds],
                     "duration": v["check"].get("duration"), "footage": fp, "moment_at": when,

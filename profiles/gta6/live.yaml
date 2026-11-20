@@ -17,3 +17,8 @@ streams:
 - name: caseoh_-twitch
   url: https://www.twitch.tv/caseoh_
   topic_only: true
+  priority: 10
+- name: IShowSpeed-youtube
+  url: https://www.youtube.com/@IShowSpeed/live
+  topic_only: true
+  priority: 10

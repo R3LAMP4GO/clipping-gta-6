@@ -144,6 +144,8 @@ python3 -m clipper live restart <stream>       # load new code into a recorder w
 python3 -m clipper live health                 # live streams not recorded, stalled recorders, failed analyses, low disk (exit 1)
 python3 -m clipper cleanup [--dry-run]         # delete old job video/audio (also runs on every live watch and daily)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
+python3 -m clipper bench --moments              # moment signals scored on 100K+ outliers vs same-channel flops
+python3 -m clipper stats [--no-save]            # our uploads' views/engaged/retention joined to their upload.json
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
 python3 -m unittest discover -s tests
 ```
