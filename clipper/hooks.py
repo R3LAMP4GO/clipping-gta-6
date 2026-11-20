@@ -283,6 +283,20 @@ def check_stranger(pick):
     return fails
 
 
+MOOD_TITLE = re.compile(r"\s*(me|us|pov|when (you|your|ur))\b", re.I)
+MOOD_NOTE = ("\"Me…\" / \"POV:\" / \"When you…\" hides the streamer and names a mood, not a moment: tell the setup with "
+             "the streamer first and withhold the ending (\"Kai Cenat Tried To Steal A Car Off A Moving Truck In GTA 6 😱\")")
+
+
+def streamer_clip(pick, names=()):
+    """True when the pick's description or source names a streamer: its titles must name them, not say "Me…"."""
+    text = " ".join(str(pick.get(k) or "") for k in ("description", "source")) + " " + " ".join(pick.get("sources") or [])
+    if re.search(r"\b(twitch\.tv|kick\.com)/", text, re.I):  # a live stream is a streamer's clip
+        return True
+    words = {w.lower() for w in re.findall(r"[A-Za-z0-9_]+", text)}
+    return bool(words & (STREAMERS | {n.lower() for n in names}))
+
+
 def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
     fails, notes = [], []
     if len(title) > 100:
@@ -297,10 +311,8 @@ def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
                      "\"Kai Cenat Finds ICE SPICE In GTA 5 😂\"; keep the twist in the hook, not the title")
     if DID_YOU_KNOW.search(title):
         notes.append(DID_YOU_KNOW_NOTE)
-    if narrate and re.match(r"\s*(me|us|pov|when (you|your|ur))\b", title, re.I):
-        notes.append("\"Me…\" / \"POV:\" / \"When you…\" hides the streamer and names a mood, not a moment: tell the "
-                     "setup with the streamer first and withhold the ending (\"Kai Cenat Tried To Steal A Car Off A "
-                     "Moving Truck In GTA 6 😱\")")
+    if narrate and MOOD_TITLE.match(title):
+        notes.append(MOOD_NOTE)
     elif narrate and loop_frame(title) == "closed":
         notes.append("no open loop: tell the setup on the clip's most extreme fact and hold back how it ends "
                      "(\"xQc Refused To Give An Armed Robber $5 In GTA 6 😭\"), or ask what happens if…")
@@ -575,6 +587,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
         tags = pick.get("hashtags") or []
         for t in pick.get("titles") or []:
             f, nt = check_title(t, tags, topic, gta)
+            if MOOD_NOTE in nt and streamer_clip(pick, names):  # a note alone lost to the ranker's 1.5x "relatable" score
+                f, nt = f + [MOOD_NOTE], [x for x in nt if x != MOOD_NOTE]
             if f or nt:
                 entry.setdefault("titles", {})[t] = {"fails": f, "notes": nt} if nt else {"fails": f}
         hs, ts = pick.get("hooks") or [], pick.get("titles") or []

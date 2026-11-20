@@ -111,3 +111,18 @@ class ColdHookTests(unittest.TestCase):
                   "When you walk past a gator in *Florida*", "How do you date a Latina with NO *Spanish*?"):
             self.assertEqual(hooks.check_cold({"hooks": [h]}), [], h)
         self.assertIn("Mangrove", hooks.check_cold({"hooks": ["Nobody warned xQc about *Mr. Mangrove*"]})[0])
+
+
+class MoodTitleFailTests(unittest.TestCase):
+    def test_me_title_fails_on_a_streamer_clip_only(self):
+        pick = {"hooks": ["Me when they call my statue *fake*"],
+                "titles": ["Me When They Call My Rich Uncle's Statue Fake In GTA 6 😂"],
+                "description": "Kai Cenat playing GTA 6 live: a dealer calls the statue fake.", "hashtags": ["#gta6"]}
+        t = hooks.check_picks([pick])["video 1"]["titles"][pick["titles"][0]]
+        self.assertIn(hooks.MOOD_NOTE, t["fails"])
+        self.assertNotIn(hooks.MOOD_NOTE, t.get("notes", []))
+        skit = {**pick, "description": "A GTA 6 skit about a fake statue."}
+        t = hooks.check_picks([skit])["video 1"]["titles"][pick["titles"][0]]
+        self.assertEqual(t["fails"], [])
+        self.assertIn(hooks.MOOD_NOTE, t["notes"])
+        self.assertTrue(hooks.streamer_clip({"source": "https://www.twitch.tv/kaicenat"}))
