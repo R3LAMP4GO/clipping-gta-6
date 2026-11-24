@@ -131,8 +131,12 @@ python3 -m clipper report "<markdown>"         # add a run report to exports/<pr
 python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler, one daily job per profile (--profile)
 python3 -m clipper --profile streamers schedule install --agent codex   # same with Codex (`codex exec`, project-only writes, network on; or prefs agent=codex)
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
-python3 -m clipper long check jobs/long-x.json  # long-form 16:9 spec: "kind" supercut (8-10 min), mid ("what happens", 30s-3 min) or story (narrated, 4-10 min); see /clip-long
-python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg; never auto-posted)
+python3 -m clipper long check jobs/long-x.json  # long-form 16:9 spec: "kind" supercut (8-10 min), mid ("what happens", 30s-3 min), story (narrated, 4-10 min) or compilation (a streamer's funniest moments, 8-12 min); see /clip-long
+python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg by Codex $imagegen, checked, else the raw frame; --no-ai-thumb; never auto-posted)
+python3 -m clipper bank tag <job> <start> <end> [--note] [--niche irl|gaming|rp]  # keep a moment for long-form as a small clip in jobs/_longbank/ (or --short "<video N folder>")
+python3 -m clipper bank list                     # banked moments, status, size, and what's due for deletion
+python3 -m clipper bank done "<long N folder>" [--youtube-id X]  # mark a long video posted: its bank clips and thumbnail files go after keep_after_post_days
+python3 -m clipper bank purge [--dry-run]        # the long-form deletions on their own (cleanup runs them too)
 python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper check picks.json --job <id>  # research rules + fail picks reusing exported footage
@@ -143,7 +147,7 @@ python3 -m clipper schedule live               # watch streams every 5 min + cli
 python3 -m clipper live jobs | done <job>      # finished 30-min chunks to clip / mark clipped (source kept a few hours)
 python3 -m clipper live restart <stream>       # load new code into a recorder without a gap (new one starts first)
 python3 -m clipper live health                 # live streams not recorded, stalled recorders, failed analyses, low disk (exit 1)
-python3 -m clipper cleanup [--dry-run]         # delete old job video/audio (also runs on every live watch and daily)
+python3 -m clipper cleanup [--dry-run]         # delete old job video/audio, then the long-form purge (also runs on every live watch and daily)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper bench --moments              # moment signals scored on 100K+ outliers vs same-channel flops
 python3 -m clipper stats [--no-save]            # our uploads' views/engaged/retention joined to their upload.json / long.json, grouped by profile, shape (short/long/mid/story), premise and question type
@@ -153,7 +157,13 @@ python3 -m clipper setup [--install]           # check/install dependencies + gl
 python3 -m unittest discover -s tests
 ```
 
-Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights, clip length and disk settings in `watchlist.yaml` (`keep_live_sources_hours: 3` and `keep_sources_days: 2` for when old video and audio are deleted, `null` keeps them; `min_free_gb` for the health check). Transcripts, picks and exports are never deleted. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
+Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights, clip length and disk settings in `watchlist.yaml` (`keep_live_sources_hours: 3` and `keep_sources_days: 2` for when old video and audio are deleted, `null` keeps them; `min_free_gb` for the health check). Transcripts, picks and exports are never deleted, apart from these long-form rules:
+- Tagged moments (`clipper bank tag`) are kept as padded clips (`longbank_pad_s: 3`) so their source can still go on time.
+- A banked moment is single use. It's deleted `keep_after_post_days: 2` after `clipper bank done` marks every long video that used it posted; that video's thumbnail files go then too.
+- An unused one goes `bank_expire_days: 30` after tagging (listed one run first).
+- Posted Shorts' MP4s go only if you set `keep_posted_short_exports_days` (default `null`).
+
+Deletions only touch files inside the clip's bank folder, a posted `long N`, a posted `video N` or Codex's own session folder. Each is logged to `jobs/_longbank/ledger.jsonl`; `--dry-run` shows them first. The long MP4 and `long.json` always stay. AI thumbnails run `codex exec` with `$imagegen` on your ChatGPT login (`thumbnail_codex_model`, default `gpt-6.1-terra`): one image per video, one retry if the Apple Vision check fails. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
 
 A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first. A moment may go out once per shape: as a Short and as a `mid` long video, never twice as either.
 

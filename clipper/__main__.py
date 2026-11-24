@@ -10,7 +10,7 @@ from . import config, hooks, library, render as render_mod, schedule, simulate, 
 from . import bench as bench_mod
 from . import cleanup as cleanup_mod
 from . import dub as dub_mod
-from . import longform
+from . import longbank, longform
 from . import live as live_mod
 from . import setup as setup_mod
 from . import stats as stats_mod
@@ -60,6 +60,12 @@ def favored_first(found, cfg):
     return sorted(found, key=lambda v: (not is_favored(v.get("channel"), cfg), v["source"].startswith("search:")))
 
 
+def cleaned_total(c):
+    """Files and GB a cleanup run freed: sources plus the long-form purge."""
+    lf = c.get("longform") or {}
+    return {"files": c["files"] + lf.get("files", 0), "gb": round(c["gb"] + lf.get("gb", 0), 2)}
+
+
 def daily(cfg, limit=None):
     """Pick the newest unprocessed uploads on the profile's topic from the creators list and analyze them."""
     prefs = library.load_prefs()
@@ -89,7 +95,7 @@ def daily(cfg, limit=None):
     total = (min(sum(j["recommended"] for j in jobs), int(prefs.get("max_videos_per_run", 10)))
              if want == "auto" else int(want))
     return {"prefs": prefs, "new_videos": len(fresh), "analyzed": jobs, "videos_to_export": total,
-            "cleaned": {"files": cleaned["files"], "gb": cleaned["gb"]},
+            "cleaned": cleaned_total(cleaned),
             "skipped_off_topic": skipped, "errors": errors}
 
 
@@ -157,8 +163,9 @@ def main(argv=None):
     db.add_argument("--translation", help="render: the translation JSON (see `dub segments` for its template)")
     rp = sub.add_parser("report", help="append a run report to exports/<profile>/<date>/index.md (never rewrites it)")
     rp.add_argument("text", help="the report, in Markdown")
-    cl = sub.add_parser("cleanup", help="delete old job video/audio (keep_live_sources_hours, keep_sources_days); "
-                                        "transcripts, picks and exports stay")
+    cl = sub.add_parser("cleanup", help="delete old job video/audio (keep_live_sources_hours, keep_sources_days), "
+                                        "then the long-form purge (see `bank purge`); transcripts, picks, long "
+                                        "MP4s and long.json stay")
     cl.add_argument("--dry-run", action="store_true", help="list what would be deleted, delete nothing")
     bn = sub.add_parser("bench", help="measure this machine and how many live creators it can keep up with")
     bn.add_argument("--seconds", type=int, default=60)
@@ -217,10 +224,31 @@ def main(argv=None):
     rq.add_argument("--apply", action="store_true", help="save recut picks to jobs/<id>/picks-requeue.json and render "
                                                          "them into new video N folders (default: dry run, writes nothing)")
     lg = sub.add_parser("long", help="long-form 16:9: a running-bit supercut (8-10 min), a \"what happens\" video "
-                        "(kind mid, 30s-3 min) or a narrated story (kind story, 4-10 min): check or render a spec")
+                        "(kind mid, 30s-3 min), a narrated story (kind story, 4-10 min) or a streamer's funniest "
+                        "moments (kind compilation, 8-12 min): check or render a spec")
     lg.add_argument("action", choices=["check", "render"])
     lg.add_argument("spec", help="JSON spec (see /clip-long)")
     lg.add_argument("--out", help="output folder (default exports/<profile>/<today>; `long N` numbering continues)")
+    lg.add_argument("--no-ai-thumb", action="store_true", help="render: use the raw source frame as the thumbnail "
+                                                               "instead of a Codex $imagegen one")
+    bk = sub.add_parser("bank", help="clip bank for long-form: keep tagged moments as small clips so their sources "
+                                     "can be deleted; a moment goes once a long video that used it is posted")
+    bks = bk.add_subparsers(dest="bank_cmd", required=True)
+    bt = bks.add_parser("tag", help="cut a moment (padded by longbank_pad_s) into jobs/_longbank/")
+    bt.add_argument("job", nargs="?", help="job id or folder")
+    bt.add_argument("start", nargs="?", type=float, help="source seconds")
+    bt.add_argument("end", nargs="?", type=float, help="source seconds")
+    bt.add_argument("--note", help="what happens (shown in `bank list`)")
+    bt.add_argument("--niche", choices=["irl", "gaming", "rp"])
+    bt.add_argument("--short", help="instead of job/start/end: tag the moment of a rendered Short (a `video N` folder)")
+    bks.add_parser("list", help="every banked moment, its status and size, and what's due for deletion")
+    bd = bks.add_parser("done", help="mark a `long N` folder posted: its bank clips and thumbnail files go after "
+                                     "keep_after_post_days")
+    bd.add_argument("folder")
+    bd.add_argument("--youtube-id")
+    bp = bks.add_parser("purge", help="delete used-and-posted bank clips, expired unused ones, posted longs' "
+                                      "thumbnails and Codex leftovers (also part of `cleanup`)")
+    bp.add_argument("--dry-run", action="store_true", help="list what would be deleted, delete nothing")
     args = p.parse_args(argv)
     config.load_env()
     cfg = config.load(args.config, args.profile)
@@ -305,7 +333,7 @@ def main(argv=None):
             cleaned = cleanup_mod.run(cfg)
             print(json.dumps({"started": started, "ready": live_mod.ready_jobs(True),
                               "transcribing": sorted(set(live_mod.ready_jobs()) - set(live_mod.ready_jobs(True))),
-                              "cleaned": {"files": cleaned["files"], "gb": cleaned["gb"]}}, indent=2))
+                              "cleaned": cleaned_total(cleaned)}, indent=2))
         elif a == "health":  # exit 1 on any issue, so a timer or monitor can alert on it
             issues = live_mod.health(cfg)
             print(json.dumps({"ok": not issues, "issues": issues}, indent=2))
@@ -404,16 +432,48 @@ def main(argv=None):
             print(json.dumps(requeue.apply(cfg, rows), indent=2))
         elif any(r["verdict"] == "recut" for r in rows):
             print("dry run: nothing written (add --apply to render the recuts into new video N folders)")
+    elif args.cmd == "bank":
+        if args.bank_cmd == "tag":
+            if args.short:
+                tagged = [longbank.tag(j, s, e, cfg, args.note, args.niche, short=Path(args.short).resolve())
+                          for j, s, e in longbank.short_moments(args.short)]
+            elif args.job and args.start is not None and args.end is not None:
+                tagged = [longbank.tag(args.job, args.start, args.end, cfg, args.note, args.niche)]
+            else:
+                raise SystemExit("bank tag needs <job> <start> <end>, or --short \"<video N folder>\"")
+            print(json.dumps(tagged, indent=2, ensure_ascii=False))
+        elif args.bank_cmd == "list":
+            plan = cleanup_mod.purge_plan(cfg, exports=render_mod.EXPORTS)
+            due = {str(e["owner"].resolve()): e["reason"] for e in plan["delete"] if e["kind"] == "bank"}
+            rows = [{"id": x["id"], "job": x["job"], "span": f"{x['start']:g}-{x['end']:g}s", "niche": x.get("niche"),
+                     "note": x.get("note"), "status": "deleted" if x.get("deleted_at") else x.get("status"),
+                     "mb": round(float(x.get("bytes") or 0) / 1e6, 1),
+                     "used_in": [Path(u).name for u in x.get("used_in") or []],
+                     "purge_after": x.get("purge_after"), "due": due.get(str(d.resolve())),
+                     "expires_next_run": x["id"] in plan["expiring"]} for d, x in longbank.entries()]
+            live_mb = sum(r["mb"] for r in rows if r["status"] != "deleted")
+            print(json.dumps({"clips": rows, "on_disk_mb": round(live_mb, 1),
+                              "due_now": sum(1 for r in rows if r["due"])}, indent=2, ensure_ascii=False))
+        elif args.bank_cmd == "done":
+            print(json.dumps(longbank.mark_posted(args.folder, cfg, args.youtube_id), indent=2))
+        else:
+            print(json.dumps(cleanup_mod.purge(cfg, args.dry_run, exports=render_mod.EXPORTS), indent=2,
+                             ensure_ascii=False))
     elif args.cmd == "long":
         spec = json.loads(open(args.spec, encoding="utf-8").read())
         if args.action == "check":
-            report = longform.check_long(spec, job_words)
+            report = longform.check_long(spec, job_words, hooks.known_facecams(config.JOBS))
             reused = longform.reused_footage(spec)
             if reused:
                 report["fails"] = report.get("fails", []) + reused
+            extra = [] if longform.kind_of(spec) == "compilation" else [  # its check already holds these
+                n for n in longform.shared_notes(spec) if n not in report.get("notes", [])]
+            if extra:
+                report["notes"] = report.get("notes", []) + extra
             print(json.dumps(report, indent=2, ensure_ascii=False) if report else "long-form spec passes")
             sys.exit(1 if report.get("fails") else 0)
-        print(json.dumps(longform.render_long(spec, cfg, args.out, words_for=job_words), indent=2))
+        print(json.dumps(longform.render_long(spec, cfg, args.out, words_for=job_words,
+                                              ai_thumb=not args.no_ai_thumb), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
 // Apple Vision on still frames: on-screen text (OCR) and faces, as JSON for clipper/viral.py.
-// Usage: apple-vision <image> [<image> ...] -> [{"path", "text": [{"s", "area", "y"}], "faces": [{"area", "y"}]}]
-// Areas are fractions of the frame; y is the box's vertical centre from the top (0-1).
+// Usage: apple-vision <image> [<image> ...] -> [{"path", "text": [{"s", "area", "y", "x", "top", "w", "h"}],
+//   "faces": [{"area", "y", "x", "top", "w", "h"}]}]
+// Areas are fractions of the frame; y is the box's vertical centre from the top (0-1); x/top are its left and top
+// edges, w/h its size (fractions of the frame).
 import Foundation
 import Vision
 
-struct TextBox: Encodable { let s: String; let area: Double; let y: Double }
-struct FaceBox: Encodable { let area: Double; let y: Double }
+struct TextBox: Encodable { let s: String; let area: Double; let y: Double; let x: Double; let top: Double; let w: Double; let h: Double }
+struct FaceBox: Encodable { let area: Double; let y: Double; let x: Double; let top: Double; let w: Double; let h: Double }
 struct Frame: Encodable { let path: String; let text: [TextBox]; let faces: [FaceBox] }
 
 var out: [Frame] = []
@@ -26,11 +28,13 @@ for path in CommandLine.arguments.dropFirst() {
     let t = (text.results ?? []).compactMap { obs -> TextBox? in
         guard let c = obs.topCandidates(1).first else { return nil }
         let b = obs.boundingBox
-        return TextBox(s: c.string, area: Double(b.width * b.height), y: Double(1 - b.midY))
+        return TextBox(s: c.string, area: Double(b.width * b.height), y: Double(1 - b.midY), x: Double(b.minX),
+                       top: Double(1 - b.maxY), w: Double(b.width), h: Double(b.height))
     }
     let f = (faces.results ?? []).map { obs -> FaceBox in
         let b = obs.boundingBox
-        return FaceBox(area: Double(b.width * b.height), y: Double(1 - b.midY))
+        return FaceBox(area: Double(b.width * b.height), y: Double(1 - b.midY), x: Double(b.minX),
+                       top: Double(1 - b.maxY), w: Double(b.width), h: Double(b.height))
     }
     out.append(Frame(path: path, text: t, faces: f))
 }
