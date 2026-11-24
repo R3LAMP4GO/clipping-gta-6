@@ -10,7 +10,9 @@ SENTENCE_END = (".", "?", "!")
 
 def extract_audio(src, wav):
     try:
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vn", "-ac", "1",
+        # live recordings have audio timestamp gaps; fill them with silence so word times match the video
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vn",
+                        "-af", "aresample=async=1:first_pts=0", "-ac", "1",
                         "-ar", "16000", "-c:a", "pcm_s16le", str(wav)], check=True)
     except subprocess.CalledProcessError:
         # a half-written wav would be reused by the next analyze and yield an empty transcript

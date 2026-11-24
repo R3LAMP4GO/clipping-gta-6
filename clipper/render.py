@@ -604,14 +604,26 @@ def next_video_number(out_dir):
     return max(nums, default=0) + 1
 
 
+def claim_video_folder(out_dir, n):
+    # Parallel renders share the day folder, so create it atomically and skip numbers another run took.
+    n = max(n, next_video_number(out_dir))
+    while True:
+        folder = out_dir / f"video {n}"
+        try:
+            folder.mkdir()
+            return n, folder
+        except FileExistsError:
+            n = max(n + 1, next_video_number(out_dir))
+
+
 def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     fallback = transcribe.drop_repeats(json.loads((job / "transcript.json").read_text(encoding="utf-8"))["words"])
     out_dir = Path(out_dir) if out_dir else export_dir(cfg)
     out_dir.mkdir(parents=True, exist_ok=True)
-    first = next_video_number(out_dir)
+    n = next_video_number(out_dir)
     results = []
-    for n, pick in enumerate(picks, first):
+    for i_pick, pick in enumerate(picks, 1):
         full = pick
         if top:  # only the best hook(s) get an MP4; the rest would never be posted
             pick = top_hooks(pick, cfg, top)
@@ -627,8 +639,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
         if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.5)):
             print(f"[render] video {n}: no-hook arm (one MP4, no banner, best title)", flush=True)
             hooks, titles = [""], titles[:1]
-        folder = out_dir / f"video {n}"
-        folder.mkdir()
+        n, folder = claim_video_folder(out_dir, n)
         taken = set()
         creds = credits(pick, job, meta)
         with tempfile.TemporaryDirectory(dir=job) as tmp:
@@ -638,7 +649,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                 print(f"[render] video {n}: joining {len(pick['segments'])} segments ...", flush=True)
                 src_job = tmp / "segments"
                 flat, words = build_segment_job(pick, job, cfg, src_job)
-            print(f"[render] video {n} ({n - first + 1} of {len(picks)}): separating voices + diarizing ...", flush=True)
+            print(f"[render] video {n} ({i_pick} of {len(picks)}): separating voices + diarizing ...", flush=True)
             prep = prepare_clip(src_job, flat, words, cfg, tmp)
             variants = []
             for i, hook in enumerate(hooks):

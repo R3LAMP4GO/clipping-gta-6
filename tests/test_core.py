@@ -292,6 +292,14 @@ class LibraryTests(unittest.TestCase):
 
 
 class ExportNumberingTests(unittest.TestCase):
+    def test_claim_skips_folder_taken_by_parallel_render(self):
+        from clipper.render import claim_video_folder
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "video 3").mkdir()
+            n, folder = claim_video_folder(Path(d), 3)
+            self.assertEqual((n, folder.name), (4, "video 4"))
+            self.assertTrue(folder.is_dir())
+
     def test_numbering_continues_in_dated_folder(self):
         import tempfile
         from pathlib import Path
@@ -1456,6 +1464,14 @@ class CaptionFontTests(unittest.TestCase):
 
 
 class DailySkipsFailedDownloads(unittest.TestCase):
+    def test_audio_extraction_fills_timestamp_gaps(self):
+        # a gappy live recording decoded without this ran 98 s short, so captions came 15 s early
+        from unittest import mock
+        with mock.patch.object(transcribe.subprocess, "run") as run:
+            transcribe.extract_audio("source.mp4", "audio.wav")
+        cmd = run.call_args[0][0]
+        self.assertIn("aresample=async=1:first_pts=0", cmd[cmd.index("-af") + 1])
+
     def test_age_restricted_download_is_skipped_not_fatal(self):
         import subprocess
         from unittest import mock
@@ -1994,6 +2010,22 @@ class SetupSudoTest(unittest.TestCase):
 
 
 class BiggerFaceBigHookOpeningTest(unittest.TestCase):
+    def test_opening_check_measures_the_split_frame_not_the_dark_desktop(self):
+        import subprocess
+        from clipper import hooks
+        with tempfile.TemporaryDirectory() as d:
+            job = Path(d)
+            subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-f", "lavfi", "-i",
+                            "color=c=0x101010:s=640x360:d=3", "-f", "lavfi", "-i", "testsrc2=s=180x160:d=3",
+                            "-f", "lavfi", "-i", "testsrc2=s=134x108:d=3", "-filter_complex",
+                            "[0][1]overlay=230:100[a];[a][2]overlay=0:0", "-pix_fmt", "yuv420p",
+                            str(job / "source.mp4")], check=True)
+            split = {"type": "split", "face": [0, 0, 0.21, 0.3], "game_zoom": 2.2}
+            fit = hooks.check_opening_frames({"start": 0, "end": 2}, job)
+            framed = hooks.check_opening_frames({"start": 0, "end": 2, "layout": split}, job)
+        self.assertIn("opens dark", fit["fails"][0])
+        self.assertNotIn("fails", framed)
+
     def test_split_gives_face_half_the_frame_and_zooms_gameplay(self):
         from clipper import render
         vf = render.video_filter({"type": "split", "face": [0, 0, 0.2, 0.3]}, (1920, 1080))

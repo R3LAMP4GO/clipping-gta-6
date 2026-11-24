@@ -833,12 +833,17 @@ def check_picks(picks, cfg=None, words=None, load=None):
 DARK_OPENING, STATIC_OPENING = 45, 3.5
 
 
-def opening_frames(src, start, secs=1.5):
+def opening_frames(src, start, secs=1.5, layout=None):
     """(brightness, motion) of the first `secs` of a clip from its source video; None when it can't be read."""
     import subprocess
     import numpy as np
+    vf = ["-vf", "scale=32:56,fps=8"]
+    if (layout or {}).get("type") == "split":  # measure the frame the split renders, not the raw (often dark) desktop
+        from . import render
+        vf = ["-filter_complex", render.video_filter(layout, render.source_size(src)) + ";[v1]scale=32:56,fps=8[o]",
+              "-map", "[o]"]
     raw = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-ss", f"{float(start):.3f}", "-t", str(secs),
-                          "-i", str(src), "-vf", "scale=32:56,fps=8", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                          "-i", str(src), *vf, "-f", "rawvideo", "-pix_fmt", "gray", "-"],
                          capture_output=True).stdout
     if len(raw) < 2 * 32 * 56:
         return None
@@ -851,7 +856,7 @@ def check_opening_frames(pick, job_dir):
     from .config import job_dir as resolve
     first = (pick.get("segments") or [pick])[0]
     src = (resolve(first["job"]) if first.get("job") else job_dir) / "source.mp4"
-    got = src.exists() and opening_frames(src, first["start"])
+    got = src.exists() and opening_frames(src, first["start"], layout=first.get("layout") or pick.get("layout"))
     if not got:
         return {}
     bright, motion = got
