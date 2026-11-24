@@ -35,11 +35,11 @@ title_topic:
 playbook:
   comedy:
     what: "an absurd RP scene with several players (heists, cops, court, hostages); the situation is the joke"
-    examples: ["POV: you're the hostage in *NoPixel*", "Nobody expected the hostages to *SING*",
+    examples: ["The hostages only *SING*", "THE *WORST* NOPIXEL HOSTAGE SITUATION",
                "Why are the hostages singing?", "Wait until the hostages start singing..."]
   reaction:
     what: "a streamer reacting in character to another player; their face and voice are the payoff"
-    examples: ["Me explaining RP to my mom", "xQc was NOT ready for *this*",
+    examples: ["Explaining RP to his mom", "xQc's *first* day as a cop",
                "Why couldn't xQc stop laughing?", "Wait for xQc's face at the end..."]
 
 # Names the speech recognition gets wrong in GTA streams (whole words, any case); a pick's own caption_fixes win.

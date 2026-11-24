@@ -33,6 +33,14 @@ def require_topic(cfg):
     return cfg.get("require_topic", cfg.get("require_gta6", True))
 
 
+def excluded(title, cfg, description=None, tags=None):
+    """The profile's `exclude_title_patterns` match the title (or, when given, the description's opening or a tag):
+    a profile that takes any topic but GTA 6 lists GTA 6 here, so gta6 gets those and this one never does."""
+    excl = [re.compile(p, re.I) for p in cfg.get("exclude_title_patterns", [])]
+    texts = [title or "", (description or "")[:600], *(tags or [])]
+    return any(p.search(t) for p in excl for t in texts)
+
+
 def topic_evidence(title, description, tags, cfg):
     """Where the video proves it's on the profile's topic ('title'/'description'/'tags'), or None."""
     pats = [re.compile(p, re.I) for p in topic_patterns(cfg)]
@@ -77,7 +85,13 @@ def watch(cfg, per_channel=8, searches=None):
                 "processed": (JOBS / vid / "candidates.json").exists(),
             })
     if not require_topic(cfg):
-        return found, errors, 0
+        kept = [v for v in found if not excluded(v["title"], cfg)]
+        if cfg.get("exclude_title_patterns") and kept:  # the same evidence the topic profile claims a video with
+            with ThreadPoolExecutor(max_workers=6) as pool:
+                metas = list(pool.map(_full_meta, [v["id"] for v in kept]))
+            kept = [v for v, m in zip(kept, metas)
+                    if not excluded(v["title"], cfg, (m or {}).get("description"), (m or {}).get("tags"))]
+        return kept, errors, len(found) - len(kept)
     with ThreadPoolExecutor(max_workers=6) as pool:
         metas = list(pool.map(_full_meta, [v["id"] for v in found]))
     kept = []

@@ -112,7 +112,7 @@ Setup copies the prompts to `~/.codex/prompts/`. After that use `/prompts:clip`,
 | `/clip-creators [add @handle \| remove name]` | Choose which creators to watch |
 | `/clip-setup` | Installs the tools, models and commands |
 
-Pick a niche with `--profile gta-rp` (or `CLIPPER_PROFILE`). Each one lives in `profiles/<name>/`: `profile.yaml` (topic filter, hashtags, searches), `creators.yaml` and `live.yaml`. Add your own by copying a folder.
+Pick a niche with `--profile gta-rp` (or `CLIPPER_PROFILE`). Each one lives in `profiles/<name>/`: `profile.yaml` (topic filter, hashtags, searches), `creators.yaml` and `live.yaml`. Add your own by copying a folder. `streamers` watches the same streamers as `gta6` but takes everything except GTA 6 (other games, IRL, just chatting): GTA 6 uploads and live streams go to `gta6` only, so the two never record or clip the same footage. Its exports stay in `exports/streamers/`, so you choose which channel posts them.
 
 <details>
 <summary><strong>CLI reference</strong> (what the agent runs for you)</summary>
@@ -124,13 +124,14 @@ python3 -m clipper frame <id> 100              # gridded frame to locate a facec
 python3 -m clipper voice-setup                 # save a Fish Audio key (macOS: key page + TextEdit note; Linux: hidden prompt)
 python3 -m clipper creators add @KaiCenat       # or: list / remove
 python3 -m clipper prefs set voice=auto videos_per_run=3 hooks_per_video=4
-python3 -m clipper daily                       # new GTA 6 uploads -> analyzed jobs (skips any that can't be downloaded)
+python3 -m clipper daily                       # new uploads on the profile's topic -> analyzed jobs (skips any that can't be downloaded)
 python3 -m clipper dub segments <id> --pick 1     # a clip's lines to translate, with speaker, pitch and loudness
 python3 -m clipper dub render <id> --pick 1 --lang ru --translation dub-ru.json   # exports/<profile>-ru/<date>/video N
 python3 -m clipper report "<markdown>"         # add a run report to exports/<profile>/<date>/index.md (never rewrites it)
-python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
+python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler, one daily job per profile (--profile)
+python3 -m clipper --profile streamers schedule install --agent codex   # same with Codex (`codex exec`, project-only writes, network on; or prefs agent=codex)
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
-python3 -m clipper long check jobs/long-x.json  # long-form running-bit supercut spec (see /clip-long)
+python3 -m clipper long check jobs/long-x.json  # long-form 16:9 spec: "kind" supercut (8-10 min), mid ("what happens", 30s-3 min) or story (narrated, 4-10 min); see /clip-long
 python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg; never auto-posted)
 python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
@@ -145,7 +146,8 @@ python3 -m clipper live health                 # live streams not recorded, stal
 python3 -m clipper cleanup [--dry-run]         # delete old job video/audio (also runs on every live watch and daily)
 python3 -m clipper bench                        # how many live creators this machine keeps up with
 python3 -m clipper bench --moments              # moment signals scored on 100K+ outliers vs same-channel flops
-python3 -m clipper stats [--no-save]            # our uploads' views/engaged/retention joined to their upload.json
+python3 -m clipper stats [--no-save]            # our uploads' views/engaged/retention joined to their upload.json / long.json, grouped by profile, shape (short/long/mid/story), premise and question type
+python3 -m clipper requeue [--apply]           # unposted clips vs the own-channel winners: keep / recut / hold (dry run; --apply renders recuts into new video N folders)
 python3 -m clipper viral collect|measure|score|report  # outliers (3x channel median) vs the rest: code metrics, optional Gemini scores (GEMINI_API_KEY), 50-run hidden-views validation; viral/ data deleted after 30 days
 python3 -m clipper setup [--install]           # check/install dependencies + global /clip commands
 python3 -m unittest discover -s tests
@@ -153,7 +155,9 @@ python3 -m unittest discover -s tests
 
 Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights, clip length and disk settings in `watchlist.yaml` (`keep_live_sources_hours: 3` and `keep_sources_days: 2` for when old video and audio are deleted, `null` keeps them; `min_free_gb` for the health check). Transcripts, picks and exports are never deleted. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
 
-A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first.
+A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first. A moment may go out once per shape: as a Short and as a `mid` long video, never twice as either.
+
+Picks name the one question the clip answers (`question`: `choice`, `tries`, `collision`, `recognition` or `event`). `premise_type` now includes `event`, the only type at 2x a plain description in `research/outlier-questions-2026-11.md` (2,910 titles from 46 GTA 6 and streamer clip channels). A `story` long video voices its narration lines with the same voiceover engine as Shorts, either on a frozen frame or ducked under the clip. `long check` fails it if the narrator covers a payoff, takes over 35% of the runtime or states the question after 15 s, or if a clip has nobody talking.
 
 Tools: yt-dlp, Parakeet (onnx-asr) or whisper.cpp, Demucs (voice separation), WhisperKit (speaker labels, macOS), FFmpeg, Pillow. Voiceover uses Fish Audio's free developer model when `FISH_API_KEY` is set (`clipper voice-setup`), otherwise the system voice. Dubs need the Fish key and Demucs (no system-voice fallback); the speaker split uses WhisperKit, so it's best on macOS. Fonts bundled in `assets/fonts` (Montserrat, Bebas Neue, TikTok Sans, Luckiest Guy; OFL/Apache licences included). Captions in other alphabets (Cyrillic, Greek, ...) switch automatically to a bundled font that can draw them. `transcript.json` has one word per line, so the agent can search it for any second.
 

@@ -34,8 +34,17 @@ class CheckLoopTests(unittest.TestCase):
         self.assertEqual(hooks.check_loop(early)[0], [])
         self.assertIn("closes 6s into a 30s clip", hooks.check_loop(early)[1][0])
         self.assertFalse(hooks.has_fails({"video 1": {"loop": {"fails": [], "notes": ["x"]}}}))
-        good = {**outside, "payoff_at": 126}
+        good = {**outside, "end": 113, "payoff_at": 110}
         self.assertEqual(hooks.check_loop(good), ([], []))
+
+    def test_late_payoff_and_long_tail_get_notes(self):
+        base = {"start": 100.0, "loop": "will they pay it?"}
+        late = hooks.check_loop({**base, "end": 130.0, "payoff_at": 126})
+        self.assertEqual(late[0], [])
+        self.assertIn("payoff lands 26s in", late[1][0])
+        tail = hooks.check_loop({**base, "end": 120.0, "payoff_at": 111})
+        self.assertEqual(len(tail[1]), 1)
+        self.assertIn("9s past the payoff", tail[1][0])
 
     def test_segment_pick_payoff_uses_clip_seconds(self):
         pick = {"segments": [{"start": 10, "end": 20}, {"start": 50, "end": 60}], "loop": "x", "payoff_at": 18}
@@ -78,12 +87,12 @@ class TitleLoopNoteTests(unittest.TestCase):
 class HookLoopNoteTests(unittest.TestCase):
     def test_plain_hook_without_a_loop_gets_a_note_structured_hooks_dont(self):
         loop = lambda h, gta=True: [n for n in hooks.check_hook(h, gta)[1] if "no open loop" in n]
-        self.assertTrue(loop("Kai Cenat steals a *Corvette*"))
-        self.assertEqual(hooks.check_hook("Kai Cenat steals a *Corvette*")[0], [])  # a note, not a fail
+        self.assertTrue(loop("Kai Cenat steals a *Corvette* in traffic"))
+        self.assertEqual(hooks.check_hook("Kai Cenat steals a *Corvette* in traffic")[0], [])  # a note, not a fail
         for h in ("Ron tried to surprise Lacy with a *PS5 Pro*", "Nobody expected xQc's hostages to *SING*",
                   "Kai pays $500K for a *painting*", "Why are the hostages *singing*?"):
             self.assertFalse(loop(h), h)
-        self.assertFalse(loop("Kai Cenat steals a *Corvette*", gta=False))
+        self.assertFalse(loop("Kai Cenat steals a *Corvette* in traffic", gta=False))
 
 
 class ColdHookTests(unittest.TestCase):

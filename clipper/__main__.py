@@ -61,7 +61,7 @@ def favored_first(found, cfg):
 
 
 def daily(cfg, limit=None):
-    """Pick the newest unprocessed GTA 6 uploads from the creators list and analyze them."""
+    """Pick the newest unprocessed uploads on the profile's topic from the creators list and analyze them."""
     prefs = library.load_prefs()
     cleaned = cleanup_mod.run(cfg)  # old downloads go before new ones arrive
     limit = limit or int(prefs.get("sources_per_day", 2))
@@ -170,14 +170,16 @@ def main(argv=None):
     pr = sub.add_parser("prefs", help="show or set saved choices (voice, videos_per_run, ...)")
     pr.add_argument("action", choices=["show", "set"])
     pr.add_argument("pairs", nargs="*", help="key=value")
-    dl = sub.add_parser("daily", help="find new GTA 6 uploads and analyze them (step 1 of /clip-daily)")
+    dl = sub.add_parser("daily", help="find new uploads on the profile's topic and analyze them (step 1 of /clip-daily)")
     dl.add_argument("--limit", type=int, help="override sources_per_day")
-    sc = sub.add_parser("schedule", help="launchd fallback for Claude Code CLI users")
+    sc = sub.add_parser("schedule", help="launchd/systemd fallback for Claude Code or Codex CLI users, per profile")
     sc.add_argument("action", choices=["install", "live", "remove", "status"])
     sc.add_argument("--time", help="HH:MM (default prefs schedule_time)")
     sc.add_argument("--every", type=int, default=2, help="live: hours between live clip runs")
     sc.add_argument("--watch-only", action="store_true", help="live: only the stream watcher (clip from your app's own "
                                                                  "scheduled task)")
+    sc.add_argument("--agent", choices=schedule.AGENTS, help="install/live: run /clip-daily with claude or codex "
+                                                              "(default prefs agent, else claude)")
     sc.add_argument("--clip-cmd", help="live: shell command that clips the waiting chunks instead of `claude -p "
                                        "'/clip-daily live'` (e.g. your own agent runner); still only runs when chunks wait")
     fd = sub.add_parser("find", help="search recent jobs' transcripts (all streams) for a line, e.g. one cutscene "
@@ -190,10 +192,18 @@ def main(argv=None):
     vr = sub.add_parser("viral", help="what outliers (3x their channel's median) have in common: collect Shorts, "
                                       "measure with code, optional Gemini scores, compare and validate; raw YouTube "
                                       "data in viral/ is deleted after 30 days")
-    vr.add_argument("action", choices=["collect", "measure", "score", "report", "purge"])
+    vr.add_argument("action", choices=["collect", "import", "measure", "openings", "labels", "actions", "hooks",
+                                       "pairs", "score", "report", "purge"])
+    vr.add_argument("--path", help="import: an earlier study's ext.json; labels: a folder of *.jsonl; actions: a JSONL; hooks: a folder of *.jsonl; pairs: JSON [{id, title, stream_date}] of our uploads")
+    vr.add_argument("--grouped", help="import: grouped.json with durations/dates for some of those videos")
     vr.add_argument("--own", type=int, default=100, help="collect: our last N uploads (Shorts kept)")
     vr.add_argument("--per-channel", type=int, default=40, help="collect: each clip channel's last N uploads")
     vr.add_argument("--limit", type=int, help="measure/score: at most N videos this run")
+    vr.add_argument("--cached-only", action="store_true", help="measure: only videos already downloaded (no scraping)")
+    vr.add_argument("--slices", action="store_true",
+                    help="measure: only the first ~6 s of each undownloaded settled Short (frames, Apple OCR, speech); "
+                         "one at a time, stops at the first bot check")
+    vr.add_argument("--pause", type=float, default=6.0, help="measure --slices: seconds between downloads (+ jitter)")
     vr.add_argument("--prompt", default="full", help="score: a prompt name (full, short1-short5) or all")
     vr.add_argument("--model", default=None, help="score: Gemini model (default $GEMINI_MODEL or gemini-2.5-flash)")
     vr.add_argument("--runs", type=int, default=50, help="report: validation runs")
@@ -202,7 +212,12 @@ def main(argv=None):
     sa = sub.add_parser("stats", help="our uploads' views, engaged share and retention joined to their upload.json "
                                       "(read-only YouTube OAuth); saves research/own-stats.json + simulate's own data")
     sa.add_argument("--no-save", action="store_true", help="print the report, write nothing")
-    lg = sub.add_parser("long", help="long-form running-bit supercut (16:9, 8-10 min): check or render a spec")
+    rq = sub.add_parser("requeue", help="re-check this profile's rendered-but-unposted clips against the own-channel "
+                                        "winners: keep, recut (payoff by ~16 s, end 3 s after it) or hold")
+    rq.add_argument("--apply", action="store_true", help="save recut picks to jobs/<id>/picks-requeue.json and render "
+                                                         "them into new video N folders (default: dry run, writes nothing)")
+    lg = sub.add_parser("long", help="long-form 16:9: a running-bit supercut (8-10 min), a \"what happens\" video "
+                        "(kind mid, 30s-3 min) or a narrated story (kind story, 4-10 min): check or render a spec")
     lg.add_argument("action", choices=["check", "render"])
     lg.add_argument("spec", help="JSON spec (see /clip-long)")
     lg.add_argument("--out", help="output folder (default exports/<profile>/<today>; `long N` numbering continues)")
@@ -353,11 +368,11 @@ def main(argv=None):
         print(json.dumps(daily(cfg, args.limit), indent=2))
     elif args.cmd == "schedule":
         if args.action == "install":
-            print(schedule.install(args.time or str(library.load_prefs().get("schedule_time", "09:00"))))
+            print(schedule.install(args.time or str(library.load_prefs().get("schedule_time", "09:00")), args.agent))
         elif args.action == "live":
             if not live_mod.load_streams():
                 raise SystemExit("no live streams in this profile's live.yaml (add some with `clipper live add`)")
-            print(schedule.install_live(args.every, watch_only=args.watch_only, clip_cmd=args.clip_cmd))
+            print(schedule.install_live(args.every, watch_only=args.watch_only, clip_cmd=args.clip_cmd, agent=args.agent))
         else:
             print(schedule.remove() if args.action == "remove" else schedule.status())
     elif args.cmd == "voice-setup":
@@ -378,13 +393,27 @@ def main(argv=None):
         print(out if isinstance(out, str) else json.dumps(out, indent=2))
     elif args.cmd == "stats":
         print(stats_mod.run(save=not args.no_save))
+    elif args.cmd == "requeue":
+        from . import requeue
+        rows = requeue.verdicts(cfg)
+        if not requeue.STATS.exists():
+            print("[requeue] no research/own-stats.json (run `clipper stats`): only upload.json `youtube_id` marks a "
+                  "clip as posted, so posted clips may be listed", file=sys.stderr)
+        print(requeue.report(rows))
+        if args.apply:
+            print(json.dumps(requeue.apply(cfg, rows), indent=2))
+        elif any(r["verdict"] == "recut" for r in rows):
+            print("dry run: nothing written (add --apply to render the recuts into new video N folders)")
     elif args.cmd == "long":
         spec = json.loads(open(args.spec, encoding="utf-8").read())
         if args.action == "check":
-            report = longform.check_long(spec)
+            report = longform.check_long(spec, job_words)
+            reused = longform.reused_footage(spec)
+            if reused:
+                report["fails"] = report.get("fails", []) + reused
             print(json.dumps(report, indent=2, ensure_ascii=False) if report else "long-form spec passes")
             sys.exit(1 if report.get("fails") else 0)
-        print(json.dumps(longform.render_long(spec, cfg, args.out), indent=2))
+        print(json.dumps(longform.render_long(spec, cfg, args.out, words_for=job_words), indent=2))
 
 
 if __name__ == "__main__":

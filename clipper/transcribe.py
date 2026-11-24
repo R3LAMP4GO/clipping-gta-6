@@ -91,15 +91,15 @@ def run_parakeet(wav, cfg):
 APPLE_SRC = Path(__file__).with_name("apple_asr.swift")
 
 
-def apple_binary():
-    """The Swift helper for Apple's on-device model, compiled once (again when its source changes)."""
+def apple_binary(src=APPLE_SRC, name="apple-asr"):
+    """A Swift helper for Apple's on-device models, compiled once (again when its source changes)."""
     from .config import ROOT
-    exe = ROOT / ".cache" / "apple-asr"
-    if not exe.exists() or exe.stat().st_mtime < APPLE_SRC.stat().st_mtime:
+    exe = ROOT / ".cache" / name
+    if not exe.exists() or exe.stat().st_mtime < src.stat().st_mtime:
         exe.parent.mkdir(parents=True, exist_ok=True)
-        res = subprocess.run(["swiftc", "-O", "-o", str(exe), str(APPLE_SRC)], capture_output=True, text=True)
+        res = subprocess.run(["swiftc", "-O", "-o", str(exe), str(src)], capture_output=True, text=True)
         if res.returncode != 0:
-            raise SystemExit("apple-asr build failed (needs macOS 26+ and Xcode's swiftc):\n" + res.stderr[-1500:])
+            raise SystemExit(f"{name} build failed (needs macOS 26+ and Xcode's swiftc):\n" + res.stderr[-1500:])
     return exe
 
 

@@ -12,6 +12,7 @@ PREF_RULES = {
     "voice": ("off", "all", "auto"),
     "videos_per_run": ("auto", *range(1, 21)), "max_videos_per_run": range(1, 31), "hooks_per_video": ("auto", *range(1, 9)), "sources_per_day": range(1, 11),
     "daily_max_minutes": range(10, 601), "schedule_time": re.compile(r"^([01]\d|2[0-3]):[0-5]\d$"),
+    "agent": ("claude", "codex"),
 }
 
 

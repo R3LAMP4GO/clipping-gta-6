@@ -1,5 +1,5 @@
-"""Fallback daily schedule for Claude Code CLI users (no Desktop app): launchd (macOS) or a systemd user timer
-(Linux) running /clip-daily."""
+"""Fallback daily schedule for CLI users (no Desktop app): launchd (macOS) or a systemd user timer (Linux) running
+/clip-daily per profile with Claude Code (`claude -p`) or Codex (`codex exec`)."""
 import os
 import plistlib
 import shlex
@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import config
+from . import config, library
 from .config import IS_MAC, ROOT
 
 UNIT_DIR = Path("~/.config/systemd/user").expanduser()
@@ -28,18 +28,61 @@ def _claude_cmd(claude, prompt="/clip-daily"):
     return [claude, "-p", prompt, "--model", MODEL, "--permission-mode", "dontAsk", "--allowedTools", *ALLOWED]
 
 
+AGENTS = ("claude", "codex")
+# codex-cli 0.165 (`codex exec --help`): never stop for approval, write only inside the project, network on for
+# yt-dlp and Fish Audio (workspace-write blocks it by default).
+CODEX_ARGS = ["-s", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "-c", 'approval_policy="never"']
+CODEX_APP = Path("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex")  # the ChatGPT app's bundled CLI
+
+
+def pick_agent(agent=None):
+    """The agent a scheduled run uses: the --agent flag, else prefs `agent`, else claude."""
+    agent = agent or str(library.load_prefs().get("agent") or "claude")
+    if agent not in AGENTS:
+        raise SystemExit(f"unknown agent '{agent}' (choose from {', '.join(AGENTS)})")
+    return agent
+
+
+def find_agent(agent):
+    found = shutil.which(agent)
+    if not found and agent == "codex" and CODEX_APP.exists():
+        return str(CODEX_APP)
+    return found
+
+
+def _daily_args(extra=""):
+    """/clip-daily's arguments: the profile (when not the default; CLIPPER_PROFILE also names it) and e.g. `live`."""
+    p = config.PROFILE
+    return " ".join(x for x in ("" if p == config.DEFAULT_PROFILE else p, extra) if x)
+
+
+def _agent_cmd(agent, binary, args=""):
+    """argv for one unattended /clip-daily run. `codex exec` can't expand a custom prompt, so it reads the file."""
+    if agent == "codex":
+        prompt = ("Unattended scheduled run: read .codex/prompts/clip-daily.md and follow it exactly. "
+                  f"Its arguments: {args or 'none'}.")
+        return [binary, "exec", "-C", str(ROOT), *CODEX_ARGS, prompt]
+    return _claude_cmd(binary, f"/clip-daily {args}".strip())
+
+
 def _live_names():
     """(launchd label suffix / systemd unit suffix) per profile, so each profile's live jobs are separate."""
     p = config.PROFILE
     return "" if p == config.DEFAULT_PROFILE else f"-{p}"
 
 
-def live_jobs(claude, every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None):
+def _daily_names():
+    """(launchd label, systemd unit) of this profile's daily run; gta6 keeps the original names."""
+    return f"{LABEL}{_live_names()}", f"{UNIT}{_live_names()}"
+
+
+def live_jobs(claude, every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None, agent="claude"):
     """{name: (argv, interval seconds, keep children)}: the watcher starts recorders (no AI, so it can run every few
-    minutes and catch streams as they go live); the clip run starts Claude only when analyzed chunks are waiting."""
+    minutes and catch streams as they go live); the clip run starts the agent only when analyzed chunks are waiting.
+    `claude` is the agent's binary (claude or codex)."""
     py, sfx = sys.executable, _live_names()
     jobs = {f"live-watch{sfx}": ([py, "-m", "clipper", "live", "watch"], watch_minutes * 60, True)}
-    run = clip_cmd or (claude and shlex.join(_claude_cmd(claude, "/clip-daily live")))
+    run = clip_cmd or (claude and shlex.join(_agent_cmd(agent, claude, _daily_args("live"))))
     if run and not watch_only:
         gate = shlex.join([py, "-m", "clipper", "live", "pending"])
         jobs[f"live-clip{sfx}"] = (["/bin/sh", "-c", f"if {gate}; then {run}; fi"], every_hours * 3600, False)
@@ -55,9 +98,10 @@ def _live_env(claude):
     return {"PATH": path, "CLIPPER_PROFILE": config.PROFILE}
 
 
-def install_live(every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None):
-    claude = shutil.which("claude")
-    jobs = live_jobs(claude, every_hours, watch_minutes, watch_only, clip_cmd)
+def install_live(every_hours=2, watch_minutes=5, watch_only=False, clip_cmd=None, agent=None):
+    agent = pick_agent(agent)
+    claude = find_agent(agent)
+    jobs = live_jobs(claude, every_hours, watch_minutes, watch_only, clip_cmd, agent)
     env = _live_env(claude)
     logs = ROOT / "logs"
     logs.mkdir(exist_ok=True)
@@ -105,10 +149,10 @@ WantedBy=timers.target
             subprocess.run(["systemctl", "--user", "enable", "--now", f"{unit}.timer"], check=True)
     out = f"live watch every {watch_minutes} min"
     if f"live-clip{_live_names()}" in jobs:
-        out += (f"; live clip run ({'your --clip-cmd' if clip_cmd else '/clip-daily live'}) every {every_hours} h, "
-                "only when chunks are ready")
+        out += (f"; live clip run ({'your --clip-cmd' if clip_cmd else f'/clip-daily live with {agent}'}) every "
+                f"{every_hours} h, only when chunks are ready")
     elif not watch_only:
-        out += "; claude CLI not found, so chunks are clipped by the daily run (/clip-daily step 0)"
+        out += f"; {agent} CLI not found, so chunks are clipped by the daily run (/clip-daily step 0)"
     return out + "; logs in logs/live-*.log"
 
 
@@ -128,23 +172,24 @@ def remove_live():
     return removed
 
 
-def _install_systemd(claude, time_str):
+def _install_systemd(argv, time_str):
     logs = ROOT / "logs"
     logs.mkdir(exist_ok=True)
     UNIT_DIR.mkdir(parents=True, exist_ok=True)
-    cmd = " ".join(f"'{a}'" if any(c in a for c in " ()*") else a for a in _claude_cmd(claude))
-    (UNIT_DIR / f"{UNIT}.service").write_text(f"""[Unit]
-Description=Daily GTA 6 clipping run (/clip-daily)
+    unit, sfx = _daily_names()[1], _live_names()
+    (UNIT_DIR / f"{unit}.service").write_text(f"""[Unit]
+Description=Daily {config.PROFILE} clipping run (/clip-daily)
 
 [Service]
 Type=oneshot
 WorkingDirectory={ROOT}
 Environment=PATH={os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")}
-ExecStart={cmd}
-StandardOutput=append:{logs / "daily.log"}
-StandardError=append:{logs / "daily.err.log"}
+Environment=CLIPPER_PROFILE={config.PROFILE}
+ExecStart={shlex.join(argv)}
+StandardOutput=append:{logs / f"daily{sfx}.log"}
+StandardError=append:{logs / f"daily{sfx}.err.log"}
 """, encoding="utf-8")
-    (UNIT_DIR / f"{UNIT}.timer").write_text(f"""[Unit]
+    (UNIT_DIR / f"{unit}.timer").write_text(f"""[Unit]
 Description=Run /clip-daily at {time_str}
 
 [Timer]
@@ -155,34 +200,42 @@ Persistent=true
 WantedBy=timers.target
 """, encoding="utf-8")
     subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
-    subprocess.run(["systemctl", "--user", "enable", "--now", f"{UNIT}.timer"], check=True)
-    return (f"daily run scheduled at {time_str} via a systemd user timer ({UNIT}.timer); logs in logs/daily.log. "
-            f"To run while logged out: sudo loginctl enable-linger {os.environ.get('USER', '$USER')}")
+    subprocess.run(["systemctl", "--user", "enable", "--now", f"{unit}.timer"], check=True)
+    return (f"daily {config.PROFILE} run scheduled at {time_str} via a systemd user timer ({unit}.timer); logs in "
+            f"logs/daily{sfx}.log. To run while logged out: sudo loginctl enable-linger {os.environ.get('USER', '$USER')}")
 
 
-def install(time_str):
-    claude = shutil.which("claude")
-    if not claude:
-        raise SystemExit("claude CLI not found on PATH")
+def _plist_path():
+    return PLIST.with_name(f"{_daily_names()[0]}.plist")
+
+
+def install(time_str, agent=None):
+    """This profile's daily run (gta6 keeps the original label/unit, others add -<profile>) with Claude or Codex."""
+    agent = pick_agent(agent)
+    binary = find_agent(agent)
+    if not binary:
+        raise SystemExit(f"{agent} CLI not found on PATH")
+    argv = _agent_cmd(agent, binary, _daily_args())
     if not IS_MAC:
-        return _install_systemd(claude, time_str)
+        return _install_systemd(argv, time_str)
     hour, minute = (int(x) for x in time_str.split(":"))
-    logs = ROOT / "logs"
+    logs, sfx, plist_path = ROOT / "logs", _live_names(), _plist_path()
     logs.mkdir(exist_ok=True)
     plist = {
-        "Label": LABEL,
-        "ProgramArguments": _claude_cmd(claude),
+        "Label": plist_path.stem,
+        "ProgramArguments": argv,
         "WorkingDirectory": str(ROOT),
         "StartCalendarInterval": {"Hour": hour, "Minute": minute},
-        "StandardOutPath": str(logs / "daily.log"), "StandardErrorPath": str(logs / "daily.err.log"),
+        "StandardOutPath": str(logs / f"daily{sfx}.log"), "StandardErrorPath": str(logs / f"daily{sfx}.err.log"),
         "EnvironmentVariables": {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:"
-                                         + str(Path(claude).parent) + ":" + str(Path(shutil.which("python3")).parent)},
+                                         + str(Path(binary).parent) + ":" + str(Path(shutil.which("python3")).parent),
+                                 "CLIPPER_PROFILE": config.PROFILE},
     }
-    PLIST.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["launchctl", "unload", str(PLIST)], capture_output=True)
-    PLIST.write_bytes(plistlib.dumps(plist))
-    subprocess.run(["launchctl", "load", str(PLIST)], check=True)
-    return f"daily run scheduled at {time_str} via launchd ({PLIST}); logs in logs/daily.log"
+    plist_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
+    plist_path.write_bytes(plistlib.dumps(plist))
+    subprocess.run(["launchctl", "load", str(plist_path)], check=True)
+    return f"daily {config.PROFILE} run ({agent}) scheduled at {time_str} via launchd ({plist_path}); logs in logs/daily{sfx}.log"
 
 
 def remove():
@@ -193,15 +246,17 @@ def remove():
 
 def _remove_daily():
     if not IS_MAC:
-        subprocess.run(["systemctl", "--user", "disable", "--now", f"{UNIT}.timer"], capture_output=True)
+        unit = _daily_names()[1]
+        subprocess.run(["systemctl", "--user", "disable", "--now", f"{unit}.timer"], capture_output=True)
         for ext in ("service", "timer"):
-            (UNIT_DIR / f"{UNIT}.{ext}").unlink(missing_ok=True)
-        return "systemd schedule removed"
-    if not PLIST.exists():
-        return "no launchd schedule installed"
-    subprocess.run(["launchctl", "unload", str(PLIST)], capture_output=True)
-    PLIST.unlink()
-    return "launchd schedule removed"
+            (UNIT_DIR / f"{unit}.{ext}").unlink(missing_ok=True)
+        return f"systemd {config.PROFILE} schedule removed"
+    plist_path = _plist_path()
+    if not plist_path.exists():
+        return f"no launchd schedule installed for {config.PROFILE}"
+    subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
+    plist_path.unlink()
+    return f"launchd {config.PROFILE} schedule removed"
 
 
 def status():
@@ -211,14 +266,19 @@ def status():
 
 
 def _daily_status():
+    unit = _daily_names()[1]
     if not IS_MAC:
-        if not (UNIT_DIR / f"{UNIT}.timer").exists():
-            return "no systemd schedule (use `clipper schedule install`)"
-        res = subprocess.run(["systemctl", "--user", "list-timers", f"{UNIT}.timer", "--no-pager"],
+        if not (UNIT_DIR / f"{unit}.timer").exists():
+            return f"no systemd schedule for {config.PROFILE} (use `clipper --profile {config.PROFILE} schedule install`)"
+        res = subprocess.run(["systemctl", "--user", "list-timers", f"{unit}.timer", "--no-pager"],
                              capture_output=True, text=True)
-        return res.stdout.strip() or f"{UNIT}.timer installed"
-    if not PLIST.exists():
-        return "no launchd schedule (use the Claude Code Desktop / Codex app scheduler, or `clipper schedule install`)"
-    p = plistlib.loads(PLIST.read_bytes())
-    t = p["StartCalendarInterval"]
-    return f"launchd: daily at {t['Hour']:02d}:{t['Minute']:02d} -> claude -p /clip-daily (logs/daily.log)"
+        return res.stdout.strip() or f"{unit}.timer installed"
+    plist_path = _plist_path()
+    if not plist_path.exists():
+        return (f"no launchd schedule for {config.PROFILE} (use the Claude Code Desktop / Codex app scheduler, or "
+                f"`clipper --profile {config.PROFILE} schedule install`)")
+    p = plistlib.loads(plist_path.read_bytes())
+    t, argv = p["StartCalendarInterval"], p["ProgramArguments"]
+    run = "codex exec" if argv[1:2] == ["exec"] else f"claude -p {argv[2]}"
+    return (f"launchd: daily {config.PROFILE} run at {t['Hour']:02d}:{t['Minute']:02d} -> {run} "
+            f"({Path(p['StandardOutPath']).relative_to(ROOT)})")

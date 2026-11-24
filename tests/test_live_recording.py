@@ -165,6 +165,66 @@ class RecorderHandoverTests(unittest.TestCase):
             self.assertGreater(last - first, 450)  # >15 s recorded across both recorders
 
 
+def _streamers_cfg():
+    sys.path.insert(0, str(ROOT / "tests"))
+    from test_core import streamers_cfg
+    return streamers_cfg()
+
+
+class ProfileRoutingTests(unittest.TestCase):
+    @unittest.skipUnless((ROOT / "profiles" / "streamers" / "profile.yaml").exists(), "streamers is a private profile")
+    def test_shipped_streamers_profile_excludes_exactly_gta6s_topic(self):
+        from clipper import config
+        try:
+            s, g = config.load(profile="streamers"), config.load(profile="gta6")
+        finally:
+            config.load()
+        self.assertEqual(s["exclude_title_patterns"], g["topic_patterns"])
+        self.assertFalse(s["require_topic"])
+        self.assertTrue(s["selection_gate"])
+        self.assertEqual([c["url"] for c in s["channels"]], [c["url"] for c in g["channels"]])
+
+
+    def test_a_live_stream_is_on_topic_in_one_profile_only(self):
+        """gta6 records a streamer's GTA 6 stream, streamers records everything else they stream; never both."""
+        from unittest import mock
+        from clipper import config, live
+        probes = {"gta": {"live": True, "title": "GTA 6 DAY 3 WE ROB THE BANK"},
+                  "irl": {"live": True, "title": "IRL IN TOKYO W SPEED"},
+                  "desc": {"live": True, "title": "DAY 3", "description": "playing GTA 6 all night"},
+                  "tag": {"live": True, "title": "marathon", "tags": ["GTA6"]},
+                  "off": {"live": False}}
+        on = {}
+        for profile in ("gta6", "streamers"):
+            cfg = config.load(profile="gta6") if profile == "gta6" else _streamers_cfg()
+            streams = [{"name": k, "url": k, "topic_only": profile == "gta6"} for k in probes]
+            with mock.patch.object(live, "load_streams", return_value=streams), \
+                    mock.patch.object(live, "probe", side_effect=lambda url: probes[url]), \
+                    mock.patch.object(live, "recorder_running", return_value=False):
+                on[profile] = {s["name"] for s in live.status(cfg) if s["on_topic"]}
+        config.load()
+        self.assertEqual(on["gta6"], {"gta", "desc", "tag"})
+        self.assertEqual(on["streamers"], {"irl"})
+
+    def test_streamers_watch_drops_gta6_uploads(self):
+        from unittest import mock
+        from clipper import config, sources
+        entries = [{"id": "a", "title": "Kai Cenat Plays GTA 6 For The First Time", "duration": 600},
+                   {"id": "b", "title": "Kai Cenat Goes To Japan", "duration": 600},
+                   {"id": "c", "title": "Making Connections With Rockstar Employees", "duration": 600}]
+        metas = {"b": {"description": "IRL in Tokyo"}, "c": {"description": "We talk about GTA 6 and more"}}
+        cfg = {**_streamers_cfg(), "channels": [{"name": "Kai Cenat", "url": "u"}], "search": []}
+        gta = {**config.load(profile="gta6"), "channels": cfg["channels"], "search": []}
+        config.load()
+        with mock.patch.object(sources, "_flat", return_value=({"entries": entries}, None)), \
+                mock.patch.object(sources, "_full_meta", side_effect=lambda vid: metas.get(vid)):
+            found, _, skipped = sources.watch(cfg)
+            claimed, _, _ = sources.watch(gta)
+        self.assertEqual([v["id"] for v in found], ["b"])
+        self.assertEqual(skipped, 2)
+        self.assertEqual([v["id"] for v in claimed], ["a", "c"])  # each upload in exactly one profile
+
+
 class _Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass

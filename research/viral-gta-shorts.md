@@ -70,6 +70,17 @@ Give each variant a **different** structure so the A/B test actually tests somet
 - Captions are huge (about 8–10% of frame height), 1–3 words at a time, bold white with a black outline, and the active or key word in yellow or red. Emphasis words get their own colour ("WHAT?" in red).
 - Overlapping voices: show each speaker in a different colour so viewers can follow the back-and-forth.
 
+## Own channel winners vs ~1k-stuck Shorts (2026-11-23)
+Our own GTA 6 Shorts, read with the YouTube Analytics API: the ones that reached 4k–28k views against the many that stopped at ~1k.
+- **Payoff early, end on it.** The top 10 all paid off by ~16 s and ended on the payoff, so they looped (89–137% average viewed). The 1k-stuck ones kept 0.43 of viewers at 90% of the clip vs 0.69 for the breakouts.
+- **12–25 s, streamer on the mic throughout.** The winners ran 12–25 s with the streamer talking or reacting the whole time.
+- **One cold-readable beat:** real-world money or a price, a first, a chase/escape or confrontation, a theft, or a blunt verdict.
+- **What stuck at ~1k:** cutscenes or scenes where only other people talk, quizzes, sentimental moments, inside jokes and ongoing storylines, and titles the clip never answers.
+
+**Where it's enforced:** `clipper check` notes a payoff later than 20 s in, more than 5 s of clip after the payoff, a clip over 25 s (`AIM_CLIP_S`) and `streamer_reacts: false`, in every profile; `/clip` step 4 and `/clip-daily` carry the rules, and the daily run fixes these notes. The `streamers` profile (the same creators' non-GTA-6 uploads and streams: other games, IRL, just chatting) also opts into the selection gate (`selection_gate: true`).
+
+**Caveat:** measured on GTA 6 clips only. For other games and IRL these rules are a reasoned extension, not a measurement; `clipper stats` groups results by profile, so the `streamers` numbers confirm or correct them.
+
 ## Originality: story cuts and multi-streamer edits
 YouTube's reused-content rules reward clips that add editing over raw re-uploads, and the same footage posted twice gets no reach the second time. So every video is one of three kinds, and no footage is ever used twice (`clipper check --job` enforces it, 3 s tolerance):
 - **Single clip:** one moment that carries itself (the formats above).
@@ -181,6 +192,79 @@ The 12 biggest streamer-clip outliers in the dataset (12–117x their channel's 
 
 ## Text over the game (2026-11-19)
 In split layout the hook hung from the seam into the game and the captions sat mid-game: hook plus a 3-word caption inked 22-28% of the gameplay area and spanned 28-49% of its height. The hook now stands on the seam over the facecam's lower third, captions are 1-2 words on the game's top edge, sizes are ~30% smaller (big hook 112 → 72 px, boxed captions 116 → 80 px) and the game zoom is 1.1x instead of 1.3x (1.3 cropped out signs): 3-4% ink, and only the caption touches the game (its top 10%). `"captions": false` turns speech captions off for a source with its own burnt-in subtitles.
+
+## Flops vs winners: our 10 lowest xQc Shorts vs the 10 best xQc Shorts we hold (2026-11-20)
+
+**Method.** First I looked for the *same moment* clipped by both sides. 63 of our 73 uploads could be traced to a source stream on the mini PC (43 VOD upload dates, 20 render days used as the stream date). Each was matched to clip-channel Shorts naming the same streamer, published within ±3 days and up to 60 s long. 28 of our uploads had candidates and cached media; the candidates were downloaded one at a time with pauses (no bot check) and both sides were transcribed with Apple's on-device model. **No pair was the same moment:** the longest shared runs were filler ("i can", "for you"), and the one hit ("oh my gosh oh my gosh") was rejected. The big channels clipped different moments from ours, and 25 of our xQc NoPixel clips come from Feb 2024 VODs that their recent uploads don't cover. So this is the fallback: our 10 lowest-view uploads (8–335 views; all xQc) vs the 10 most-viewed xQc Shorts in `viral/videos.json` (333K–38K; the top 5 from Variety Roleplay, the other 5 from xQc Clips). Frames at 0.3/1/2/3 s and the last frame, Apple OCR and face boxes, Apple transcripts, ffmpeg cut counts. Layout, start and ending were judged by eye from the contact sheets (`viral/media/pairs/<ours>.vs.<theirs>.jpg`, git-ignored, purged after 30 days). Gemini did not watch them: the Gemini CLI's free Google login is discontinued, so it needs an API key.
+
+| # | Ours (views, length) | Theirs (views, length, channel) | Our layout / theirs | Our first line / theirs | Our ending / theirs |
+|---|---|---|---|---|---|
+| 1 | Nobody Believed xQc's Booby Traps (25, 32 s) | xQc gets Jumpscared by Morag Goul (224K, 33 s, VR) | banner + gameplay strip + word caption, no face / big facecam on top, gameplay below | "I told you… I had a bunch of AKs and bombs" (telling) / "Oh, my fucking God, hello?" (the scare itself) | "there's no clothes in the washing machines" (the raid never lands) / "You little dickweed" (reaction) |
+| 2 | When Your Homie Gets Grounded Mid-Robbery (107, 23 s) | Don't say that SHIT! (127K, 36 s, VR) | strip, no face, `*OG SAID NO*` / big facecam, small captions | "would you order not to go?" (needs lore) / "This is the last time we interact with this establishment" (states the stakes) | an unrelated line / "Whoa whoa whoa…" (the blow-up) |
+| 3 | xQc's Confession Was NOT Guilt (115, 35 s) | Dean Trying to Have A Civil Conversation with xQc (333K, 22 s, VR) | banner + strip, no face / two streamers' cams side by side on top | "I can't sleep at nightmares" / "I just try to help you guys out" | "I win in both directions" / "I did nothing." (punchline) |
+| 4 | xQc Would NOT Wait For His Crew (126, 38 s) | xQc Can't Stop Laughing Watching Speedy Get Sucked by the Machine (105K, 35 s, VR) | banner + strip, no face / big facecam | "Why did he just die?" / "this machine is deadly" (premise in one line) | "good luck with the tigers" / xQc laughing |
+| 5 | POV: Your Squad Votes On Saving Avery (164, 28 s) | xQc Reacts to GGEZ song (253K, 57 s, VR) | banner + strip, no face / big facecam, then the singer's cam | "Do we care about this police officer's life?" / the song plays | "prioritise saving me?" / xQc grinning |
+| 6 | Me Bringing The Doctor To A Drug Deal (177, 38 s) | xQc causes ROAD RAGE… GTA 6 (45K, 52 s, xQc Clips) | facecam top + banner / raw 16:9 stream, corner cam | "Real great thinking back there, Dr. Bill" / "the FPS makes it hard to look at anything" | "That fuck!" / mid-sentence |
+| 7 | Us When A Teammate Starts Being Smart (179, 21 s) | xQc got EXPOSED by a viewer (48K, 44 s, xQc Clips) | banner + strip, no face / raw 16:9 desktop + chat | "I think you're mad he's too smart" / "what if your phone was this and that?" | "First one in the house." / "he's lying" |
+| 8 | Is This xQc's Best Cliffhanger?! (251, 17 s) | xQc gets into a FATAL CAR CRASH IN GTA 6 (61K, 51 s, xQc Clips) | facecam top, `*COUNTS HIS GUNS*` / raw 16:9, corner cam | "I had 6 guns total or five" / radio menu chatter | "Find out next episode" / "Ooh" |
+| 9 | When The Ransom Is Two Bags Of Chips (293, 33 s) | GTA 6 MIGHT be BETTER than NBA2K (40K, 54 s, xQc Clips) | strip, no face, `I WANT TWO` / raw 16:9, corner cam | "I want 2 bags of chips from that vending machine" (the premise) / "Now, watch this." | "you cannot have the chips, that's for my lunch" (punchline) / mid-sentence |
+| 10 | When The Hostage Swap Gets Misheard (335, 19 s) | xQc shows off his VICTOR OBS PLUGIN (38K, 41 s, xQc Clips) | banner + strip, no face / raw 16:9 desktop | "I will let Avery go. You will let the hostage go" (the premise) / "Victor on standby" | "So no killing then, yeah?" (punchline) / "my bad for the parasocial" |
+
+**Differences, ranked by how many of the 10 pairs show them** (the 5 Variety Roleplay 100K+ Shorts in brackets):
+
+| Kind | Difference | Pairs |
+|---|---|---|
+| Packaged differently | Theirs show xQc's face and ours don't: Apple found no face in any frame of 8 of our 10; theirs had a face in all 10. In the 100K+ ones it fills the top half (face box 0.03–0.08 of the frame vs 0 for ours) | 8/10 (5/5) |
+| Packaged differently | We put a hook banner or label on screen; theirs carry only the channel watermark and the game's own UI | 10/10 (5/5) |
+| Packaged differently | Our gameplay is a thin letterboxed strip between the banner and a big one-word caption on a black or blurred band, so the game fills about a third of the frame; theirs fill the frame (split screen or raw 16:9) | 8/10 (5/5) |
+| Picked a different moment | Ours need crew lore (OG orders, Avery, the crew, a confession, a cliffhanger); theirs are readable cold (a jumpscare, a blow-up, a cop and xQc bickering, xQc laughing at a friend, a song) | 7/10 (5/5) |
+| Picked a different moment | Theirs often show a second known streamer on camera (Dean, Speedy, the singer); none of ours do | 3/10 (3/5) |
+| Started at a different point | Theirs open on the event itself (the scare, the song, the stakes line); ours open mid-conversation or on someone telling what happened. Ours do open on the premise line in 3 (#5, #9, #10) | 4/10 (4/5) |
+| Started at a different point | Ours end on a line after the moment or unrelated to it; theirs end on the reaction or punchline | 5/10 (5/5) |
+| Packaged differently | Length and cuts don't separate them: ours 17–38 s, theirs 22–57 s; 0–4 cuts on both sides | 0/10 |
+
+- **The weaker half of "theirs" is raw.** xQc Clips posts the full 16:9 stream with a corner cam, no hook, no edit, often stopping mid-sentence, and still gets 38–61K views against our 25–335. That points to the audience a channel already has, and to the streamer's face being present, as much as to editing.
+- **Caveats:** not the same moments, so "started at a different point" compares opening style, not seconds before the turn. 10 pairs, judged by one reader from frames and transcripts, all xQc. Layout differences are clear-cut; idea and ending calls are judgment.
+- **What to try:** for xQc clips, the Variety Roleplay layout (facecam as the top half, gameplay filling the bottom, small word captions, no banner) on cold-readable moments that open on the event and end on the reaction. Measure it against our current banner-and-strip layout on the same streamer.
+
+### Gemini watched them: outliers vs average Shorts, blind A/B (2026-11-20)
+
+**Method.** Gemini CLI (free AI Studio key) watched 36 pairs of fully downloaded Shorts. Each pair was one outlier (3x+ its channel's median) and one average video (0.6–1.5x the median) from the same channel, across 13 channels. They were shown as A and B in random order with views hidden. For each video Gemini described the premise, idea type, cold-readability, spoken hook, on-screen text hook, opening visuals, layout, face share, turn time and ending, then predicted which got more views and why. The free tier's daily limits forced three models: gemini-3.6-flash (13 pairs), gemini-3-flash-preview (13) and gemini-3.5-flash-lite (10). 6 more pairs failed on Gemini's side. Data: `viral/ab.json` (git-ignored, purged after 30 days).
+
+| Result | Value |
+|---|---|
+| Gemini picked the outlier | 21 of 36 (58%), one-sided p = 0.20 |
+| Full-size models only | 17 of 26 (65%), p = 0.08 |
+| Flash-lite | 4 of 10 |
+| When Gemini was at least 70% sure | 20 of 32 |
+
+**What it said decided it** (main reason; right picks / wrong picks): premise 7/6, pacing 5/4, idea 3/1, opening visuals 2/2, text hook 2/0, spoken hook 1/1, people on screen 1/1. Premise and pacing were cited as often when it was wrong as when it was right.
+
+**What it saw, outlier vs the average video in the same pair:**
+- **Ending:** Gemini said the average video ended mid-sentence in 12 pairs where the outlier didn't, and the reverse in 2 (sign test p = 0.013; about 0.13 once the ~10 features tested are counted). It also more often judged that the outlier ended on the payoff: 13 vs 6, p = 0.17. **But Apple's transcripts don't confirm the cut:** speech runs into the last 0.35 s in 18 of 36 outliers and 18 of 35 averages, and only 8 of the 14 videos Gemini called "mid-sentence" show that. So Gemini is reading an unfinished *thought*, not an audio cut, and this stays a lead to test, not a finding.
+- **No difference:** cold-readable (32 vs 30 of 36), on-screen text hook (30 vs 29), opening on the event (only the outlier 8 vs only the average 6), face share (median 35% both), turn time (median 6.0 s vs 7.8 s; earlier in 13, later in 12).
+- **Idea mix:** outliers were more often banter, prank and feats (19 vs 11); averages more often commentary and fails/accidents (13 vs 3). Small counts, one judge.
+
+**Answer to "is it the premise, the idea, the hook, the text hook or the opening visuals?":** with views hidden, Gemini told outliers from average videos only a little better than a coin flip (58%; 65% with the full-size models, not significant on 26 pairs). Its explanations don't hold up either: the premise it credits is cited as often in wrong picks. Hooks, text hooks and opening visuals look the same on both sides, matching the code measures above (AUC about 0.5 inside channels). The only lead is that outliers land a complete payoff before the cut, and an independent audio measure doesn't confirm it. Inside a channel, what makes an outlier is mostly not visible in the video. That points to distribution and timing (which videos YouTube tests widely) and to factors these clips don't show, more than to packaging. To go further: about 100 pairs judged by one full-size model (several days of free quota, or a paid key), plus a test of "end on the payoff" against our own uploads.
+
+## Root cause: what the data supports (2026-11-20)
+
+**Data used:** 5,046 settled clip-channel Shorts from 29 channels plus our 64 settled uploads (views, likes, titles; publish dates for 2,286), blind labels for every title, Apple OCR hooks and opening frames for 398, Gemini blind A/B on 36 same-channel pairs, and the 10 flop/winner teardowns above. **Missing:** impressions, swipe-away rate and retention for other channels. These are what YouTube's feed acts on, and only our own channel's are readable (YouTube Analytics).
+
+| Candidate cause | Test | Result |
+|---|---|---|
+| Channel / streamer audience | share of Shorts over 100K by channel | Kai Cenat Live 98%, Zylok 96% … NoPixel & Streamer Clips 0%, ours 0% (median 1.1K) |
+| Title (question, negation, emoji, words, trigger, turn, cold-readable, setup withheld, streamer first, names) | in-channel AUC, 5,087 videos, 1,182 outliers | 0.49–0.51 |
+| Text hook, spoken hook, opening visuals, face size, shows the action | in-channel AUC, 398 videos, 124 outliers | 0.46–0.55, every interval near or across 0.5 |
+| Whole video (premise, idea, pacing, ending) | Gemini picks the outlier, blind, 36 pairs | 58% (p = 0.20); ending lead not confirmed by audio |
+| Same moment clipped by other channels within 3 days | in-channel AUC, 2,286 dated | 0.50 |
+| Reach beyond fans | like rate | outliers 1.74% vs others 1.91% likes per view; in-channel AUC 0.42 (0.36 for videos 30+ days old); odds ratio 1.35 within channel and age band |
+| Posting time | 7–10 pm ET (00–03 UTC) vs other hours, same channel and age band | odds ratio 1.50 (31% vs 24%) |
+| Video age | outlier rate by age | 18% under 14 days, 37% at 90–365 days: part of the 3x rule measures time online |
+
+- **Root cause, in order of evidence:** (1) **whose audience the clip lands in.** The channel and streamer set the ceiling, and our NoPixel lore pond tops out around 1–20K. (2) **Inside a channel, an outlier is a video YouTube pushed past the fans.** Its lower like rate is the footprint of cold viewers. Nothing in the title, hook, text or opening predicts which video that will be, and the clips themselves don't reveal it (Gemini 58%). (3) **Timing:** a US-evening post (7–10 pm ET) and simply more time online raise the odds.
+- **What this means for picking and packaging:** hooks and text are hygiene, not the lever. The lever is the pond: the streamer and a moment that cold viewers watch through (the earlier same-channel pairs: a turn between people, readable without lore). After that comes the layout cold viewers expect: facecam as the top half, gameplay filling the frame (8 of our 10 flops show no face). Then post 7–10 pm ET.
+- **Next data to collect:** our own swipe-away rate and retention per upload (YouTube Analytics API, already authorised read-only). Compare them across layout, streamer and posting hour, since those are the variables the feed acts on.
 
 ## Why our Shorts stall near 1-2k views (2026-11-16)
 Our channel (50 public Shorts, 11 subs): median 1,191 views, none past 10k (best 8,960). Nearly every upload stops at 1,100-1,800: YouTube's first test audience, then no push. Compared against clip channels on the same streamers and server, measured the same way (frames every 3 s, Apple Vision for faces and text):

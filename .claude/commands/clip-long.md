@@ -1,9 +1,29 @@
 ---
-description: Build a long-form (8-10 min, 16:9) running-bit supercut from the streams already fetched or recorded
+description: Build a long-form 16:9 video (running-bit supercut, "what happens" video or narrated story) from the streams already fetched or recorded
 argument-hint: [streamer or bit, e.g. "xQc lying to the cops"]
 ---
 
 Build one long-form YouTube video: a **running-bit supercut**, one trait of one streamer delivered 25–30 times and getting bigger each time. Run from the clipping-gta-6 project root; pass `--profile <name>` to every `python3 -m clipper` command if `$ARGUMENTS` or `CLIPPER_PROFILE` names one. Read `research/long-form-compilations.md` first: every number below comes from its 87 outliers (5×–97× their channel's normal).
+
+**Pick the kind first** (`"kind"` in the spec). Read `/clip` step 4's "Why outliers work" table, then set `"question"` and `"premise_type"` the same way; both go into `long.json` for `clipper stats`.
+- `supercut` (the default; steps 1–10 below): one running bit, 25–30 clips, 8–10 min.
+- `mid`: a **"what happens" video**, 30 s–3 min. It holds 1–4 clips of one situation, with no flash-forward and no counter.
+  - Title: state the situation or ask it ("What Happens If You Leave Lucia In Prison In GTA 6?", "Speed Asks A Stranger For $1,000 In Tokyo 😳").
+  - Payoff: `"payoff": {"clip": n, "t": <source s>}` must land before 60% of the runtime; the rest is the fallout.
+  - Reuse: a moment already posted as a Short may go out once as a `mid`, never as two `mid`s.
+  - The outlier study found this length no better than 10+ min (0.75x on GTA 6), so it's a test: compare it in `clipper stats`.
+- `story`: a **narrated story**, 4–10 min. The streamers' clips (6–90 s each) are linked by an AI narrator (the Fish Audio voice, else the system voice).
+  - Spec: `"narration": [{"at": n, "text": "...", "mode": "freeze" | "duck", "question": true}]`.
+    - `freeze` plays the line on the first frame of clip `n`, before it.
+    - `duck` plays it over the clip's opening, with the clip's sound lowered.
+    - `at` = clip count + 1 is a closing line on the last frame.
+  - The first line states the question (mark it `"question": true` or end it with "?") by 15 s.
+  - The narrator takes at most 35% of the runtime and never talks over a clip's `payoff_at`.
+  - Every clip must have someone talking (`long check` reads each job's transcript).
+  - YouTube's inauthentic-content rule targets mass-produced voice-over on reused footage, so keep the volume low:
+    - Tell a real arc across moments (how Speed got stranded, who helped, how he got home).
+    - Never describe what's already on screen.
+- For `mid` and `story`, skip steps 1–5. Pick the moments from `candidates.md` and `clipper find`, then write the spec (step 8, plus the fields above), check and render (step 9) and report (step 10).
 
 1. **Pick the bit.** One trait, one streamer, that recurs across the streams in `jobs/` (and live chunks from `python3 -m clipper live jobs`): lying to the cops, a feud with one character, a catchphrase, rage at one thing. It has to be one sentence a stranger understands ("xQc lies to the cops"), like "CaseOh HATING ON Spiderman for almost 9 minutes" (15×) or "CaseOh Perfect Timing Moments" (97×). Find instances with `python3 -m clipper find "<a line>" --hours 168` and by Grepping each job's `transcript.json` and `candidates.md`. With fewer than 25 strong instances, pick another bit or wait for more streams; don't pad.
 2. **Cut the clips.** 25–30 clips of 15–30 s (6–45 s allowed), each a complete beat: the setup line, the bit, the reaction. Start on the first meaningful word, end on the reaction. No two clips overlap. Every clip must show the streamer's face: use jobs where the facecam is on in that stretch.

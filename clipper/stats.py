@@ -107,12 +107,16 @@ def norm_title(t):
 
 
 def local_manifests(root=EXPORTS):
-    """{video id or normalized title: upload.json entry + its profile} for every rendered MP4. A poster that writes
-    `youtube_id` into upload.json makes the match exact; otherwise the posted title must still equal ours."""
+    """{video id or normalized title: upload.json / long.json entry + its profile} for every rendered MP4. A poster
+    that writes `youtube_id` into the manifest makes the match exact; otherwise the posted title must still equal ours."""
     out = {}
-    for f in sorted(root.glob("*/*/*/upload.json")):
+    files = sorted(root.glob("*/*/*/upload.json")) + sorted(root.glob("*/*/*/long.json"))
+    for f in files:
         profile = f.parent.parent.parent.name
-        for e in json.loads(f.read_text(encoding="utf-8")):
+        data = json.loads(f.read_text(encoding="utf-8"))
+        for e in data if isinstance(data, list) else [data]:
+            if f.name == "upload.json":
+                e = {"kind": "short", **e}  # renders before 2026-11-23 didn't record it
             if e.get("youtube_id"):
                 out.setdefault(e["youtube_id"], {**e, "profile": profile})
             if e.get("title"):
@@ -136,7 +140,8 @@ def join(rows, manifests, now=None):
         r["settled"] = now - datetime.fromisoformat(r["published"].replace("Z", "+00:00")) >= timedelta(hours=SETTLE_HOURS)
         if m:
             r.update({k: m.get(k) for k in ("profile", "clip_type", "arm", "hook", "hook_type", "turn", "cold_premise",
-                                            "loop", "predicted")})
+                                            "loop", "predicted", "angle_arm", "hook_angle", "premise_type",
+                                            "selection_score", "kind", "question")})
         from .hooks import loop_frame
         r["title_frame"] = loop_frame(r["t"])  # the posted title, matched or not: every upload counts here
     return rows
@@ -153,8 +158,9 @@ def report(rows):
     """Medians per what the clipper decided, over settled uploads only."""
     ok = [r for r in rows if r.get("settled")]
     groups = {"all settled": ok, "matched to an upload.json": [r for r in ok if r.get("profile")]}
-    for key, name in (("profile", "profile"), ("clip_type", "clip type"), ("arm", "hook arm"), ("hook_type", "hook type"),
-                      ("title_frame", "title frame")):
+    for key, name in (("profile", "profile"), ("kind", "shape"), ("question", "question type"), ("clip_type", "clip type"), ("arm", "hook arm"), ("hook_type", "hook type"),
+                      ("title_frame", "title frame"), ("angle_arm", "hook angle (assigned)"),
+                      ("hook_angle", "hook angle (posted)"), ("premise_type", "premise type")):
         for v in sorted({r.get(key) for r in ok if r.get(key)}):
             groups[f"{name}: {v}"] = [r for r in ok if r.get(key) == v]
     with_turn = [r for r in ok if r.get("profile") and r.get("turn")]
@@ -168,7 +174,7 @@ def own_uploads(rows):
     """Rows for simulate's `own` scope, per profile: {profile: [{niche, ch, t, views, lift}]}."""
     out = {}
     for r in rows:
-        if r.get("settled") and r.get("profile") and r.get("lift") is not None:
+        if r.get("settled") and r.get("profile") and r.get("lift") is not None and r.get("kind", "short") == "short":
             out.setdefault(r["profile"], []).append({"niche": "own", "ch": "own", "t": r["t"], "views": r["views"],
                                                      "lift": r["lift"]})
     return out

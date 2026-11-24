@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,9 +13,19 @@ def W(text, s, e):
     return {"w": text, "s": s, "e": e}
 
 
+def streamers_cfg():
+    """The `streamers` profile's routing and gate settings (the profile itself is private, so CI builds them)."""
+    from clipper import config
+    gta = config.load(profile="gta6")
+    config.load()
+    return {**gta, "profile": "streamers", "research": None, "require_topic": False, "selection_gate": True,
+            "exclude_title_patterns": gta["topic_patterns"], "title_topic": None}
+
+
 # every pick names its turn, a cold premise, its open loop and the payoff (`clipper check` fails it otherwise)
 TURN = {"turn": "meeting", "cold_premise": "Kai meets a kid who says he is 13", "loop": "how old is he really?",
-        "payoff_at": 9.0}
+        "payoff_at": 9.0, "premise_type": "interaction",
+        "selection": {"standalone": True, "unexpected": True, "payoff": True, "six_words": True, "story": False}}
 
 
 class TranscriptTests(unittest.TestCase):
@@ -342,8 +353,9 @@ class HookRuleTests(unittest.TestCase):
     def test_every_structured_viral_hook_passes(self):
         from clipper import hooks
         for h in self.VIRAL_HOOKS:
-            self.assertEqual(hooks.check_hook(h)[0], [], h)
             self.assertTrue(hooks.structures(h), h)
+            if not hooks.banned_hook(h):  # reaction/meme openers are banned for our clips since 2026-11-21
+                self.assertEqual(hooks.check_hook(h)[0], [], h)
 
     def test_series_labels_are_notes_not_fails(self):
         from clipper import hooks
@@ -382,10 +394,11 @@ class HookRuleTests(unittest.TestCase):
 class RelatableHookTests(unittest.TestCase):
     def test_relatable_situations_pass(self):
         from clipper import hooks
-        for good in ("Me watching *GTA 6* with my mom in the room", "When your parents walk in during *GTA 6*",
+        for good in ("Watching *GTA 6* with his mom in the room", "His parents walk in during *GTA 6*",
                      "How playing *GTA 6* is gonna be 😂"):
             self.assertEqual(hooks.check_hook(good)[0], [], good)
-        self.assertTrue(hooks.check_hook("Me watching GTA 6 with my mom in the living room tonight bro")[0])
+        for meme in ("Me watching *GTA 6* with my mom in the room", "When your parents walk in during *GTA 6*"):
+            self.assertIn(hooks.BANNED_NOTE, hooks.check_hook(meme)[0], meme)
 
 
 class ColdOpenTests(unittest.TestCase):
@@ -675,8 +688,9 @@ class LinuxPortTests(unittest.TestCase):
         from clipper import hooks
         base = {"hooks": ["Why did Kai scream?"], "start": 10, "end": 55}
         self.assertNotIn("length", hooks.check_picks([base]).get("video 1", {}))
-        self.assertIn("aim for 15-30s", hooks.check_picks([base])["video 1"]["length_note"])  # a note, not a fail
-        self.assertNotIn("length_note", hooks.check_picks([{**base, "end": 38}]).get("video 1", {}))
+        self.assertIn("aim for 12-25s", hooks.check_picks([base])["video 1"]["length_note"])  # a note, not a fail
+        self.assertIn("length_note", hooks.check_picks([{**base, "end": 38}])["video 1"])  # 28s: over the 25s aim
+        self.assertNotIn("length_note", hooks.check_picks([{**base, "end": 35}]).get("video 1", {}))
         long = {**base, "end": 57}
         self.assertIn("45s maximum", hooks.check_picks([long])["video 1"]["length"])
         self.assertTrue(hooks.has_fails(hooks.check_picks([long])))
@@ -836,7 +850,7 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(topic_evidence("xQc becomes a cop on NoPixel 4.0", "", [], rp), "title")
         self.assertIsNone(topic_evidence("Kai Cenat Reacts To GTA 6 Trailer", "", [], rp))
         self.assertIsNone(topic_evidence("Fortnite tournament", "", [], rp))
-        fails, notes = hooks.check_title("xQc Robs the Bank in GTA RP", ["#gtarp"], hooks.title_topic(rp))
+        fails, notes = hooks.check_title("xQc Robs the Bank in GTA RP 😭", ["#gtarp"], hooks.title_topic(rp))
         self.assertEqual(fails, [])
         self.assertTrue(all("open loop" in n for n in notes))  # the topic is found; only the open-loop note may show
         for play in playbook.for_profile(rp).values():
@@ -862,6 +876,84 @@ class LiveScheduleMacTests(unittest.TestCase):
         self.assertEqual((watch["StartInterval"], clip["StartInterval"]), (300, 7200))
         self.assertEqual(watch["EnvironmentVariables"]["CLIPPER_PROFILE"], "gta6")
         self.assertIn("/clip-daily live", clip["ProgramArguments"][2])
+
+
+class ScheduleAgentTests(unittest.TestCase):
+    """Daily and live runs per profile, with Claude or Codex; nothing is installed (launchctl/systemctl mocked)."""
+
+    def _install(self, profile, agent, mac):
+        import plistlib
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+        from clipper import config, schedule
+        bins = {"claude": "/opt/bin/claude", "codex": "/opt/bin/codex", "python3": "/usr/bin/python3"}
+        with mock.patch.object(config, "PROFILE", profile):
+            with tempfile.TemporaryDirectory() as d, mock.patch.object(schedule, "IS_MAC", mac), \
+                    mock.patch.object(schedule, "UNIT_DIR", Path(d)), \
+                    mock.patch.object(schedule, "PLIST", Path(d) / "com.clipper.gta6.daily.plist"), \
+                    mock.patch.object(schedule.subprocess, "run") as run, \
+                    mock.patch.object(schedule.shutil, "which", side_effect=bins.get):
+                out = schedule.install("08:15", agent)
+                files = {f.name: f.read_bytes() for f in Path(d).iterdir()}
+                live = schedule.live_jobs(schedule.find_agent(agent), agent=agent)
+                schedule.remove() if mac else None
+                left = sorted(f.name for f in Path(d).iterdir())
+        plists = {k: plistlib.loads(v) for k, v in files.items() if k.endswith(".plist")}
+        return out, files, plists, live, left, run
+
+    def test_claude_and_codex_argv_per_profile(self):
+        import shlex
+        from clipper.config import ROOT
+        for profile, sfx in (("gta6", ""), ("streamers", "-streamers")):
+            for agent in ("claude", "codex"):
+                out, _, plists, live, left, _ = self._install(profile, agent, mac=True)
+                label = f"com.clipper.gta6.daily{sfx}"
+                self.assertEqual(list(plists), [f"{label}.plist"], (profile, agent))  # gta6 keeps its label
+                p = plists[f"{label}.plist"]
+                self.assertEqual(p["Label"], label)
+                self.assertEqual(p["EnvironmentVariables"]["CLIPPER_PROFILE"], profile)
+                self.assertTrue(p["StandardOutPath"].endswith(f"logs/daily{sfx}.log"))
+                argv = p["ProgramArguments"]
+                clip = live[f"live-clip{sfx}"][0][2]
+                args = profile if sfx else ""
+                if agent == "claude":
+                    self.assertEqual(argv[:3], ["/opt/bin/claude", "-p", f"/clip-daily {args}".strip()])
+                    self.assertIn("--model", argv)
+                    self.assertIn(shlex.quote(f"/clip-daily {args} live".replace("  ", " ")), clip)
+                else:
+                    self.assertEqual(argv[:4], ["/opt/bin/codex", "exec", "-C", str(ROOT)])
+                    self.assertEqual(argv[4:-1], ["-s", "workspace-write", "-c",
+                                                  "sandbox_workspace_write.network_access=true",
+                                                  "-c", 'approval_policy="never"'])
+                    self.assertIn(".codex/prompts/clip-daily.md", argv[-1])
+                    self.assertIn(f"arguments: {args or 'none'}.", argv[-1])
+                    self.assertIn(f"arguments: {(args + ' live').strip()}.", clip)
+                    self.assertNotIn("$", argv[-1])  # systemd would expand it
+                self.assertIn(f"daily {profile} run ({agent})", out)
+                self.assertEqual(left, [])  # remove takes this profile's daily job away
+
+    def test_systemd_units_per_profile_with_codex(self):
+        _, files, _, _, _, run = self._install("streamers", "codex", mac=False)
+        self.assertEqual(sorted(files), ["clipper-gta6-daily-streamers.service", "clipper-gta6-daily-streamers.timer"])
+        service = files["clipper-gta6-daily-streamers.service"].decode()
+        self.assertIn("Environment=CLIPPER_PROFILE=streamers", service)
+        self.assertIn("/opt/bin/codex exec -C", service)
+        self.assertIn("sandbox_workspace_write.network_access=true", service)
+        self.assertIn("OnCalendar=*-*-* 08:15:00", files["clipper-gta6-daily-streamers.timer"].decode())
+        self.assertIn("clipper-gta6-daily-streamers.timer", str(run.call_args_list))
+
+    def test_agent_pref_and_unknown_agent(self):
+        from unittest import mock
+        from clipper import library, schedule
+        with mock.patch.object(library, "load_prefs", return_value={"agent": "codex"}):
+            self.assertEqual(schedule.pick_agent(), "codex")
+            self.assertEqual(schedule.pick_agent("claude"), "claude")
+        with mock.patch.object(library, "load_prefs", return_value={}):
+            self.assertEqual(schedule.pick_agent(), "claude")
+        with self.assertRaises(SystemExit):
+            schedule.pick_agent("gemini")
+        self.assertIn("agent", library.PREF_RULES)
 
 
 class ShippedProfilesTests(unittest.TestCase):
@@ -992,7 +1084,7 @@ class FootageTests(unittest.TestCase):
         from unittest import mock
         from clipper import render
         meta = {"id": "x1", "url": "https://www.youtube.com/watch?v=x1", "channel": "Kai"}
-        pick = {"start": 5, "end": 25, "hooks": ["Why did Kai's game crash?", "Kai never saw the crash coming"]}
+        pick = {"start": 5, "end": 25, "hooks": ["Why did Kai's game crash?", "Kai's game *crashed* mid-heist"]}
         variants = [{"file": "a.mp4", "hook": h, "check": {"duration": 20}} for h in pick["hooks"]]
         with mock.patch.object(render, "predicted", return_value={"Why did Kai's game crash?": 1.4}), \
                 mock.patch.object(render.time, "time", return_value=5000):
@@ -1160,13 +1252,13 @@ class TopHookTests(unittest.TestCase):
         from pathlib import Path
         from unittest import mock
         from clipper import render
-        pick = {"start": 0, "end": 10, "hooks": ["Kai never saw the crash coming", "Why did Kai's game crash?", "the stream"],
+        pick = {"start": 0, "end": 10, "hooks": ["Kai's game *crashed* mid-heist", "Why did Kai's game crash?", "the stream"],
                 "titles": ["T lost", "T crash", "T stream"]}
-        scores = {"Kai never saw the crash coming": 1.2, "Why did Kai's game crash?": 1.5, "the stream": 9.0}  # fails check
+        scores = {"Kai's game *crashed* mid-heist": 1.2, "Why did Kai's game crash?": 1.5, "the stream": 9.0}  # fails check
         with mock.patch.object(render, "predicted", return_value=scores):
             top = render.top_hooks(pick, {}, 1)
             self.assertEqual((top["hooks"], top["titles"]), (["Why did Kai's game crash?"], ["T crash"]))
-            self.assertEqual(render.top_hooks(pick, {}, 2)["hooks"], ["Why did Kai's game crash?", "Kai never saw the crash coming"])
+            self.assertEqual(render.top_hooks(pick, {}, 2)["hooks"], ["Why did Kai's game crash?", "Kai's game *crashed* mid-heist"])
         with tempfile.TemporaryDirectory() as d:
             job, out = Path(d) / "job", Path(d) / "out"
             job.mkdir()
@@ -1799,10 +1891,10 @@ class DebateRuleTest(unittest.TestCase):
         self.assertTrue(hooks.is_debate("Was Kai wrong for this?"))
         self.assertFalse(hooks.is_debate("Why is Kai shaking?"))
         self.assertTrue(hooks.is_debate("Does Jason look like *Arthur Morgan*?"))
-        plain = {"hooks": ["Why is Kai shaking?", "Kai was NOT ready for *this*"],
+        plain = {"hooks": ["Why is Kai shaking?", "THE *EASIEST* MISSION"],
                  "titles": ["Why Is Kai Shaking At GTA 6?", "Kai Was NOT Ready For GTA 6"], **TURN}
         self.assertIn("debate", hooks.check_picks([plain])["video 1"])
-        judged = {**plain, "hooks": ["Is xQc's aim *legit*?!", "Kai was NOT ready for *this*"]}
+        judged = {**plain, "hooks": ["Is xQc's aim *legit*?!", "THE *EASIEST* MISSION"]}
         self.assertNotIn("debate", hooks.check_picks([judged]).get("video 1", {}))
         self.assertFalse(hooks.has_fails(hooks.check_picks([plain])))
         self.assertTrue(hooks.check_hook("GTA 6 maps are *overrated*?")[1])
@@ -2054,3 +2146,315 @@ class AlignScriptTest(unittest.TestCase):
         self.assertTrue(0.4 <= out[2]["s"] < out[2]["e"] <= 1.1)       # unmatched one fits between its neighbours
         self.assertTrue(out[4]["s"] >= out[3]["e"])
         self.assertEqual(render.align_script("", heard), heard)
+
+
+class TitleTemplateTests(unittest.TestCase):
+    def test_series_tag_suffix_and_missing_end_emoji_are_noted(self):
+        from clipper import hooks
+        notes = hooks.check_title("Kai Cenat Did NOT Expect Him To Be 13 💀 | GTA RP", topic=None)[1]
+        self.assertTrue(any("series tag" in n for n in notes))
+        self.assertEqual(hooks.check_title("Kai Cenat Did NOT Expect Him To Be 13 💀 | GTA RP", topic=None)[0], [])
+        self.assertTrue(any("no emoji at the end" in n for n in hooks.check_title("Kai Cenat Met Ice Spice In GTA 6", topic=None)[1]))
+        clean = hooks.check_title("Kai Cenat Met Ice Spice In GTA 6 😭😭", topic=None)[1]
+        self.assertFalse([n for n in clean if "series tag" in n or "emoji at the end" in n])
+        self.assertFalse([n for n in hooks.check_title("Kai Cenat Met Ice Spice In GTA 6 ❤️", topic=None)[1] if "emoji" in n])
+        self.assertEqual(hooks.check_title("Me At My First Sneaker Drop", topic=None, narrate=False)[1], [])
+
+
+class SelectionAndAngleTests(unittest.TestCase):
+    def test_selection_gate_needs_premise_type_and_four_of_five(self):
+        from clipper import hooks
+        base = {"hooks": ["Kai Cenat fails the *easiest* mission"], **TURN}
+        self.assertNotIn("selection", hooks.check_picks([base]).get("video 1", {}))
+        weak = {**base, "selection": {"standalone": True, "unexpected": True, "payoff": True}}
+        self.assertIn("3/5", hooks.check_picks([weak])["video 1"]["selection"][0])
+        self.assertTrue(hooks.has_fails(hooks.check_picks([weak])))
+        untyped = {k: v for k, v in base.items() if k != "premise_type"}
+        self.assertIn("premise_type", hooks.check_picks([untyped])["video 1"]["selection"][0])
+        self.assertNotIn("selection", hooks.check_picks([untyped], {"research": "cod"}).get("video 1", {}))
+        self.assertEqual(hooks.check_selection({"campaign": "brand"}), [])
+
+    def test_streamers_profile_opts_into_the_selection_gate(self):
+        from clipper import hooks
+        cfg = streamers_cfg()
+        weak = {"hooks": ["SPEED BUYS A $2,000 JACKET"], "start": 0, "end": 18, "turn": "money spent",
+                "cold_premise": "Speed buys a jacket", "loop": "does he buy it?", "payoff_at": 9.0,
+                "selection": {"standalone": True, "payoff": True}}
+        rep = hooks.check_picks([weak], cfg)["video 1"]
+        self.assertIn("premise_type", rep["selection"][0])
+        self.assertIn("2/5", rep["selection"][1])
+        self.assertTrue(hooks.has_fails({"video 1": rep}))
+        self.assertNotIn("angles", rep)  # the GTA hook-angle A/B stays GTA-only
+        self.assertNotIn("selection", hooks.check_picks([weak], {**cfg, "selection_gate": False}).get("video 1", {}))
+        self.assertIn("Marty", hooks.check_picks([{**weak, "hooks": ["Why won't Speed hear *Marty* out?"]}], cfg)["video 1"]["cold"][0])
+
+    def test_streamer_not_reacting_is_a_note_in_every_profile(self):
+        from clipper import hooks
+        quiet = {"hooks": ["THE *CUTSCENE*"], "start": 0, "end": 18, "streamer_reacts": False, **TURN}
+        for cfg in (None, {"research": "cod"}):
+            rep = hooks.check_picks([quiet], cfg)["video 1"]
+            self.assertIn("cutscenes", rep["reacts"])
+        self.assertFalse(hooks.has_fails({"video 1": {"reacts": rep["reacts"]}}))
+        for ok in ({**quiet, "streamer_reacts": True}, {k: v for k, v in quiet.items() if k != "streamer_reacts"},
+                   {**quiet, "campaign": "brand"}):
+            self.assertNotIn("reacts", hooks.check_picks([ok]).get("video 1", {}))
+
+    def test_situation_label_passes_but_topic_label_still_fails(self):
+        from clipper import hooks
+        self.assertEqual(hooks.check_hook("THE EASIEST MISSION")[0], [])
+        self.assertEqual(hooks.check_hook("DRIVING IN SCUBA GEAR")[0], [])
+        self.assertTrue(hooks.check_hook("GTA 6 GRAPHICS")[0])
+
+    def test_reaction_only_titles_get_a_note(self):
+        from clipper import hooks
+        self.assertTrue(any("announces the reaction" in n
+                            for n in hooks.check_title("Kai Cenat Was NOT Ready For This Mission 😭", topic=None)[1]))
+        self.assertFalse(any("announces the reaction" in n
+                             for n in hooks.check_title("Kai Cenat Was NOT Ready For Trevor In GTA 5 😭", topic=None)[1]))
+
+    def test_hook_angles_and_coverage(self):
+        from clipper import hooks
+        self.assertEqual(hooks.hook_angle("THE EASIEST MISSION"), "label")
+        self.assertEqual(hooks.hook_angle("ONE GUN COSTS $590?!"), "detail")
+        self.assertEqual(hooks.hook_angle("Kai did NOT expect this"), "reaction")
+        self.assertIsNone(hooks.hook_angle(""))
+        three = {"hooks": ["THE EASIEST MISSION", "ONE GUN COSTS $590?!", "HE'S ONLY 13?!"], **TURN}
+        self.assertNotIn("angles", hooks.check_picks([three]).get("video 1", {}))
+        one_kind = {**three, "hooks": ["ONE GUN COSTS $590?!", "HE'S ONLY 13?!", "Why is he *13*?"]}
+        self.assertIn("label", hooks.check_picks([one_kind])["video 1"]["angles"]["fails"][0])
+        self.assertTrue(hooks.has_fails(hooks.check_picks([one_kind])))
+        self.assertIn("notes", hooks.check_picks([{**one_kind, "hooks": one_kind["hooks"][:2]}])["video 1"]["angles"])
+
+    def test_render_leads_with_the_assigned_angle_and_records_it(self):
+        from clipper import render
+        full = {"hooks": ["HE'S ONLY 13?!", "ONE GUN COSTS $590?!", "THE EASIEST MISSION"],
+                "titles": ["T detail2", "T detail", "T label"]}
+        cut = {**full, "hooks": full["hooks"][:2], "titles": full["titles"][:2]}
+        led = render.lead_with_angle(full, cut, "label")
+        self.assertEqual(led["hooks"], ["THE EASIEST MISSION", "HE'S ONLY 13?!"])
+        self.assertEqual(led["titles"], ["T label", "T detail2"])
+        self.assertEqual(render.lead_with_angle(full, cut, "nonexistent"), cut)
+        meta = {"url": "https://youtu.be/x", "id": "x"}
+        arms = {render.angle_arm({"start": float(s), "end": float(s) + 20}, None, meta) for s in range(0, 600, 7)}
+        self.assertEqual(arms, {"label", "detail"})
+        a = render.angle_arm({"start": 12.0, "end": 30.0}, None, meta)
+        self.assertEqual(a, render.angle_arm({"start": 12.0, "end": 30.0}, None, meta))
+
+
+class SetupFirstPlaybookTests(unittest.TestCase):
+    def test_reaction_playbook_leads_with_setup_hooks(self):
+        from clipper import hooks, playbook
+        play = playbook.PLAYBOOK["reaction"]
+        self.assertEqual(play["hooks"][:2], ["superlative", "shock fact"])
+        self.assertNotIn("reaction", [hooks.hook_angle(x) for x in play["examples"]])
+
+    def test_no_playbook_example_uses_a_banned_opener(self):
+        from clipper import hooks, playbook
+        for table in (playbook.PLAYBOOK, playbook.GENERIC):
+            for kind, play in table.items():
+                for ex in play.get("examples", []):
+                    self.assertFalse(hooks.banned_hook(ex), f"{kind}: {ex}")
+
+    def test_any_reaction_hook_fails_the_angle_check(self):
+        from clipper import hooks
+        pick = {"hooks": ["THE *EASIEST* MISSION", "Nobody warned Kai about this", "ONE GUN COSTS $590?!"], **TURN}
+        fails = hooks.check_picks([pick])["video 1"]["angles"]["fails"]
+        self.assertIn("Nobody warned Kai about this", fails[0])
+        clean = {**pick, "hooks": ["THE *EASIEST* MISSION", "ONE GUN COSTS $590?!"]}
+        self.assertNotIn("angles", hooks.check_picks([clean]).get("video 1", {}))
+
+
+class BannedHookTests(unittest.TestCase):
+    BANNED = ["Nobody expected that *one word*", "The clerk was NOT ready for the *AR*",
+              "Nobody warned Kai the bag had a *limit*", "Kai did NOT expect *Vale* to flip",
+              "Kai didn't expect his *Uber* to leave", "xQc could NOT believe *those genetics*",
+              "When you can't pay for the *ride*", "Me when she says *just say it*", "POV: the plug brings his *friend*",
+              "xQc wasn't taking the *stairs* down", "Kai never saw this guy *coming*",
+              "GTA 6 Ubers are NOT *what xQc expected*", "xQc would NOT leave without *a hat*"]
+    OK = ["THE FINAL *BRIDGE* SHOOTOUT", "STEALING HIS OWN *UBER*", "ONE GUN COSTS $590?!", "Kids CAN'T play *GTA 6*",
+          "Why couldn't he finish the game?", "HE'S ONLY *13*?!", "NO RUNNING IN THE *HALLWAY*",
+          "Why isn't Kai's *perfect run* enough?"]
+
+    def test_old_style_hooks_fail_check_and_setup_labels_pass(self):
+        from clipper import hooks
+        for h in self.BANNED:
+            self.assertTrue(hooks.banned_hook(h), h)
+            self.assertIn(hooks.BANNED_NOTE, hooks.check_hook(h)[0], h)
+            self.assertEqual(hooks.hook_angle(h), "reaction", h)
+        for h in self.OK:
+            self.assertFalse(hooks.banned_hook(h), h)
+            self.assertNotIn(hooks.BANNED_NOTE, hooks.check_hook(h)[0], h)
+        report = hooks.check_picks([{"hooks": ["Nobody expected that *one word*"], **TURN}])
+        self.assertTrue(hooks.has_fails(report))
+
+    def test_render_drops_banned_hooks_with_their_titles(self):
+        from clipper import render
+        hs, ts = render.drop_banned_hooks(["Nobody saw the *chopper* coming", "THE *HELIPAD* ESCAPE"], ["T1", "T2"])
+        self.assertEqual((hs, ts), (["THE *HELIPAD* ESCAPE"], ["T2"]))
+        self.assertEqual(render.drop_banned_hooks(["POV: you're the *pool boy*"], ["T1", "T2"]), ([""], ["T1"]))
+        self.assertEqual(render.drop_banned_hooks(["THE *HELIPAD* ESCAPE"], ["T"]), (["THE *HELIPAD* ESCAPE"], ["T"]))
+
+
+class HookEmojiTests(unittest.TestCase):
+    def test_emoji_in_hook_is_noted_and_dropped_by_the_renderer(self):
+        from clipper import hooks
+        self.assertTrue(any("emoji" in n for n in hooks.check_hook("THE *EASIEST* MISSION 💀")[1]))
+        self.assertEqual(hooks.check_hook("THE *EASIEST* MISSION 💀")[0], [])
+        self.assertEqual(hooks.check_hook("THE *EASIEST* MISSION")[0], [])
+        self.assertEqual(hooks.check_title("Kai Cenat Fails The Easiest Mission In GTA 6 💀")[0], [])  # titles keep emoji
+
+    def test_render_hook_drops_emoji_instead_of_drawing_boxes(self):
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        from clipper import captions
+        with tempfile.TemporaryDirectory() as d:
+            a, b = Path(d) / "a.png", Path(d) / "b.png"
+            captions.render_hook("THE *EASIEST* MISSION 💀", a, "big", "split")
+            captions.render_hook("THE *EASIEST* MISSION", b, "big", "split")
+            self.assertEqual(Image.open(a).tobytes(), Image.open(b).tobytes())
+
+
+class RequeueTests(unittest.TestCase):
+    """Unposted exports get keep / recut / hold; posted ones are skipped; a dry run writes nothing."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from clipper import render
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.jobs, self.exports, self.stats = root / "jobs", root / "exports", root / "own-stats.json"
+        base = {"turn": "money spent", "cold_premise": "Speed buys a jacket", "loop": "does he buy it?",
+                "hooks": ["SPEED BUYS A *$2,000* JACKET"], "titles": ["Speed Paid $2,000 For A Jacket 😭"]}
+        self.picks = {
+            "keep": {**base, "start": 100, "end": 118, "payoff_at": 114},
+            "tail": {**base, "start": 200, "end": 235, "payoff_at": 212,
+                     "labels": [{"s": 201, "e": 202, "text": "*AT THE STORE*"}, {"s": 230, "e": 231, "text": "*LATER*"}]},
+            "late": {**base, "start": 300, "end": 330, "payoff_at": 326},
+            "nopay": {**base, "start": 400, "end": 420},
+            "posted": {**base, "start": 500, "end": 515, "payoff_at": 510, "titles": ["Posted One"]},
+            "ytid": {**base, "start": 600, "end": 640, "payoff_at": 610},
+            "quiet": {**base, "start": 700, "end": 740, "payoff_at": 710, "streamer_reacts": False},
+            "story": {**base, "segments": [{"start": 800, "end": 815}, {"start": 900, "end": 920}], "payoff_at": 22},
+        }
+        words = [{"w": "so", "s": 310.6, "e": 310.9}, {"w": "yo", "s": 214.5, "e": 215.4}]
+        self.job = self._job("J1", self.picks, words)
+        gone = self._job("J2", {"gone": {**base, "start": 10, "end": 30, "payoff_at": 20}}, [], source=False)
+        n = 0
+        for name, pick in [*self.picks.items(), ("gone", None)]:
+            n += 1
+            job, pick = (gone, {**base, "start": 10, "end": 30, "payoff_at": 20}) if name == "gone" else (self.job, pick)
+            folder = self.exports / "streamers" / "2026-11-20" / f"video {n}"
+            folder.mkdir(parents=True)
+            entry = {"title": (pick.get("titles") or ["x"])[0] + (f" {name}" if name != "posted" else ""),
+                     "footage": render.footage(pick, job, render.load_meta(job)), "payoff_at": pick.get("payoff_at")}
+            if name == "ytid":
+                entry["youtube_id"] = "abc"
+            (folder / "upload.json").write_text(json.dumps([entry]))
+        legacy = self.exports / "streamers" / "2026-11-20" / f"video {n + 1}"
+        legacy.mkdir()
+        (legacy / "upload.json").write_text(json.dumps([{"title": "Old render"}]))
+        self.stats.write_text(json.dumps({"uploads": [{"id": "x", "t": "Posted One"}]}))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _job(self, jid, picks, words, source=True):
+        job = self.jobs / jid
+        job.mkdir(parents=True)
+        (job / "job.json").write_text(json.dumps({"id": jid, "url": f"https://www.youtube.com/watch?v={jid}",
+                                                  "channel": "IShowSpeed"}))
+        (job / "picks.json").write_text(json.dumps(list(picks.values())))
+        (job / "transcript.json").write_text(json.dumps({"words": words}))
+        if source:
+            (job / "source.mp4").write_bytes(b"")
+        return job
+
+    def _rows(self):
+        from clipper import requeue
+        rows = requeue.verdicts({"profile": "streamers"}, self.exports, self.jobs, self.stats)
+        return {r["folder"].split("/")[-1]: r for r in rows}
+
+    def _files(self):
+        return sorted(str(p.relative_to(self.tmp.name)) for p in __import__("pathlib").Path(self.tmp.name).rglob("*"))
+
+    def test_verdicts(self):
+        before = self._files()
+        rows = self._rows()
+        self.assertEqual(self._files(), before)  # a dry run writes nothing
+        v = {k: r["verdict"] for k, r in rows.items()}
+        self.assertEqual(v, {"video 1": "keep", "video 2": "recut", "video 3": "recut", "video 4": "hold",
+                             "video 7": "hold", "video 8": "recut", "video 9": "hold", "video 10": "hold"})
+        self.assertIn("payoff", rows["video 4"]["reasons"][0])
+        self.assertIn("isn't talking", rows["video 7"]["reasons"][0])
+        self.assertIn("source deleted (J2)", rows["video 9"]["reasons"][0])
+        self.assertIn("no footage recorded", rows["video 10"]["reasons"][0])
+        tail, late, story = rows["video 2"]["pick"], rows["video 3"]["pick"], rows["video 8"]["pick"]
+        self.assertEqual((tail["start"], tail["end"]), (200, 215.4))  # payoff + 3 s, out to the end of the word
+        self.assertEqual([x["text"] for x in tail["labels"]], ["*AT THE STORE*"])  # labels past the new end go
+        self.assertEqual((late["start"], late["end"]), (310.6, 330))  # starts on a word, payoff ~16 s in
+        self.assertEqual(story["segments"], [{"start": 806.0, "end": 815.0}, {"start": 900.0, "end": 910.0}])
+        self.assertEqual(story["payoff_at"], 16.0)
+        self.assertEqual(tail["requeued_from"], "streamers/2026-11-20/video 2")
+
+    def test_apply_renders_into_new_folders_and_keeps_originals(self):
+        from clipper import requeue
+        rows = requeue.verdicts({"profile": "streamers"}, self.exports, self.jobs, self.stats)
+        originals = {p: p.read_bytes() for p in self.exports.rglob("upload.json")}
+        calls = []
+
+        def fake_render(job, picks, cfg, top=0):
+            calls.append((job.name, picks))
+            out = self.exports / "streamers" / "2026-11-23"
+            return [{"folder": str(out / f"video {i}")} for i in range(1, len(picks) + 1)]
+        done = requeue.apply({"profile": "streamers"}, rows, self.exports, self.jobs, fake_render)
+        self.assertEqual([c[0] for c in calls], ["J1"])
+        self.assertEqual(len(json.loads((self.jobs / "J1" / "picks-requeue.json").read_text())), 3)
+        self.assertEqual(done[0], {"from": "streamers/2026-11-20/video 2", "to": "streamers/2026-11-23/video 1"})
+        self.assertEqual({p: p.read_bytes() for p in originals}, originals)  # nothing overwritten
+        marker = json.loads((self.exports / "streamers/2026-11-20/video 2/superseded.json").read_text())
+        self.assertEqual(marker["recut"], "streamers/2026-11-23/video 1")
+        self.assertNotIn("video 2", self._rows())  # a recut original isn't re-checked
+        requeue.apply({"profile": "streamers"}, [{**rows[1], "folder": "streamers/2026-11-20/video 1"}],
+                      self.exports, self.jobs, fake_render)
+        self.assertTrue((self.jobs / "J1" / "picks-requeue-2.json").exists())  # never overwrites picks-requeue.json
+
+
+class OutlierQuestionTests(unittest.TestCase):
+    """research/outlier-questions-2026-11.md: `event` premise type and the recorded `question` type."""
+
+    def test_event_premise_and_question_pass_in_gta6_and_streamers(self):
+        from clipper import config, hooks
+        gta = config.load(profile="gta6")
+        config.load()
+        gta_pick = {"hooks": ["Lucia *joins a cult* in GTA 6"], "start": 0, "end": 18, **TURN,
+                    "premise_type": "event", "question": "event"}
+        irl_pick = {"hooks": ["SPEED WINS *STREAMER OF THE YEAR*"], "start": 0, "end": 18, **TURN,
+                    "premise_type": "event", "question": "recognition", "description": "IShowSpeed at the awards"}
+        for cfg, pick in ((gta, gta_pick), (streamers_cfg(), irl_pick)):
+            rep = hooks.check_picks([pick], cfg).get("video 1", {})
+            self.assertNotIn("selection", rep)
+            self.assertNotIn("question", rep)
+
+    def test_question_must_be_a_known_type_and_is_noted_when_missing(self):
+        from clipper import hooks
+        base = {"hooks": ["Kai Cenat fails the *easiest* mission"], "start": 0, "end": 18, **TURN}
+        bad = hooks.check_picks([{**base, "question": "what happens"}], streamers_cfg())["video 1"]
+        self.assertIn("must be one of", bad["question"]["fails"][0])
+        self.assertTrue(hooks.has_fails({"video 1": bad}))
+        missing = hooks.check_picks([base], streamers_cfg())["video 1"]["question"]
+        self.assertEqual(missing["fails"], [])
+        self.assertFalse(hooks.has_fails({"video 1": {"question": missing}}))
+        self.assertEqual(hooks.check_question({"campaign": "brand"}), ([], []))
+
+    def test_upload_manifest_records_shape_premise_and_question(self):
+        from unittest import mock
+        from clipper import render
+        meta = {"id": "x1", "url": "https://www.youtube.com/watch?v=x1", "channel": "Speed"}
+        pick = {"start": 5, "end": 25, "hooks": ["SPEED WINS *STREAMER OF THE YEAR*"], "premise_type": "event",
+                "question": "event"}
+        variants = [{"file": "a.mp4", "hook": pick["hooks"][0], "check": {"duration": 20}}]
+        with mock.patch.object(render, "predicted", return_value={}):
+            out = render.upload_manifest(pick, meta, {}, variants, ["T"])[0]
+        self.assertEqual((out["kind"], out["premise_type"], out["question"]), ("short", "event", "event"))

@@ -4,17 +4,19 @@ import re
 PLAYBOOK = {
     "reaction": {
         "what": "a streamer reacting to GTA 6 footage (trailer, gameplay, news); their face and voice are the payoff",
-        "hooks": ["relatable situation", "withheld / negation", "question", "tease"],
-        "examples": ["Me watching *GTA 6* with my mom in the room", "Kai was NOT ready for *this*",
-                     "Why couldn't Kai watch this?", "Wait for Kai's face at the end..."],
+        # Set up the situation, not the reaction (research/outlier-analysis-2026-11-20.md, user-approved 2026-11-21):
+        # 100K+ GTA openings label the setup (*EASIEST MISSION*, *TRAIN MISSION*); reaction openers are banned.
+        "hooks": ["superlative", "shock fact", "question", "withheld / negation"],
+        "examples": ["THE *EASIEST* MISSION IN GTA 6", "One gun costs *$590* in GTA 6",
+                     "He's only *13*?!", "He *can't* run indoors?!"],
         "hook_style": "big", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
         "length": "9–25s", "evidence": "Kai Cenat Live 6.8M / 1.2M: face + 1-word Bebas captions, no narrator",
     },
     "comedy": {
         "what": "an absurd or funny scene with several people (RP, skits, group chaos); the situation is the joke",
-        "hooks": ["relatable situation", "withheld / negation", "question", "tease"],
-        "examples": ["POV: you're the hostage in *GTA 6*", "Nobody expected the hostages to *SING*",
-                     "Why are the hostages singing?", "Wait until the hostages start singing..."],
+        "hooks": ["withheld / negation", "question", "tease", "superlative"],
+        "examples": ["The hostages only *SING*", "Why are the hostages singing?",
+                     "Wait until the hostages start singing...", "THE *WORST* HOSTAGE SITUATION"],
         "hook_style": "big", "caption_style": "comic", "voiceover": False, "layout": "fit",
         "length": "15–40s (let the bit land)",
         "evidence": "RDCworld1 5M: meme box 'How Playing GTA 6 Is Gonna Be 😂'; Jaden Williams 2M skit",
@@ -49,8 +51,8 @@ PLAYBOOK = {
                 "turns out, so the viewer stays to see it; beats escalate to a payoff (a reveal or a face); often "
                 "quiet, no scream needed",
         "hooks": ["question", "withheld / negation", "tease", "relatable situation"],
-        "examples": ["What new *combo* did Kai just invent?", "Nobody's seen Kai's new *getaway car*",
-                     "Wait till you see the room Kai *built*...", "Me showing my friends my new *setup*"],
+        "examples": ["What new *combo* did Kai just invent?", "Chat has never seen this *getaway car*",
+                     "Wait till you see the room Kai *built*...", "Showing his friends the new *setup*"],
         "hook_style": "big", "caption_style": "boxed", "voiceover": False, "layout": "split if facecam",
         "length": "15–55s (cut on the reveal; 60s max)",
         "evidence": "Mitro 'Kai Just Invented A New Sauce' 1.5M on 39.6k subs (18s, near silent); "
@@ -60,11 +62,11 @@ PLAYBOOK = {
 # Non-GTA profiles: same structures and styles (they hold on 3,481 gaming Shorts), examples without GTA 6.
 GENERIC = {
     "reaction": {"what": "a streamer reacting to something on stream; their face and voice are the payoff",
-                 "examples": ["Me watching this with my mom in the room", "He was NOT ready for *this*",
+                 "examples": ["Watching this with his mom in the room", "His *first* time seeing this",
                               "Why couldn't he finish the game?", "Wait for his mom's face at the end..."]},
     "comedy": {"what": "an absurd or funny scene with several people (skits, group chaos); the situation is the joke",
-               "examples": ["POV: you're the hostage in his *stream*", "Nobody expected the hostages to *SING*",
-                            "Why are the hostages singing?", "Wait until the hostages start singing..."]},
+               "examples": ["The hostages only *SING*", "Why are the hostages singing?",
+                            "Wait until the hostages start singing...", "THE *WORST* HOSTAGE SITUATION"]},
     "news": {"what": "information: updates, leaks, prices, dates, facts about the game, usually narrated",
              "examples": ["4 NEW features coming this season", "The new map is 2x BIGGER",
                           "Kids CAN'T play this game", "What happens if you shoot the moon?"]},
@@ -75,8 +77,8 @@ GENERIC = {
     "scenario": {"what": "a curiosity gap: the streamer makes, finds, tries or shows something NEW and the hook "
                          "names that it exists but withholds what it is or how it turns out; beats escalate to a "
                          "payoff (a reveal or a face); often quiet",
-                 "examples": ["What new *combo* did he just invent?", "Nobody's seen his new *loadout*",
-                              "Wait till you see the room he *built*...", "Me showing my friends my new *setup*"]},
+                 "examples": ["What new *combo* did he just invent?", "Chat has never seen this *loadout*",
+                              "Wait till you see the room he *built*...", "Showing his friends the new *setup*"]},
 }
 
 

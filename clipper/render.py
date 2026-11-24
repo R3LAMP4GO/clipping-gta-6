@@ -371,17 +371,24 @@ def footage_overlap(a, b):
                for x in a or [] for y in b or [] if x.get("source") == y.get("source"))
 
 
-def footage_reuse(fp, exports=None, tol=REUSE_TOLERANCE_S):
-    """Exported clips that already use more than `tol` seconds of this footage (profiles can share an account, so
-    all of them count; a dub's entries don't, as it posts the same clip in another language on its own channel)."""
+def footage_reuse(fp, exports=None, tol=REUSE_TOLERANCE_S, shape="short"):
+    """Exported clips of the same `shape` that already use more than `tol` seconds of this footage: "short"
+    (video N/upload.json) or a long kind ("long", "mid", "story" from long N/long.json). One moment may go out once
+    per shape, a Short and a "what happens" video, never twice in one. Profiles can share an account, so all of
+    them count; a dub's entries don't, as it posts the same clip in another language on its own channel."""
     hits = []
-    for f in sorted(Path(exports or EXPORTS).glob("**/upload.json")):
+    root = Path(exports or EXPORTS)
+    files = root.glob("**/upload.json") if shape == "short" else root.glob("**/long.json")
+    for f in sorted(files):
         try:
-            entries = json.loads(f.read_text(encoding="utf-8"))
+            data = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        used = next((e.get("footage") for e in entries if isinstance(e, dict) and e.get("footage")
-                     and not e.get("lang")), None)
+        if shape == "short":
+            used = next((e.get("footage") for e in data if isinstance(e, dict) and e.get("footage")
+                         and not e.get("lang")), None)
+        else:
+            used = data.get("footage") if isinstance(data, dict) and data.get("kind", "long") == shape else None
         shared = footage_overlap(fp, used)
         if shared > tol:
             hits.append(f"{f.parent.parent.parent.name}/{f.parent.parent.name}/{f.parent.name} already uses {shared:.0f}s of this footage")
@@ -428,6 +435,20 @@ def top_hooks(pick, cfg, n):
     if len(ts) == len(hs):
         out["titles"] = [ts[i] for i in order]
     return out
+
+
+def drop_banned_hooks(hooks, titles):
+    """(hooks, titles) without banned reaction/meme openers, titles kept with their hooks; ([""], best title)
+    renders a no-hook MP4 when every hook is banned."""
+    from .hooks import banned_hook
+    keep = [i for i, h in enumerate(hooks) if not banned_hook(h)]
+    if len(keep) == len(hooks):
+        return hooks, titles
+    print(f"[render]   dropped banned hooks: {[h for h in hooks if banned_hook(h)]}", flush=True)
+    if not keep:
+        return [""], titles[:1]
+    paired = len(titles) == len(hooks)
+    return [hooks[i] for i in keep], ([titles[i] for i in keep] if paired else titles)
 
 
 def build_segment_job(pick, job, cfg, out):
@@ -499,10 +520,35 @@ def no_hook_arm(pick, job, meta, share):
     return int(digest[:8], 16) / 0xFFFFFFFF < float(share)
 
 
-def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None):
+def angle_arm(pick, job, meta):
+    """Which opening-text angle leads this video (label / detail): a hash of its footage, like the no-hook arm,
+    so the same moment always gets the same angle and each gets an equal share of clips."""
+    from .hooks import ANGLES
+    fp = footage(pick, job, meta)[0]
+    digest = hashlib.sha1(f"angle:{fp['source']}:{fp['from']:.2f}".encode()).hexdigest()
+    return ANGLES[int(digest[:8], 16) % len(ANGLES)]
+
+
+def lead_with_angle(full, pick, arm):
+    """`pick` (maybe cut to its top hooks) with a hook of the assigned angle first, taken from `full` if the cut
+    dropped it; titles follow their hooks. Unchanged when no hook has that angle."""
+    from .hooks import hook_angle
+    hs, ts = full.get("hooks") or [], full.get("titles") or []
+    lead = next((i for i, h in enumerate(hs) if hook_angle(h) == arm), None)
+    if lead is None:
+        return pick
+    keep = pick.get("hooks") or []
+    rest = [h for h in keep if h != hs[lead]][:max(len(keep) - 1, 0)]
+    out = {**pick, "hooks": [hs[lead]] + rest}
+    if len(ts) == len(hs):
+        out["titles"] = [ts[hs.index(h)] for h in out["hooks"]]
+    return out
+
+
+def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None):
     """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
     (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
-    from .hooks import loop_frame, structures
+    from .hooks import hook_angle, loop_frame, structures
     from .simulate import MODIFIERS, effect_table
     table = effect_table()
     creds = creds or credits(pick, job, meta)
@@ -519,6 +565,10 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
         out.append({"file": v["file"], "rank": i, "hook": v["hook"],
                     "hook_type": "none" if none else max(types, key=lambda t: table[t][0]) if types else None,
                     "arm": "no-hook" if none else "hook",
+                    "angle_arm": None if none else arm, "hook_angle": hook_angle(v["hook"]),
+                    "kind": "short", "premise_type": pick.get("premise_type"), "question": pick.get("question"),
+                    "selection_score": sum(1 for x in (pick.get("selection") or {}).values() if x is True)
+                    if isinstance(pick.get("selection"), dict) else None,
                     "title": (titles[i] if len(titles) == len(variants) else titles[0])[:100],
                     "hook_frame": "none" if none else loop_frame(v["hook"]),
                     "title_frame": loop_frame(titles[i] if len(titles) == len(variants) else titles[0]),
@@ -562,12 +612,18 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
     first = next_video_number(out_dir)
     results = []
     for n, pick in enumerate(picks, first):
+        full = pick
         if top:  # only the best hook(s) get an MP4; the rest would never be posted
             pick = top_hooks(pick, cfg, top)
+        from .hooks import is_gta
+        arm = angle_arm(full, job, meta) if is_gta(cfg) else None
+        if arm:
+            pick = lead_with_angle(full, pick, arm)
         hooks = pick.get("hooks") or [pick.get("hook", "")]
         if first_hook_only:
             hooks = hooks[:1]
         titles = pick.get("titles") or [pick.get("title") or hooks[0]]
+        hooks, titles = drop_banned_hooks(hooks, titles)
         if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.5)):
             print(f"[render] video {n}: no-hook arm (one MP4, no banner, best title)", flush=True)
             hooks, titles = [""], titles[:1]
@@ -591,7 +647,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                 encode_variant(src_job, flat, prep, hook, cfg, mp4, tmp)
                 variants.append({"file": str(mp4), "hook": hook, "check": probe(mp4)})
         (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job,
-                                                                       prep.get("music")),
+                                                                       prep.get("music"), arm),
                                                        indent=2, ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),

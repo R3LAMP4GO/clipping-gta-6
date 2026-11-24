@@ -1,0 +1,12 @@
+{
+  "recommended_hooks": 3,
+  "breakout_chance": {
+    "every hook type (7 variants, incl. ones that don't fit)": 0.41805555555555557,
+    "every hook type that fits (Claude drops misfits)": 0.49127777777777776,
+    "Claude's best 4": 0.49094444444444446,
+    "Claude's best 3": 0.5014444444444445,
+    "Claude's best 2": 0.4945,
+    "Claude's best 1 (one per clip)": 0.427
+  },
+  "uploads": 8
+}

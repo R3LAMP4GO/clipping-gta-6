@@ -18,3 +18,4 @@ assets/music/local/
 viral/
 # compiled helpers (apple-asr)
 .cache/
+research/own-stats.json

@@ -21,7 +21,7 @@ import yaml
 
 from . import config
 from .config import JOBS, ROOT, YT_ARGS
-from .sources import topic_evidence
+from .sources import excluded, topic_evidence
 
 WORK = JOBS / "_live"  # shared by all profiles: one recorder per stream, one set of analysis slots
 HEADER = "# Live streams to record while they're on topic. Managed by `python3 -m clipper live add|remove`.\n"
@@ -149,8 +149,11 @@ def status(cfg):
         probes = list(pool.map(lambda s: probe(s["url"]), streams))
     out = []
     for s, p in zip(streams, probes):
-        on = bool(p.get("live")) and (not topic_only(s) or
-                                      topic_evidence(p.get("title", ""), p.get("description"), p.get("tags"), cfg))
+        if topic_only(s):
+            fits = topic_evidence(p.get("title", ""), p.get("description"), p.get("tags"), cfg)
+        else:  # any topic but the excluded ones: a GTA 6 stream belongs to gta6, so two profiles never record it
+            fits = not excluded(p.get("title", ""), cfg, p.get("description"), p.get("tags"))
+        on = bool(p.get("live")) and fits
         out.append({**s, "live": p.get("live", False), "title": p.get("title"), "on_topic": bool(on),
                     "recording": recorder_running(s["name"])})
     return out

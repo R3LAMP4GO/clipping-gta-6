@@ -25,6 +25,17 @@ VIDEOS = DATA / "videos.json"
 MEASURES = DATA / "measures.json"
 SCORES = DATA / "gemini"
 REPORT = DATA / "report.md"
+LABELS = DATA / "labels.json"      # blind title labels: {id: {..., "labeled_at"}}
+OPENINGS = DATA / "openings.json"  # first-5s features of cached media: {id: {..., "opened_at"}}
+TRIGGERS = ["curiosity_gap", "viewer_judge", "play_along", "suspense", "irony", "confession", "status_celebrity",
+            "absurd_premise", "none"]
+LABEL_FIELDS = ["cold_readable", "turn", "setup_withheld", "streamer_first"]
+TITLE_CODE = ["question", "negation", "emoji", "word_count", "length_s"]
+TITLE_METRICS = TITLE_CODE + LABEL_FIELDS + [f"trigger_{x}" for x in TRIGGERS]
+OPENING_METRICS = ["hook_text", "hook_words", "hook_states_setup", "hook_question", "hook_matches_premise",
+                   "hook_title_loop", "face_area", "shows_action"]
+HOOK_LABELS = ["hook_states_setup", "hook_matches_premise", "hook_title_loop"]
+SLICE_S = 6           # a slice is the first ~6 s of a Short: enough for the 0.3/1.5/3/5 s frames and the 0-5 s speech
 CHANNELS = ROOT / "research" / "viral-channels.txt"
 KEEP_DAYS = 30
 OUTLIER_X = 3.0       # the user's cutoff: views >= 3x the channel's median
@@ -77,18 +88,20 @@ def purge(keep_days=KEEP_DAYS, t=None):
     videos = _load(VIDEOS, [])
     kept = [v for v in videos if v.get("fetched_at", 0) >= cutoff]
     ids = {v["id"] for v in kept}
-    gone = {"videos": len(videos) - len(kept), "files": 0, "measures": 0, "scores": 0}
+    gone = {"videos": len(videos) - len(kept), "files": 0, "derived": 0, "scores": 0}
     if gone["videos"]:
         _save(VIDEOS, kept)
-    for f in MEDIA.glob("*") if MEDIA.exists() else []:
-        if f.stem.split(".")[0] not in ids or f.stat().st_mtime < cutoff:
+    for f in MEDIA.rglob("*") if MEDIA.exists() else []:
+        if f.is_file() and (f.name.split(".")[0] not in ids or f.stat().st_mtime < cutoff):  # <id>.mp4, <id>.t03.jpg
             f.unlink()
             gone["files"] += 1
-    m = _load(MEASURES, {})
-    m2 = {k: v for k, v in m.items() if k in ids and v.get("measured_at", 0) >= cutoff}
-    gone["measures"] = len(m) - len(m2)
-    if gone["measures"]:
-        _save(MEASURES, m2)
+    for path, key in ((MEASURES, "measured_at"), (LABELS, "labeled_at"), (OPENINGS, "opened_at"),
+                      (DATA / "pairs.json", "paired_at"), (DATA / "ab.json", "ab_at")):
+        m = _load(path, {})
+        m2 = {k: v for k, v in m.items() if k in ids and v.get(key, 0) >= cutoff}
+        if len(m2) != len(m):
+            gone["derived"] += len(m) - len(m2)
+            _save(path, m2)
     for f in SCORES.glob("*.json") if SCORES.exists() else []:
         s = _load(f, {})
         s2 = {k: v for k, v in s.items() if k in ids and v.get("scored_at", 0) >= cutoff}
@@ -172,17 +185,49 @@ def flag_outliers(videos, x=OUTLIER_X, settle_h=yt.SETTLE_HOURS, t=None):
     than `settle_h` are still being served their first audience: marked settling and left out of the comparison."""
     t = t or now()
     for v in videos:
-        pub = datetime.fromisoformat(v["published"].replace("Z", "+00:00")).timestamp()
-        v["settling"] = t - pub < settle_h * 3600
+        if v.get("published"):
+            pub = datetime.fromisoformat(v["published"].replace("Z", "+00:00")).timestamp()
+            v["settling"] = t - pub < settle_h * 3600
+        else:  # imported without a date: the study already skipped each channel's 10 newest
+            v["settling"] = False
     by = {}
+    key = lambda v: v.get("channel_id") or v["source"]  # one channel, whichever import named it
     for v in videos:
         if not v["settling"]:
-            by.setdefault(v["source"], []).append(v["views"])
+            by.setdefault(key(v), []).append(v["views"])
     for v in videos:
-        base = st.median(by[v["source"]]) if by.get(v["source"]) else None
+        base = st.median(by[key(v)]) if by.get(key(v)) else None
         v["baseline"] = base
         v["outlier"] = bool(base) and not v["settling"] and v["views"] >= x * base
     return videos
+
+
+def import_study(ext_path, grouped_path=None):
+    """Merge an earlier study's Shorts (ext.json: ch, cid, id, views, t) into viral/videos.json, deduped by id. Each
+    record keeps its original fetch date (the file's mtime) so the 30-day purge still applies; a record already
+    here (fresher, exact API views) wins, and only gains a duration or date it lacked."""
+    ext_path = Path(ext_path)
+    fetched = ext_path.stat().st_mtime
+    extra = {}
+    if grouped_path and Path(grouped_path).exists():
+        g = json.loads(Path(grouped_path).read_text(encoding="utf-8"))
+        extra = {x["id"]: x for k in ("hit", "flop") for x in g.get(k, [])}
+    names = dict(load_channels()) if CHANNELS.exists() else {}
+    have = {v["id"]: v for v in _load(VIDEOS, [])}
+    added = 0
+    for x in json.loads(ext_path.read_text(encoding="utf-8")):
+        e = extra.get(x["id"], {})
+        if x["id"] in have:
+            v = have[x["id"]]
+            v["duration"] = v.get("duration") or e.get("dur")
+            continue
+        have[x["id"]] = {"id": x["id"], "source": names.get(x["cid"], x["ch"]), "channel_id": x["cid"], "title": x["t"],
+                         "published": e.get("pub") and f"{e['pub']}T00:00:00Z", "duration": e.get("dur"),
+                         "views": int(x["views"]), "likes": e.get("likes"), "avg_view_s": None,
+                         "fetched_at": fetched, "origin": ext_path.name}
+        added += 1
+    _save(VIDEOS, list(have.values()))
+    return {"added": added, "total": len(have)}
 
 
 # ---------- 2. code-only measurements ----------
@@ -206,6 +251,92 @@ def download(ids, height=480, pause=2.0):
         if out.exists():
             done.append(vid)
     return done
+
+
+def slice_path(vid):
+    return MEDIA / f"{vid}.slice.mp4"
+
+
+def media_for(vid):
+    """The full download when cached, else the first-seconds slice, else None."""
+    for p in (MEDIA / f"{vid}.mp4", slice_path(vid)):
+        if p.exists():
+            return p
+    return None
+
+
+def download_slice(vid, secs=SLICE_S, height=480):
+    """Only the first `secs` seconds (yt-dlp download sections), never the whole Short."""
+    MEDIA.mkdir(parents=True, exist_ok=True)
+    out = slice_path(vid)
+    if not out.exists():
+        res = subprocess.run(["yt-dlp", "-q", "--no-warnings", "-f", f"bv*[height<={height}]+ba/b[height<={height}]/b",
+                              "--download-sections", f"*0-{secs}", "--merge-output-format", "mp4", "-o", str(out),
+                              f"https://www.youtube.com/watch?v={vid}"], capture_output=True, text=True)
+        if "confirm you" in res.stderr and "not a bot" in res.stderr:
+            raise BotCheck(vid)
+    return out if out.exists() else None
+
+
+def slice_queue(videos, opens, seed=5):
+    """Settled videos with no opening yet. Channels that already have both an outlier and a non-outlier measured
+    come first, round-robin, alternating outlier / non-outlier inside each (so the thin outlier side grows)."""
+    rng = random.Random(seed)
+    have = {}
+    for v in videos:
+        if v["id"] in opens and not v.get("settling"):
+            have.setdefault(v["source"], set()).add(bool(v["outlier"]))
+    todo = {}
+    for v in videos:
+        if v["id"] not in opens and not v.get("settling") and not slice_path(v["id"]).exists():
+            todo.setdefault(v["source"], {True: [], False: []})[bool(v["outlier"])].append(v["id"])
+    for lanes in todo.values():
+        for lane in lanes.values():
+            rng.shuffle(lane)
+
+    def order(srcs):
+        out, flip = [], True
+        lanes = {s: [todo[s][True][:], todo[s][False][:]] for s in srcs}
+        while any(a or b for a, b in lanes.values()):
+            for s in srcs:
+                a, b = lanes[s]
+                for lane in ((a, b) if flip else (b, a)):
+                    if lane:
+                        out.append(lane.pop())
+                        break
+            flip = not flip
+        return out
+    both = sorted(s for s in todo if have.get(s) == {True, False})
+    rest = sorted(s for s in todo if s not in both)
+    return order(both) + order(rest)
+
+
+def grow_openings(cfg, limit=None, pause=6.0, max_failures=5):
+    """Download the first seconds of settled Shorts one at a time, pausing between, stop at the first bot check;
+    then run the frames + Apple OCR/faces + Apple speech on each slice."""
+    videos = flag_outliers(_load(VIDEOS, []))
+    todo = slice_queue(videos, _load(OPENINGS, {}))[:limit]
+    got, failures = 0, 0
+    for i, vid in enumerate(todo, 1):
+        try:
+            ok = download_slice(vid)
+        except BotCheck:
+            print(f"[viral] YouTube's bot check at {vid}: stopped after {got} slices; try again later", flush=True)
+            break
+        if not ok:
+            failures += 1
+            print(f"[viral] {vid}: slice download failed", flush=True)
+            if failures >= max_failures:
+                print(f"[viral] {failures} failures in a row: stopping", flush=True)
+                break
+        else:
+            failures = 0
+            openings(cfg, ids={vid})
+            got += 1
+        if i % 10 == 0:
+            print(f"[viral] {got} slices ({i}/{len(todo)})", flush=True)
+        time.sleep(pause + random.random() * pause / 2)
+    return {"slices": got, "openings": len(_load(OPENINGS, {}))}
 
 
 def count_cuts(stderr):
@@ -233,10 +364,11 @@ def measure_one(mp4, cfg):
             "loudness_lufs": signals.integrated_loudness(mp4), "measured_at": now()}
 
 
-def measure(cfg, limit=None):
+def measure(cfg, limit=None, cached_only=False):
     videos = _load(VIDEOS, [])
     m = _load(MEASURES, {})
-    todo = [v["id"] for v in videos if v["id"] not in m][:limit]
+    todo = [v["id"] for v in videos if v["id"] not in m
+            and (not cached_only or (MEDIA / f"{v['id']}.mp4").exists())][:limit]
     for i, vid in enumerate(todo, 1):  # one download at a time: parallel ones tripped YouTube's bot check
         try:
             ok = download([vid])
@@ -257,6 +389,114 @@ def measure(cfg, limit=None):
             print(f"[viral] measured {i}/{len(todo)}", flush=True)
     _save(MEASURES, m)
     return len(m)
+
+
+# ---------- 2b. the first 5 seconds (cached media only) ----------
+
+FRAME_TIMES = (0.3, 1.5, 3.0, 5.0)
+VISION_SRC = Path(__file__).with_name("apple_vision.swift")
+
+
+def frame_path(vid, at):
+    return MEDIA / f"{vid}.t{int(at * 10):02d}.jpg"  # <id>.t03.jpg: the purge reads the id before the first dot
+
+
+def opening_features(frames, words):
+    """Hook text = OCR text on the first frame (0.3 s); face = the biggest face in the first 1.5 s; speech = words
+    starting before 5 s. `frames` is apple-vision's output in FRAME_TIMES order."""
+    first = frames[0]["text"] if frames else []
+    hook = " ".join(b["s"] for b in first)
+    faces = [f["area"] for fr in frames[:2] for f in fr["faces"]]
+    early = [w for w in words if w["s"] < 5]
+    return {"hook_text": int(bool(first)), "hook_words": len(re.findall(r"[A-Za-z0-9']+", hook)),
+            "text_area": round(sum(b["area"] for b in first), 4), "face_area": round(max(faces, default=0.0), 4),
+            "speech_0_5_words": len(early), "first_word_s": early[0]["s"] if early else None,
+            "ocr_0_3": hook, "transcript_0_5": " ".join(w["w"] for w in early)}
+
+
+def openings(cfg=None, ids=None):
+    """First-5s features for videos whose media is already cached: no downloads."""
+    from . import transcribe
+    exe = transcribe.apple_binary(VISION_SRC, "apple-vision")
+    o = _load(OPENINGS, {})
+    videos = [v for v in _load(VIDEOS, []) if media_for(v["id"]) and (ids is None or v["id"] in ids)]
+    for v in videos:
+        vid, mp4 = v["id"], media_for(v["id"])
+        if vid in o:
+            continue
+        for at in FRAME_TIMES:
+            if not frame_path(vid, at).exists():
+                subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-ss", str(at), "-i", str(mp4),
+                                "-frames:v", "1", "-vf", "scale=-2:960", str(frame_path(vid, at))], check=False)
+        paths = [str(frame_path(vid, at)) for at in FRAME_TIMES if frame_path(vid, at).exists()]
+        sheet = MEDIA / f"{vid}.sheet.jpg"
+        if len(paths) == len(FRAME_TIMES) and not sheet.exists():
+            subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", *sum((["-i", x] for x in paths), []),
+                            "-filter_complex", "".join(f"[{i}:v]scale=-2:480[s{i}];" for i in range(4)) +
+                            "[s0][s1][s2][s3]hstack=4", str(sheet)], check=False)
+        res = subprocess.run([str(exe), *paths], capture_output=True, text=True)
+        frames = json.loads(res.stdout) if res.returncode == 0 and res.stdout else []
+        wav = mp4.with_suffix(".wav")
+        if not wav.exists():
+            transcribe.extract_audio(mp4, wav)
+        words, _, _ = transcribe.transcribe(wav, str(mp4.with_suffix("")), {**(cfg or {}), "asr": "apple"})
+        o[vid] = {**opening_features(frames, words), "shows_action": o.get(vid, {}).get("shows_action"),
+                  "opened_at": now()}
+        _save(OPENINGS, o)
+    return len(o)
+
+
+def add_action_labels(path):
+    """Merge `shows_action` labels (JSONL: {id, shows_action, why}) judged from the 0.3/1.5/3/5 s contact sheets."""
+    o = _load(OPENINGS, {})
+    n = 0
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            d = json.loads(line)
+            if d["id"] in o:
+                o[d["id"]].update(shows_action=int(bool(d["shows_action"])), action_why=d.get("why", ""))
+                n += 1
+    _save(OPENINGS, o)
+    return n
+
+
+QUESTION_START = re.compile(r"^(why|how|what|who|whom|whose|where|when|which|is|are|was|were|do|does|did|can|could|"
+                            r"will|would|should|am|have|has)\b", re.I)
+
+
+def hook_is_question(text):
+    """On-screen hook that reads as a question: a question mark, or it opens with a question word."""
+    t = (text or "").strip()
+    return int(bool(t) and ("?" in t or bool(QUESTION_START.match(t))))
+
+
+def add_hook_labels(paths):
+    """Merge blind hook labels (JSONL: {id, hook_states_setup, hook_matches_premise, hook_title_loop}) into the
+    openings, judged from the on-screen hook + title + premise only (views hidden)."""
+    o, n = _load(OPENINGS, {}), 0
+    for path in paths:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                d = json.loads(line)
+                if d["id"] in o:
+                    o[d["id"]].update({k: int(bool(d.get(k))) for k in HOOK_LABELS})
+                    n += 1
+    _save(OPENINGS, o)
+    return n
+
+
+def add_title_labels(paths):
+    """Merge blind title labels (JSONL from the labellers) into viral/labels.json, stamped for the purge."""
+    labels, t = _load(LABELS, {}), now()
+    for path in paths:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                d = json.loads(line)
+                if d.get("trigger") not in TRIGGERS:
+                    d["trigger"] = "none"
+                labels[d["id"]] = {**{k: d.get(k) for k in ["premise", "trigger"] + LABEL_FIELDS}, "labeled_at": t}
+    _save(LABELS, labels)
+    return len(labels)
 
 
 # ---------- 3. Gemini scoring ----------
@@ -323,6 +563,48 @@ def score(prompt_names, model=GEMINI_MODEL, limit=None):
 
 # ---------- 4. comparison ----------
 
+NEGATION = re.compile(r"\b(not|never|nobody|no one|can'?t|won'?t|didn'?t|doesn'?t|isn'?t|wasn'?t|wouldn'?t|couldn'?t)\b",
+                      re.I)
+EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF]")
+
+
+def title_code(title, duration):
+    """The title features code can read exactly (hashtags dropped first)."""
+    t = re.sub(r"#\S+", "", title or "").strip()
+    return {"question": int("?" in t), "negation": int(bool(NEGATION.search(t))), "emoji": int(bool(EMOJI.search(t))),
+            "word_count": len(re.findall(r"[A-Za-z0-9']+", t)), "length_s": duration}
+
+
+def title_rows(videos, labels):
+    rows = []
+    for v in videos:
+        if v.get("settling") or v["id"] not in labels:
+            continue
+        lab = labels[v["id"]]
+        r = {"id": v["id"], "source": v["source"], "outlier": v["outlier"], "views": v["views"],
+             **title_code(v["title"], v.get("duration")), **{k: int(bool(lab.get(k))) for k in LABEL_FIELDS}}
+        r.update({f"trigger_{x}": int(lab.get("trigger") == x) for x in TRIGGERS})
+        rows.append(r)
+    return rows
+
+
+def opening_rows(videos, openings):
+    """One row per settled video with an opening. Hook features read the OCR text of the 0.3 s frame; a video with no
+    on-screen text at 0.3 s has no hook, so its hook labels are 0."""
+    rows = []
+    for v in videos:
+        o = openings.get(v["id"])
+        if v.get("settling") or not o:
+            continue
+        r = {"id": v["id"], "source": v["source"], "outlier": v["outlier"], "views": v["views"],
+             "length_s": v.get("duration"), **{k: o.get(k) for k in OPENING_METRICS}}
+        r["hook_question"] = hook_is_question(o.get("ocr_0_3"))
+        for k in HOOK_LABELS:
+            r[k] = o.get(k) if o.get("hook_text") and o.get(k) is not None else (0 if not o.get("hook_text") else None)
+        rows.append(r)
+    return rows
+
+
 def rows_for(videos, measures, scores=None):
     """One row per settled, measured video: its code metrics, plus one prompt's Gemini scores when given."""
     rows = []
@@ -340,11 +622,57 @@ def rows_for(videos, measures, scores=None):
 
 
 def auc(pos, neg):
-    """P(an outlier's value > a non-outlier's), ties half: 0.5 = no difference."""
+    """P(an outlier's value > a non-outlier's), ties half: 0.5 = no difference (Mann-Whitney, via ranks)."""
     if not pos or not neg:
         return None
-    wins = sum((p > n) + 0.5 * (p == n) for p in pos for n in neg)
-    return wins / (len(pos) * len(neg))
+    vals = sorted([(x, 1) for x in pos] + [(x, 0) for x in neg])
+    rank_sum, i = 0.0, 0
+    while i < len(vals):
+        j = i
+        while j + 1 < len(vals) and vals[j + 1][0] == vals[i][0]:
+            j += 1
+        r = (i + j) / 2 + 1
+        rank_sum += r * sum(1 for k in range(i, j + 1) if vals[k][1])
+        i = j + 1
+    return (rank_sum - len(pos) * (len(pos) + 1) / 2) / (len(pos) * len(neg))
+
+
+def auc_interval(pos, neg, reps=300, seed=3):
+    """95% bootstrap interval for the AUC (outliers and others resampled separately)."""
+    if not pos or not neg:
+        return None
+    rng, vals = random.Random(seed), []
+    for _ in range(reps):
+        vals.append(auc([rng.choice(pos) for _ in pos], [rng.choice(neg) for _ in neg]))
+    vals.sort()
+    return vals[int(0.025 * reps)], vals[int(0.975 * reps) - 1]
+
+
+def strata_auc(rows, k, reps=300, seed=3):
+    """AUC computed inside each channel (>= 1 outlier and >= 3 others), averaged by pair count, with a 95% bootstrap
+    interval that resamples inside channels: a channel's house style cannot pass for an outlier trait."""
+    strata = []
+    for src in sorted({r["source"] for r in rows}):
+        p = [r[k] for r in rows if r["source"] == src and r["outlier"] and r.get(k) is not None]
+        n = [r[k] for r in rows if r["source"] == src and not r["outlier"] and r.get(k) is not None]
+        if p and len(n) >= 3:
+            strata.append((p, n))
+    if not strata:
+        return None
+
+    def combine(parts):
+        w = [len(p) * len(n) for p, n in parts]
+        return sum(wi * auc(p, n) for wi, (p, n) in zip(w, parts)) / sum(w)
+    rng, vals = random.Random(seed), []
+    for _ in range(reps):
+        vals.append(combine([([rng.choice(p) for _ in p], [rng.choice(n) for _ in n]) for p, n in strata]))
+    vals.sort()
+    return combine(strata), vals[int(0.025 * reps)], vals[int(0.975 * reps) - 1], len(strata)
+
+
+def _centre(xs):
+    """Rate for yes/no features (a median of 0/1 hides the difference), median otherwise."""
+    return st.mean(xs) if set(xs) <= {0, 1} else st.median(xs)
 
 
 def spearman(xs, ys):
@@ -371,7 +699,7 @@ def spearman(xs, ys):
     return num / den if den else None
 
 
-def compare(rows, metrics):
+def compare(rows, metrics, with_length=True):
     """Per metric: outlier vs other medians, the gap, AUC, the gap inside each source (so a channel's house style
     can't pass for an outlier trait), and how much it moves with length."""
     out = {}
@@ -385,12 +713,12 @@ def compare(rows, metrics):
             p = [r[k] for r in rows if r["source"] == src and r["outlier"] and r.get(k) is not None]
             n = [r[k] for r in rows if r["source"] == src and not r["outlier"] and r.get(k) is not None]
             if p and len(n) >= 3:
-                within.append((src, st.median(p) - st.median(n), len(p)))
-        out[k] = {"outlier_median": st.median(pos), "other_median": st.median(neg),
-                  "gap": st.median(pos) - st.median(neg), "auc": auc(pos, neg), "n_outliers": len(pos),
+                within.append((src, _centre(p) - _centre(n), len(p)))
+        out[k] = {"outlier_median": _centre(pos), "other_median": _centre(neg), "binary": set(pos + neg) <= {0, 1},
+                  "gap": _centre(pos) - _centre(neg), "auc": auc(pos, neg), "n_outliers": len(pos),
                   "n_other": len(neg), "within": within,
-                  "length_rho": None if k == "length_s" else spearman([r.get(k) for r in rows],
-                                                                       [r.get("length_s") for r in rows])}
+                  "length_rho": None if k == "length_s" or not with_length else
+                  spearman([r.get(k) for r in rows], [r.get("length_s") for r in rows])}
     return out
 
 
@@ -418,7 +746,7 @@ def explain(k, c):
 def derive_rules(rows, metrics, min_edge=0.05, min_outliers=3):
     """Metric -> signed weight (AUC - 0.5) for metrics that separated outliers on these rows."""
     rules = {}
-    for k, c in compare(rows, metrics).items():
+    for k, c in compare(rows, metrics, with_length=False).items():
         if c["n_outliers"] >= min_outliers and abs(c["auc"] - 0.5) >= min_edge:
             rules[k] = c["auc"] - 0.5
     return rules
@@ -426,11 +754,15 @@ def derive_rules(rows, metrics, min_edge=0.05, min_outliers=3):
 
 def rank(rows, rules, ref):
     """Score = sum(weight * percentile of the value among the reference rows); missing values count as the middle."""
+    import bisect
+    ref_vals = {k: sorted(r[k] for r in ref if r.get(k) is not None) for k in rules}
+
     def pct(k, x):
-        vals = [r[k] for r in ref if r.get(k) is not None]
+        vals = ref_vals[k]
         if x is None or not vals:
             return 0.5
-        return (sum(v < x for v in vals) + 0.5 * sum(v == x for v in vals)) / len(vals)
+        lo, hi = bisect.bisect_left(vals, x), bisect.bisect_right(vals, x)
+        return (lo + 0.5 * (hi - lo)) / len(vals)
     return sorted(rows, key=lambda r: -sum(w * pct(k, r.get(k)) for k, w in rules.items()))
 
 
@@ -470,6 +802,16 @@ def report(runs=50, sample=30, seed=7):
     lines = ["# What our outliers have in common", "",
              f"Outlier = views >= {OUTLIER_X:g}x its channel's median (settled videos; younger than "
              f"{yt.SETTLE_HOURS} h left out). Raw YouTube data is deleted after {KEEP_DAYS} days.", ""]
+    lines += _dataset_lines(videos)
+    labels, opens = _load(LABELS, {}), _load(OPENINGS, {})
+    rows = title_rows(videos, labels)
+    if rows:
+        lines += _section(f"Title and length features ({len(rows)} labelled videos, {sum(r['outlier'] for r in rows)} "
+                          f"outliers; length known for {sum(r['length_s'] is not None for r in rows)})", rows,
+                          TITLE_METRICS, runs, sample, seed, "title/length features")
+    rows = opening_rows(videos, opens)
+    if rows:
+        lines += _opening_section(rows, runs, sample, seed)
     for scope, pick in (("all sources", lambda r: True), ("our channel only", lambda r: r["source"] == "own")):
         rows = [r for r in rows_for(videos, measures) if pick(r)]
         n_out = sum(r["outlier"] for r in rows)
@@ -512,6 +854,100 @@ def report(runs=50, sample=30, seed=7):
     return text
 
 
+def _dataset_lines(videos):
+    s = [v for v in videos if not v["settling"]]
+    by = {}
+    for v in s:
+        n, o = by.get(v["source"], (0, 0))
+        by[v["source"]] = (n + 1, o + v["outlier"])
+    fetched = {}
+    for v in videos:
+        d = datetime.fromtimestamp(v["fetched_at"]).strftime("%Y-%m-%d %H:%M")
+        fetched[d] = fetched.get(d, 0) + 1
+    out = ["## Dataset", "", f"{len(videos)} Shorts ({len(s)} settled), {sum(v['outlier'] for v in s)} outliers; "
+           f"duration known for {sum(bool(v.get('duration')) for v in s)}. Fetched: "
+           + ", ".join(f"{n} on {d}" for d, n in sorted(fetched.items())) + ".", "",
+           "| channel | settled | outliers |", "|---|---|---|"]
+    out += [f"| {k} | {n} | {o} |" for k, (n, o) in sorted(by.items(), key=lambda kv: -kv[1][1])]
+    return out + [""]
+
+
+def _fmt(v, binary):
+    return f"{v:.0%}" if binary else f"{v:.2f}"
+
+
+def _section(title, rows, metrics, runs, sample, seed, what):
+    c = compare(rows, metrics)
+    lines = [f"## {title}", "", "| metric | outliers | others | gap | AUC | same direction inside channels |",
+             "|---|---|---|---|---|---|"]
+    for k, v in c.items():
+        same = sum(1 for _, g, _ in v["within"] if g and (g > 0) == (v["gap"] > 0))
+        gap = f"{v['gap'] * 100:+.0f} pts" if v["binary"] else f"{v['gap']:+.2f}"
+        lines.append(f"| {k} | {_fmt(v['outlier_median'], v['binary'])} | {_fmt(v['other_median'], v['binary'])} | "
+                     f"{gap} | {v['auc']:.2f} | {same} of {len(v['within'])} |")
+    lines += [""] + [f"- **{k}**: {explain(k, v)}" for k, v in c.items() if abs(v["auc"] - 0.5) >= 0.05] + [""]
+    return lines + _val_lines(validate(rows, metrics, runs, sample, seed), sample, what)
+
+
+def _opening_section(rows, runs, sample, seed):
+    n_out = sum(r["outlier"] for r in rows)
+    c = compare(rows, OPENING_METRICS, with_length=False)
+    by = {}
+    for r in rows:
+        n, o = by.get(r["source"], (0, 0))
+        by[r["source"]] = (n + 1, o + r["outlier"])
+    usable = [k for k, (n, o) in by.items() if o and n - o >= 3]
+    lines = [f"## First 5 seconds and the text hook ({len(rows)} measured settled videos, {n_out} outliers, "
+             f"{len(by)} channels)", "",
+             "Hook = the on-screen text Apple OCR reads on the 0.3 s frame (none = no hook). Hook labels (states the "
+             "setup, matches the premise, hook + title add a loop) were judged blind from the hook text + title + "
+             "premise; videos with no hook count as 0. `shows_action` was judged from the 0.3/1.5/3/5 s frames. "
+             "Face size = the biggest face in the first 1.5 s. Videos are downloaded in part (first ~6 s) and chosen "
+             "to balance outliers and others inside channels, so the outlier share here is not the channel base "
+             "rate; AUC does not depend on that share.", "",
+             f"| channel | measured | outliers | others |", "|---|---|---|---|"]
+    lines += [f"| {k} | {n} | {o} | {n - o} |" for k, (n, o) in sorted(by.items(), key=lambda kv: (-kv[1][1], kv[0]))]
+    lines += ["", f"Within-channel columns use the {len(usable)} channel(s) with at least 1 outlier and 3 others "
+                  "measured; the within-channel AUC is computed inside each of them and averaged, so a channel's "
+                  "own style cannot pass for an outlier trait.", "",
+              "| feature | outliers (rate or median, n) | others (rate or median, n) | gap | AUC pooled (95% interval) | "
+              "AUC inside channels (95% interval) | same direction inside channels |", "|---|---|---|---|---|---|---|"]
+    clear = []
+    for k in OPENING_METRICS:
+        v = c.get(k)
+        if not v:
+            lines.append(f"| {k} | no data | no data | | | | |")
+            continue
+        pos = [r[k] for r in rows if r["outlier"] and r.get(k) is not None]
+        neg = [r[k] for r in rows if not r["outlier"] and r.get(k) is not None]
+        lo, hi = auc_interval(pos, neg)
+        inner = strata_auc(rows, k)
+        same = sum(1 for _, g, _ in v["within"] if g and (g > 0) == (v["gap"] > 0))
+        gap = f"{v['gap'] * 100:+.0f} pts" if v["binary"] else f"{v['gap']:+.2f}"
+        in_txt = f"{inner[0]:.2f} ({inner[1]:.2f} to {inner[2]:.2f}, {inner[3]} ch.)" if inner else "n/a"
+        lines.append(f"| {k} | {_fmt(v['outlier_median'], v['binary'])} (n={v['n_outliers']}) | "
+                     f"{_fmt(v['other_median'], v['binary'])} (n={v['n_other']}) | {gap} | "
+                     f"{v['auc']:.2f} ({lo:.2f} to {hi:.2f}) | {in_txt} | {same} of {len(v['within'])} |")
+        if inner and (inner[1] > 0.5 or inner[2] < 0.5):
+            clear.append(f"{k} ({inner[0]:.2f})")
+    lines.append("")
+    val = validate(rows, OPENING_METRICS, runs, sample, seed)
+    lines += _val_lines(val, sample, "opening/hook features only")
+    small = n_out < 50 or len(usable) < 8
+    why = []
+    if n_out < 50:
+        why.append(f"only {n_out} outliers")
+    if len(usable) < 8:
+        why.append(f"only {len(usable)} channel(s) with both outliers and others")
+    lines += [f"**Sample size**: {len(rows)} videos with {n_out} outliers across {len(by)} channels "
+              f"({len(usable)} with both kinds). Features whose inside-channel AUC interval excludes 0.5: "
+              + (", ".join(clear) or "none") + ". "
+              + (f"Still too small to conclude ({' and '.join(why)}): the intervals are wide, the effect is read "
+                 "from a handful of channels, and the hidden-views test cannot separate a real effect from luck."
+                 if small else "Large enough for the intervals above to be read as they stand."), ""]
+    return lines
+
+
 def _val_lines(val, sample, what="code metrics"):
     if not val.get("runs"):
         return ["Validation: no sample had an outlier to find.", ""]
@@ -530,10 +966,28 @@ def run(action, cfg, args):
     gone = purge()
     if any(gone.values()):
         print(f"[viral] purged data older than {KEEP_DAYS} days: {gone}", flush=True)
+    if action == "import":
+        return import_study(args.path, args.grouped)
+    if action == "labels":
+        return {"labels": add_title_labels(sorted(Path(args.path).glob("*.jsonl")))}
+    if action == "openings":
+        return {"openings": openings(cfg)}
+    if action == "actions":
+        return {"shows_action": add_action_labels(args.path)}
+    if action == "pairs":
+        from . import pairs
+        own = json.loads(Path(args.path).read_text(encoding="utf-8"))
+        others = [x for x in _load(VIDEOS, []) if x["source"] != "own"]
+        found = pairs.find(own, others, cfg, pause=args.pause)
+        return {"confirmed": sum(1 for p in found.values() if p.get("their")), "checked": len(found)}
+    if action == "hooks":
+        return {"hook_labels": add_hook_labels(sorted(Path(args.path).glob("*.jsonl")))}
     if action == "collect":
         return collect(args.own, args.per_channel)
+    if action == "measure" and args.slices:
+        return grow_openings(cfg, args.limit, args.pause)
     if action == "measure":
-        return {"measured": measure(cfg, args.limit)}
+        return {"measured": measure(cfg, args.limit, args.cached_only)}
     if action == "score":
         names = list(PROMPTS) if args.prompt == "all" else [args.prompt]
         return score(names, args.model, args.limit)

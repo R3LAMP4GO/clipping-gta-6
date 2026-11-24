@@ -262,7 +262,12 @@ def parse_markup(text):
     return out
 
 
+# The bundled and fallback fonts have no emoji glyphs, so an emoji in a hook would burn in as an empty box.
+HOOK_EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55\ufe0f\u200d]")
+
+
 def render_hook(text, path, style="box", layout="fit"):
+    text = re.sub(r"\s{2,}", " ", HOOK_EMOJI.sub("", text or "")).strip()
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     st = HOOK_STYLES.get(style)
     if st is None or not text.strip():

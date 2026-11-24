@@ -30,6 +30,25 @@ class StatsTests(unittest.TestCase):
         self.assertEqual(rep["turn named"]["n"], 1)
 
 
+    def test_groups_by_shape_and_question_type_and_keeps_long_videos_out_of_simulate(self):
+        from clipper import stats
+        rows = [{"id": f"v{i}", "t": f"Clip {i}", "published": f"2026-11-{10 + i:02d}T12:00:00Z", "views": 1000}
+                for i in range(3)]
+        with tempfile.TemporaryDirectory() as d:
+            day = Path(d) / "streamers" / "2026-11-12"
+            (day / "video 1").mkdir(parents=True)
+            (day / "video 1" / "upload.json").write_text(json.dumps([{"title": "Clip 0", "question": "event",
+                                                                       "premise_type": "event"}]))
+            (day / "long 1").mkdir()
+            (day / "long 1" / "long.json").write_text(json.dumps({"kind": "mid", "title": "Clip 1",
+                                                                   "question": "choice"}))
+            man = stats.local_manifests(Path(d))
+        rows = stats.join(stats.add_lift(rows), man, datetime(2026, 11, 20, tzinfo=timezone.utc))
+        rep = stats.report(rows)
+        self.assertEqual((rep["shape: short"]["n"], rep["shape: mid"]["n"]), (1, 1))
+        self.assertEqual((rep["question type: event"]["n"], rep["question type: choice"]["n"]), (1, 1))
+        self.assertEqual([r["t"] for r in stats.own_uploads(rows)["streamers"]], ["Clip 0"])
+
     def test_get_retries_a_dropped_connection(self):
         import http.client
         import io

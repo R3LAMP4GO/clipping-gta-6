@@ -30,6 +30,7 @@ CAPS_TWIST = re.compile(r"\b(?!(?:GTA|RP|VI|POV|NPC|I|OK)\b)[A-Z][A-Z']+\b")
 STRUCTURES = [(n, re.compile(p, re.I), ex) for n, p, ex in STRUCTURES]
 STRUCTURES.append(("premise + twist", CAPS_TWIST, "xQc FORCES Weazel News Ron Otterman to Rob a Bank (source title)"))
 STRUCTURES.append(("superlative", re.compile(r"\b(best|fastest|worst|biggest|craziest|smartest|most|first ever|"
+                                           r"easiest|hardest|cheapest|richest|dumbest|wildest|scariest|luckiest|"
                                            r"world'?s|#1|ever)\b", re.I), "World's Best Sniper in Black Ops 7"))
 # Words that describe the clip instead of teasing it; fine inside a tease ("Wait for his reaction...").
 # A question that hands the viewer a verdict to argue about ("Is He Cheating?!", 7.8M, 29x; ~1.28x on 36 titles).
@@ -127,7 +128,8 @@ NAME_SKIP = {"Season", "Episode", "Part", "Chapter", "Week", "Day", "Mr", "Mrs",
 KNOWN_WORDS = set("""vice city leonida florida miami los santos liberty america american usa mexico mexican spanish english
 latina latino french chinese japanese uber lambo lamborghini ferrari corvette tesla bugatti walmart mcdonald playstation
 xbox nintendo rockstar twitch youtube tiktok instagram discord bigfoot santa god jesus christmas halloween""".split())
-LORE = re.compile(r"\b(\w+'s|his|her|their) (crew|gang|faction|war)\b|\bthe betrayal\b", re.I)
+LORE = re.compile(r"\b(\w+'s|his|her|their) (crew|gang|faction|war)\b|\bthe betrayal\b|\bbetrayal\b|"
+                  r"\breally (leave|left|quit)\b|\bhear \w+ out\b", re.I)
 
 
 def unknown_names(text, names=()):
@@ -165,6 +167,59 @@ def check_cold(pick, names=()):
     return notes
 
 
+EMOJI_IN_HOOK = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55]")
+# Opening text that announces a reaction instead of the situation ("xQc did NOT expect this from the PD", 636 views):
+# 100K+ GTA openings label the setup (*EASIEST MISSION*, *PUTS ON NIKE*) and let the footage show what happens.
+REACTION_ONLY = re.compile(r"\b(did ?n[o']?t expect|(was|were|is) not ready|was ?n'?t ready|nobody (warned|expected|saw)|"
+                           r"did (he|she|they|\w+) really|could ?n[o']?t believe|did ?n[o']?t see (this|that|it)|"
+                           r"(not|never) see (this|that|it) coming)\b", re.I)
+REACTION_NOTE = ("announces the reaction, not the situation: set up what's about to happen with the concrete detail "
+                 "(\"THE EASIEST MISSION\", \"ONE GUN COSTS $590?!\") and let the footage show the surprise")
+# Banned outright (Ken/user 2026-11-21): reaction-explaining and meme openers. The opening text is a 2-6 word setup
+# label for what's about to happen ("THE FINAL *BRIDGE* SHOOTOUT"), never how someone reacts to it.
+BANNED_HOOK = re.compile(r"^\s*(when|me|pov)\b|\bpov\b|\b(nobody|no one)\b|\bdid ?n[o']?t\b|\b(was|were) ?n[o']?t\b|"
+                         r"\b(could ?n[o']?t|can'?t) (believe|unsee)\b|\bwould ?n[o']?t\b|\bnever saw\b|\bexpected\b|"
+                         r"\bsaw (this|that|it) coming\b", re.I)
+BANNED_NOTE = ("old-style opener (Nobody / NOT ready / did NOT / didn't expect / When... / Me... / POV / a reaction): "
+               "write a 2-6 word setup label for what's about to happen (\"THE FINAL *BRIDGE* SHOOTOUT\", "
+               "\"STEALING HIS OWN *UBER*\", \"ONE GUN COSTS $590?!\")")
+
+
+def banned_hook(hook):
+    text = plain(hook or "")
+    return bool(BANNED_HOOK.search(text) or REACTION_ONLY.search(text))
+
+
+TOPIC_WORDS = {"gta", "gta6", "6", "vi", "v", "5", "graphics", "trailer", "gameplay", "update", "map", "leak", "leaks",
+               "news", "game", "rp", "nopixel", "moments", "moment", "funny", "clip", "clips", "stream", "live"}
+# The opening-text angles the hook-angle A/B compares (research/outlier-analysis-2026-11-20.md, user-approved);
+# the reaction arm was dropped 2026-11-21 when reaction openers were banned.
+ANGLES = ("label", "detail")
+
+
+def situation_label(hook):
+    """A 2-6 word label that sets up the situation (\"THE EASIEST MISSION\", \"DRIVING IN SCUBA GEAR\"): at least two
+    content words that aren't topic words, so \"GTA 6 GRAPHICS\" still counts as a bare topic label."""
+    text = plain(hook)
+    words = re.sub(r"\bgta (6|vi)\b", "GTA6", text, flags=re.I).split()
+    if not 2 <= len(words) <= 6 or "?" in text or SPOILERS.search(text):
+        return False
+    return len([w for w in content_words(text) if w.lower().strip("'") not in TOPIC_WORDS]) >= 2
+
+
+def hook_angle(hook):
+    """'reaction' (announces how someone reacts), 'label' (a 2-6 word situation label), 'detail' (names the concrete
+    surprising detail), or None for an empty or unclassifiable hook."""
+    text = plain(hook or "").strip()
+    if not text:
+        return None
+    if banned_hook(text):
+        return "reaction"
+    if situation_label(hook):
+        return "label"
+    return "detail" if has_stake(hook) or "?" in text else None
+
+
 def check_hook(hook, gta=True, names=()):
     """(fails, notes): fails break a rule every 500k+ hook followed; notes are judgment calls."""
     text = plain(hook)
@@ -182,6 +237,8 @@ def check_hook(hook, gta=True, names=()):
     if found == ["premise + twist"]:
         notes.append("a CAPS word alone measured 0.97x: the premise works when it names the streamer "
                      "(\"xQc forces the hostages to *SING*\", 1.21x) or adds a question/negation")
+    if banned_hook(hook):
+        fails.append(BANNED_NOTE)
     if gta and found and not has_stake(hook, names):
         notes.append("no concrete stake: name the number, amount, consequence or a character viewers already know (\"NOT ready for "
                      "*Trevor*\", \"him to be *13*\", \"$500K painting\"); our flops named only a vague object "
@@ -191,11 +248,16 @@ def check_hook(hook, gta=True, names=()):
     if RAGE_BAIT.search(text):
         notes.append("rage-bait wording measured ~0.84x on 3,481 gaming Shorts: ask the viewer for a verdict instead "
                      "(\"Is xQc's aim *legit*?!\")")
+    if EMOJI_IN_HOOK.search(hook or ""):  # the hook fonts have no emoji glyphs: they burn in as empty boxes
+        notes.append("emoji in the hook: the on-screen font has none, so the render drops it; keep emoji for the title")
     if (hook or "").count("*") not in (0, 2):
         fails.append("unbalanced *keyword* markup")
     if not found:
         if SPOILERS.search(text):
             fails.append("labels the clip instead of teasing it (drop 'reaction'/'highlights'/…)")
+        elif situation_label(hook):
+            notes.append("situation label: works when the first second of footage shows the contrast it sets up; bare "
+                         "topic labels measured 0.88x, so this is the 'label' arm of the hook-angle test")
         elif len(words) <= 4:
             fails.append("topic label (no structure measured 0.88x on GTA Shorts): turn it into a question, number, "
                          "negation or relatable line (\"GTA 6 GRAPHICS\" -> \"Are these *GTA 6* graphics real?\")")
@@ -237,6 +299,12 @@ def loop_frame(text):
     return next((name for name, pat in LOOP_FRAMES if pat.search(t)), "closed")
 
 
+# Own channel, 23 Nov 2026: our top 10 GTA 6 Shorts all paid off by ~16s and ended on it (avg 89-137% viewed);
+# 1k-stuck ones kept 0.43 of viewers at 90% vs 0.69 for breakouts.
+PAYOFF_BY_S = 20
+PAYOFF_TAIL_S = 5
+
+
 def check_loop(pick):
     """(fails, notes) for the reframe: the pick names the question a viewer is left with after the first second
     (`loop`) and the moment the clip answers it (`payoff_at`, source seconds; clip seconds for a segment pick, like
@@ -262,6 +330,12 @@ def check_loop(pick):
     elif hi > lo and (at - lo) / (hi - lo) < 0.5:
         notes.append(f"the loop closes {at - lo:.0f}s into a {hi - lo:.0f}s clip: viewers leave once it's answered; end "
                      "a few seconds after the payoff or start later on the setup line")
+    elif hi - at > PAYOFF_TAIL_S:
+        notes.append(f"the clip runs {hi - at:.0f}s past the payoff: our breakouts end on the punchline so they loop; "
+                     f"cut the end to within {PAYOFF_TAIL_S:g}s of it")
+    if lo <= at <= hi and at - lo > PAYOFF_BY_S:
+        notes.append(f"the payoff lands {at - lo:.0f}s in: our top 10 Shorts all paid off by ~16s; "
+                     "start on the last setup line")
     return fails, notes
 
 
@@ -281,6 +355,86 @@ def check_stranger(pick):
         fails.append(f"cold_premise is {len(premise.split())} words: a stranger must get it in one read "
                      f"(<= {TURN_MAX_WORDS}); if it needs backstory, skip the clip")
     return fails
+
+
+# 2,911 100K+ clip Shorts vs our 73 (research/outlier-analysis-2026-11-20.md): a style gap, not a proven cause.
+TAG_SUFFIX = re.compile(r"\s[|•–-]\s*[^|]*\b(gta|rp|nopixel|roleplay|shorts?)\b[^|]*$", re.I)
+TAG_SUFFIX_NOTE = ("series tag after a pipe (\"| GTA RP\"): 71% of our titles, 3% of 100K+ clip Shorts; our tagged ones got a "
+                   "median 1,044 views vs 1,399 untagged. Work the game into the sentence (\"…In GTA RP 😭\") or drop it")
+END_EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B50\u2B55]\ufe0f?" + r"\s*$")
+END_EMOJI_NOTE = "no emoji at the end: 81% of 100K+ GTA clip Shorts end on one (ours 23%); pick the clip's emotion (😳 💀 😭 🤯)"
+PREMISE_TYPES = {
+    "contradiction": "an obvious contradiction (fails the easiest mission)",
+    "recognition": "a famous moment in a new situation (Kai and Pudgie redo Big Smoke's order)",
+    "consequence": "a consequence with stakes (loses hours of progress, loses his car in a bet)",
+    "interaction": "people with an unpredictable outcome (buys a fan GTA 6, the dad says no)",
+    "discovery": "an unusual discovery (GTA VI is 200GB)",
+    # the only type over 2x plain in research/outlier-questions-2026-11.md (streamer Shorts), mostly award-show clips
+    "event": "a live event the audience is following right now (wins Streamer of the Year, a marathon's 24-hour mark)",
+}
+# The question a viewer can't answer without watching (research/outlier-questions-2026-11.md); recorded per upload so
+# `clipper stats` can test the types on our channel, where the outlier study found no reliable winner.
+QUESTION_TYPES = {
+    "choice": "does it react if I do X? (if you pick up Lucia in a sports car this happens)",
+    "tries": "how badly will this go? (awkward NPC tries to rob Lucia)",
+    "collision": "who snaps first? (Lucia finds out about Mandy)",
+    "recognition": "is that real? (Speed finds a Hulk-like monster)",
+    "event": "what is this world? (Lucia joins a cult, Speed wins Streamer of the Year)",
+}
+SELECTION = {"standalone": "makes sense without the stream", "unexpected": "something actually surprising happens",
+             "payoff": "a visible or audible payoff", "six_words": "the premise fits in about 6 words",
+             "story": "setup, development and payoff inside the clip"}
+SELECTION_MIN = 4
+
+
+def check_selection(pick):
+    """Fails unless the pick names a `premise_type` and scores >= 4 of the 5 `selection` points (user-approved gate,
+    2026-11-21): a heuristic for which moments are worth clipping, not a validated predictor."""
+    if pick.get("campaign"):
+        return []
+    fails = []
+    kind = pick.get("premise_type")
+    if kind not in PREMISE_TYPES:
+        fails.append(f"`premise_type` must be one of {', '.join(PREMISE_TYPES)} "
+                     f"({'got ' + repr(kind) if kind else 'missing'}); if none fits, find a stronger moment")
+    sel = pick.get("selection")
+    if not isinstance(sel, dict):
+        return fails + ["no `selection`: score the moment {" + ", ".join(f'"{k}": true/false' for k in SELECTION) + "}"]
+    missed = [k for k in SELECTION if sel.get(k) is not True]
+    if len(SELECTION) - len(missed) < SELECTION_MIN:
+        fails.append(f"selection {len(SELECTION) - len(missed)}/5 (needs {SELECTION_MIN}): missing "
+                     + "; ".join(f"{k} ({SELECTION[k]})" for k in missed) + ". Find a stronger moment")
+    return fails
+
+
+def check_question(pick):
+    """(fails, notes): `question` names which of QUESTION_TYPES the clip answers; a note when missing."""
+    if pick.get("campaign"):
+        return [], []
+    q = pick.get("question")
+    if q is None:
+        return [], ["no `question`: name the one question the clip answers (" + ", ".join(QUESTION_TYPES) +
+                    ") so `clipper stats` can compare them on our channel"]
+    if q not in QUESTION_TYPES:
+        return [f"`question` must be one of {', '.join(QUESTION_TYPES)} (got {q!r})"], []
+    return [], []
+
+
+def check_angles(pick):
+    """(fails, notes): the hook-angle A/B leads each video with one angle, so 3+ hooks must cover each."""
+    hs = [h for h in pick.get("hooks") or [] if (h or "").strip()]
+    have = {hook_angle(h) for h in hs}
+    missing = [a for a in ANGLES if a not in have]
+    if pick.get("campaign"):
+        return [], []
+    banned = [h for h in hs if banned_hook(h)]
+    if banned:
+        return [f"reaction/old-style hooks ({', '.join(repr(h) for h in banned)}): {BANNED_NOTE}"], []
+    if not missing:
+        return [], []
+    msg = (f"hook-angle test: no {'/'.join(missing)} hook (label = 2-6 word situation \"THE EASIEST MISSION\"; "
+           f"detail = the concrete surprise \"ONE GUN COSTS $590?!\")")
+    return ([msg], []) if len(hs) >= 3 else ([], [msg])
 
 
 MOOD_TITLE = re.compile(r"\s*(me|us|pov|when (you|your|ur))\b", re.I)
@@ -311,6 +465,15 @@ def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
                      "\"Kai Cenat Finds ICE SPICE In GTA 5 😂\"; keep the twist in the hook, not the title")
     if DID_YOU_KNOW.search(title):
         notes.append(DID_YOU_KNOW_NOTE)
+    rest = re.sub(r"\bgta ?(\d|vi?)\b", " ", REACTION_ONLY.sub(" ", title), flags=re.I)
+    known = set(re.findall(r"[a-z]+", rest.lower())) & (KNOWN_CHARACTERS | KNOWN_WORDS)  # Title Case hides real names
+    if narrate and REACTION_ONLY.search(title) and not (STAKE.search(rest) or known):
+        notes.append("title " + REACTION_NOTE + "; \"Kai Cenat Fails The Easiest Mission In GTA 5\" over "
+                     "\"Kai Cenat Was NOT Ready For This Mission\"")
+    if narrate and TAG_SUFFIX.search(title):
+        notes.append(TAG_SUFFIX_NOTE)
+    if narrate and not END_EMOJI.search(title):
+        notes.append(END_EMOJI_NOTE)
     if narrate and MOOD_TITLE.match(title):
         notes.append(MOOD_NOTE)
     elif narrate and loop_frame(title) == "closed":
@@ -336,7 +499,8 @@ def opening_type(first_line):
 
 
 MAX_CLIP_S = 45  # our cap; YouTube Shorts allow longer
-AIM_CLIP_S = 30  # 500K+ clip Shorts: median 23 s, 32 of 45 at 30 s or less; our 40 s+ uploads: median ~1.1k views
+# Own channel, 23 Nov 2026: our 4k-28k-view Shorts ran 12-25 s and paid off by ~16 s; 500K+ clip Shorts median 23 s.
+AIM_CLIP_S = 25
 
 
 def pick_duration(pick):
@@ -373,7 +537,7 @@ OPENING_LABEL_S = 3.0  # strangers swipe when the first seconds don't say what's
 
 
 def check_length_note(pick):
-    """A note (not a fail) for a clip over 30 s: long clips lose viewers before the payoff."""
+    """A note (not a fail) for a clip over 25 s: long clips lose viewers before the payoff."""
     if check_segments(pick):
         return None
     try:
@@ -381,9 +545,18 @@ def check_length_note(pick):
     except (KeyError, TypeError, ValueError):
         return None
     if AIM_CLIP_S < d <= MAX_CLIP_S:
-        return (f"{d:.0f}s: aim for 15-{AIM_CLIP_S}s (500K+ clip Shorts median 23 s); keep it longer only while a "
-                "streak or story keeps escalating")
+        return (f"{d:.0f}s: aim for 12-{AIM_CLIP_S}s (our 4k-28k-view Shorts ran 12-25 s; the ones stuck at ~1k kept "
+                "0.43 of viewers at 90% vs 0.69); keep it longer only while a streak or story keeps escalating")
     return None
+
+
+def check_streamer_reacts(pick):
+    """A note when the pick says the streamer isn't talking or reacting through the clip (`streamer_reacts: false`):
+    cutscenes and scenes where only other people talk were among our ~1k-stuck Shorts (own channel, 23 Nov 2026)."""
+    if pick.get("streamer_reacts") is not False or pick.get("campaign"):
+        return None
+    return ("the streamer isn't talking or reacting through this clip: our 4k-28k-view Shorts keep them on the mic "
+            "throughout, while cutscenes and scenes where only other people talk stuck at ~1k; pick a stretch where they react")
 
 
 def clip_bounds(pick):
@@ -576,6 +749,7 @@ def check_picks(picks, cfg=None, words=None, load=None):
     job's transcript `words` (source seconds; `load(job)` for other jobs' segments)."""
     from .playbook import for_profile
     gta, topic, playbook = is_gta(cfg), title_topic(cfg), for_profile(cfg)
+    gate = (cfg or {}).get("selection_gate", gta)  # the own-channel selection rules; `streamers` opts in
     names = [w for c in (cfg or {}).get("channels") or [] for w in str(c.get("name", "")).split()]
     report = {}
     for n, pick in enumerate(picks, 1):
@@ -617,12 +791,23 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["narration"] = check_narration(pick)
         if check_context_note(pick):
             entry["context_note"] = check_context_note(pick)
+        if check_streamer_reacts(pick):
+            entry["reacts"] = check_streamer_reacts(pick)
         if check_fx(pick):
             entry["fx"] = check_fx(pick)
         if check_stranger(pick):
             entry["stranger"] = check_stranger(pick)
-        if gta and check_cold(pick, names):
+        if gate and check_selection(pick):
+            entry["selection"] = check_selection(pick)
+        a_fails, a_notes = check_angles(pick) if gta else ([], [])
+        if a_fails or a_notes:
+            entry["angles"] = {"fails": a_fails, "notes": a_notes} if a_notes else {"fails": a_fails}
+        if gate and check_cold(pick, names):
             entry["cold"] = check_cold(pick, names)
+        q_fails, q_notes = check_question(pick)
+        q_notes = q_notes if gate else []  # only the gta6/streamers selection-gate profiles track it
+        if q_fails or q_notes:
+            entry["question"] = {"fails": q_fails, "notes": q_notes} if q_notes else {"fails": q_fails}
         loop_fails, loop_notes = check_loop(pick)
         if loop_fails or loop_notes:
             entry["loop"] = {"fails": loop_fails, "notes": loop_notes} if loop_notes else {"fails": loop_fails}
@@ -751,5 +936,6 @@ def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \
         or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e or "narration" in e
-               or "stranger" in e or (e.get("loop") or {}).get("fails")
+               or "stranger" in e or "selection" in e or (e.get("loop") or {}).get("fails") or (e.get("question") or {}).get("fails")
+               or (e.get("angles") or {}).get("fails")
                for e in report.values())
