@@ -542,3 +542,37 @@ class JumpTimingTests(unittest.TestCase):
             rep = hooks.check_picks([new_pick(start=0, end=20, payoff_at=15)], {"principles": "on", "research": "gta"},
                                     loudness=lambda pk: early)
         self.assertTrue(any("loudest jump" in f for f in rep["video 1"]["profile"]["fails"]))
+
+
+class SevenPrinciplesTests(unittest.TestCase):
+    def test_the_seven_categories_in_the_users_order(self):
+        from clipper import hooks
+        self.assertEqual(list(hooks.CATEGORIES), ["misunderstanding", "chemistry", "consequence", "character_behaviour",
+                                                  "discovery", "crossover", "reward"])
+        self.assertTrue(any("category" in f for f in hooks.check_cause(new_pick(category="live_event"))))
+        for c in hooks.CATEGORIES:
+            self.assertFalse([f for f in hooks.check_cause(new_pick(category=c)) if "category" in f], c)
+
+    def test_title_principles_weak_titles_flagged_improved_pass(self):
+        from clipper import hooks
+        pairs = [("Kai Goes Crazy In GTA 6 😭", "Kai Finds Out His GTA 6 World Was Deleted 😭"),
+                 ("xQc Is In Trouble In GTA 6 😳", "xQc Has 30 Seconds to Escape the Cops In GTA 6 😳"),
+                 ("Rakai Is So Funny In GTA 6 💀", "Rakai Always Wears Two Durags In GTA 6 💀"),
+                 ("Kai and Fanum Funny Moment In GTA 6 😂", "Fanum Forces Kai to Apologize In GTA 6 😭"),
+                 ("Ron Surprises Lacy In GTA 6 😳", "Ron Surprises Lacy With a PS5 Pro In GTA 6 😳"),
+                 ("Kai Needs Money In GTA 6 💀", "Kai Needs $2 Million but Can't Sell His Car In GTA 6 💀"),
+                 ("This GTA Moment Was INSANE 😱", "GTA 6 Charges Kai $339 for an Uber 😭")]
+        for weak, good in pairs:
+            wf, wn = hooks.check_title(weak, ["#gta6"])
+            self.assertTrue(wf or any("too vague" in n for n in wn), weak)
+            gf, gn = hooks.check_title(good, ["#gta6"])
+            self.assertEqual(gf, [], good)
+            self.assertFalse([n for n in gn if "too vague" in n or "exaggeration" in n], good)
+        self.assertTrue(any("empty exaggeration" in f for f in hooks.check_title("Kai Goes Crazy In GTA 6 😭")[0]))
+
+    def test_prompts_carry_the_seven_categories_and_title_principles(self):
+        text = (Path(__file__).resolve().parent.parent / ".claude/commands/clip.md").read_text(encoding="utf-8")
+        for needle in ("Rakai Accidentally Woke Up Rayquan", "Ron Surprises Lacy With a PS5 Pro", "name the actual event",
+                       "remove empty exaggeration", "GTA 6 Charges Kai $339 for an Uber"):
+            self.assertIn(needle, text)
+        self.assertNotIn("live_event", text)

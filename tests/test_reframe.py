@@ -77,7 +77,7 @@ class TitleLoopNoteTests(unittest.TestCase):
         note = lambda t: hooks.check_title(t, ["#gta6"])[1]
         self.assertTrue(any("hides the streamer" in n for n in note("Me At My First GTA 6 Sneaker Drop 😂")))
         self.assertTrue(any("hides the streamer" in n for n in note("POV: GTA 6 Gives You Chores 😂")))
-        self.assertTrue(any("no open loop" in n for n in note("Kai Cenat Was NOT Having This GTA 6 Take 😭")))
+        self.assertFalse([n for n in note("Ron Surprises Lacy With a PS5 Pro In GTA 6 😳") if "open loop" in n])  # titles name the event
         for t in ("Kai Cenat Tried To Steal A Car Off A Moving Truck In GTA 6 😱",
                   "What Happens If You Rob The First Guy You See In GTA 6?"):
             self.assertFalse([n for n in note(t) if "open loop" in n or "hides the streamer" in n], t)

@@ -439,18 +439,23 @@ def check_angles(pick):
 
 # ---------- the 100K+ moment rules (research/100k-profile-2026-11.md) ----------
 
-# The moment's category, in order of measured 100K+ lift inside each channel (research/100k-profile-2026-11.md; all
-# lean, none clear): live event 1.22x, discovery 1.17x, chemistry 1.16x, crossover 1.16x, misunderstanding 1.01x,
-# consequence 0.89x, character behaviour 0.86x, reward 0.76x.
+# The seven moment categories to prioritise, in the user's order (2026-11-25, "Principle 2"); a moment that fits none
+# isn't clipped.
 CATEGORIES = {
-    "live_event": "a scheduled or public happening the audience follows (award, milestone, launch)",
-    "discovery": "finding or seeing something surprising",
-    "chemistry": "two or more people playing off each other",
-    "crossover": "people from different worlds meet (a celebrity, a parent, another streamer)",
-    "misunderstanding": "someone misreads a person or situation",
-    "consequence": "an act with a real cost or result (arrested, loses money, banned)",
-    "character_behaviour": "a person acting in a striking, in-character way",
-    "reward": "a gift, prize, money or win given or received",
+    "misunderstanding": "someone believes something that turns out wrong (mistaken identity, a wrong assumption, an "
+                        "accidental reveal, dramatic irony)",
+    "chemistry": "an interaction shows an entertaining relationship (roasting, teasing, disagreement, unexpected "
+                 "honesty, friendship, rivalry, role reversal)",
+    "consequence": "something at an unusual scale or with a real consequence (a total loss, an improbable win, a hard "
+                   "challenge, a large sum of money, a consequential decision)",
+    "character_behaviour": "a distinctive behaviour that's funny because of who does it (a strange habit, a recurring "
+                           "joke, an exaggerated trait, a recognisable pattern)",
+    "discovery": "a streamer finds something the audience would also find interesting (a hidden mechanic, odd NPC "
+                 "behaviour, surprising information, an Easter egg, an unknown feature)",
+    "crossover": "a streamer meets a recognisable personality, brand, game, meme or cultural event (a celebrity, a "
+                 "trending meme or song, a major game, an unexpected collaboration)",
+    "reward": "a moment of happiness, admiration, justice or generosity (a meaningful surprise, a wholesome moment, a "
+              "reunion, standing up for someone, a satisfying resolution)",
 }
 HYPE_ADJ = re.compile(r"\b(insane|crazy|craziest|wild|wildest|unbelievable|epic|legendary|hilarious|funniest|"
                       r"shocking|amazing|unreal|chaotic|mind[- ]?blowing|incredible|ridiculous|savage|iconic|"
@@ -619,6 +624,16 @@ def check_review(pick, cfg, match=None):
 
 
 MOOD_TITLE = re.compile(r"\s*(me|us|pov|when (you|your|ur))\b", re.I)
+# Title principles (user, 2026-11-25): name the actual event, concrete stakes, the unusual detail, character dynamics,
+# recognisable subjects, quantified extremes, and no empty exaggeration.
+EMPTY_TITLE = re.compile(r"\b(insane|crazy|craziest|wild|wildest|unbelievable|unreal|epic|legendary|hilarious|funniest|"
+                         r"chaotic|mind[- ]?blowing|shocking|amazing|so funny|funny moments?|goes crazy|went crazy|"
+                         r"going crazy|in trouble|lost it|loses it|this (gta )?moment)\b", re.I)
+EMPTY_TITLE_NOTE = ("empty exaggeration ({}): name what happened instead (\"GTA 6 Charges Kai $339 for an Uber\", not "
+                    "\"This GTA Moment Was INSANE\")")
+VAGUE_TITLE_NOTE = ("too vague: name the actual event with its concrete stake, unusual detail or recognisable subject "
+                    "(\"Ron Surprises Lacy With a PS5 Pro\", \"Kai Needs $2 Million but Can't Sell His Car\", "
+                    "\"xQc Has 30 Seconds to Escape the Cops\")")
 MOOD_NOTE = ("\"Me…\" / \"POV:\" / \"When you…\" hides the streamer and names a mood, not a moment: tell the setup with "
              "the streamer first and withhold the ending (\"Kai Cenat Tried To Steal A Car Off A Moving Truck In GTA 6 😱\")")
 
@@ -657,9 +672,16 @@ def check_title(title, hashtags=(), topic=GTA6_TITLE, narrate=True):
         notes.append(END_EMOJI_NOTE)
     if narrate and MOOD_TITLE.match(title):
         notes.append(MOOD_NOTE)
-    elif narrate and loop_frame(title) == "closed":
-        notes.append("no open loop: tell the setup on the clip's most extreme fact and hold back how it ends "
-                     "(\"xQc Refused To Give An Armed Robber $5 In GTA 6 😭\"), or ask what happens if…")
+    empty = sorted({m.group(0).lower() for m in EMPTY_TITLE.finditer(title)})
+    if narrate and empty:
+        fails.append(EMPTY_TITLE_NOTE.format(", ".join(empty)))
+    from .profile100k import streamers_in
+    people = streamers_in(title)  # two named people is character dynamics, a recognisable subject on its own
+    names = {t for n in people for t in n.lower().split()} | STREAMERS
+    words = [w for w in content_words(re.sub(r"\bgta ?(\d|vi?|rp)\b", " ", title, flags=re.I)) if w not in names]
+    if narrate and not empty and not re.search(r"[$£€]|\d", re.sub(r"\bgta ?\d\b", "", title, flags=re.I)) \
+            and len(words) <= 2 and len(people) < 2:
+        notes.append(VAGUE_TITLE_NOTE)
     if re.search(r"\b(update|announce\w*|explained|patch|now live|available now)\b", title, re.I):
         notes.append("announcement wording measured 0.85x: lead with what changed (\"GTA 6 Map Is 2x BIGGER\")")
     if topic and not re.search(topic["pattern"], title, re.I):

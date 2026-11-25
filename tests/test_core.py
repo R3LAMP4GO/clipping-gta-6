@@ -864,7 +864,7 @@ class ProfileTests(unittest.TestCase):
         self.assertIsNone(topic_evidence("Fortnite tournament", "", [], rp))
         fails, notes = hooks.check_title("xQc Robs the Bank in GTA RP 😭", ["#gtarp"], hooks.title_topic(rp))
         self.assertEqual(fails, [])
-        self.assertTrue(all("open loop" in n for n in notes))  # the topic is found; only the open-loop note may show
+        self.assertTrue(all("too vague" in n for n in notes))  # the topic is found; only the vague-title note may show
         for play in playbook.for_profile(rp).values():
             for ex in play["examples"]:
                 self.assertEqual(hooks.check_hook(ex)[0], [], ex)
