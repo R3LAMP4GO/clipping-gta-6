@@ -24,7 +24,8 @@ def _picks_from_ids(job, ids):
         c = by_id.get(int(i))
         if not c:
             raise SystemExit(f"no candidate #{i}")
-        picks.append({"start": c["start"], "end": c["end"], "hooks": [c["hook"]], "titles": [c["hook"]]})
+        line = c.get("loudest_line") or c.get("hook") or ""  # "hook" in candidates.json written before 2026-11-25
+        picks.append({"start": c["start"], "end": c["end"], "hooks": [line], "titles": [line]})
     return picks
 
 
@@ -140,6 +141,8 @@ def main(argv=None):
     ck = sub.add_parser("check", help="check picks.json hooks/titles against the viral research rules")
     ck.add_argument("picks")
     ck.add_argument("--job", help="the picks' job: also fail picks reusing footage this profile already exported")
+    ck.add_argument("--rendered", nargs="*", default=[],
+                    help="rendered MP4s (in pick order) to compare with the 100K+ profile too")
     sm = sub.add_parser("simulate", help="Monte Carlo swipe test: rank a picks.json's hook variants")
     sm.add_argument("picks", nargs="?", help="omit to print the fitted effect of every hook feature")
     sm.add_argument("--strategies", action="store_true", help="compare hooks-per-clip strategies at equal uploads")
@@ -200,7 +203,7 @@ def main(argv=None):
                                       "measure with code, optional Gemini scores, compare and validate; raw YouTube "
                                       "data in viral/ is deleted after 30 days")
     vr.add_argument("action", choices=["collect", "import", "measure", "openings", "labels", "actions", "hooks",
-                                       "pairs", "score", "report", "purge"])
+                                       "pairs", "score", "report", "purge", "sample"])
     vr.add_argument("--path", help="import: an earlier study's ext.json; labels: a folder of *.jsonl; actions: a JSONL; hooks: a folder of *.jsonl; pairs: JSON [{id, title, stream_date}] of our uploads")
     vr.add_argument("--grouped", help="import: grouped.json with durations/dates for some of those videos")
     vr.add_argument("--own", type=int, default=100, help="collect: our last N uploads (Shorts kept)")
@@ -216,6 +219,13 @@ def main(argv=None):
     vr.add_argument("--runs", type=int, default=50, help="report: validation runs")
     vr.add_argument("--sample", type=int, default=30, help="report: videos with views hidden per run")
     vr.add_argument("--seed", type=int, default=7)
+    sub.add_parser("calibrate", help="review criteria vs our views: rank correlations and suggested weights "
+                                     "(prints only; weights come from watchlist.yaml)")
+    pk = sub.add_parser("profile100k", help="what 100K+ clips do vs the same channels' flops: build the profile from "
+                                            "research/100k-split-2026-11.json (+ labels, measured sample), or show it")
+    pk.add_argument("action", choices=["build", "show"])
+    dm = sub.add_parser("demand", help="each streamer's and subject's 100K+ rate on the watched clip channels")
+    dm.add_argument("action", choices=["build", "show"])
     sa = sub.add_parser("stats", help="our uploads' views, engaged share and retention joined to their upload.json "
                                       "(read-only YouTube OAuth); saves research/own-stats.json + simulate's own data")
     sa.add_argument("--no-save", action="store_true", help="print the report, write nothing")
@@ -303,7 +313,13 @@ def main(argv=None):
                 facecam = hooks.check_facecam(pick, jd, cams, bool(cfg.get("require_facecam")))
                 if facecam:
                     report.setdefault(f"video {n}", {})["facecam"] = facecam
-        failing = hooks.has_fails(report)
+        from . import profile100k
+        mode, prof = profile100k.mode_of(cfg), profile100k.load_profile()
+        for n, mp4 in enumerate(args.rendered or [], 1):
+            got = profile100k.check_rendered(mp4, prof, mode)
+            if got and (got["fails"] or got["notes"]):
+                report.setdefault(f"video {n}", {})["rendered"] = got
+        failing = hooks.has_fails(report) or any((e.get("rendered") or {}).get("fails") for e in report.values())
         if report:
             print(json.dumps(report, indent=2, ensure_ascii=False))
         print("FIX the 'fails' above" if failing else
@@ -419,6 +435,16 @@ def main(argv=None):
         args.model = args.model or os.environ.get("GEMINI_MODEL") or viral.GEMINI_MODEL
         out = viral.run(args.action, cfg, args)
         print(out if isinstance(out, str) else json.dumps(out, indent=2))
+    elif args.cmd == "calibrate":
+        print(stats_mod.run_calibrate(cfg))
+    elif args.cmd == "profile100k":
+        from . import profile100k
+        prof = profile100k.build_files() if args.action == "build" else profile100k.load_json(profile100k.PROFILE, None)
+        print(profile100k.show(prof) if prof else f"no profile yet: run `clipper profile100k build`")
+    elif args.cmd == "demand":
+        from . import demand
+        d = demand.build_files() if args.action == "build" else demand.load()
+        print(demand.show(d) if d else "no demand file yet: run `clipper demand build`")
     elif args.cmd == "stats":
         print(stats_mod.run(save=not args.no_save))
     elif args.cmd == "requeue":

@@ -1,0 +1,3933 @@
+{
+"enXTJUrMRRA": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": null,
+"streamers": [
+"Kai Cenat"
+]
+},
+"XJ_1IvsIlCU": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.3,
+"payoff_at_s": 10.8,
+"streamers": [
+"Lacy"
+]
+},
+"5ivrrl9jCzE": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 7.4,
+"streamers": [
+"Kai Cenat",
+"Siebe"
+]
+},
+"NMMCPj1SJ3w": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.3,
+"streamers": [
+"Lacy",
+"Marlon"
+]
+},
+"ktUTUkp9ePQ": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 5.7,
+"payoff_at_s": 13.2,
+"streamers": [
+"Fanum"
+]
+},
+"k1hVuDC0BtY": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 1.0,
+"streamers": [
+"xQc"
+]
+},
+"e_Yt2pyLiw4": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.7,
+"streamers": [
+"Kai Cenat",
+"Fanum"
+]
+},
+"m_UC0ZgmPZ8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 2.0,
+"streamers": [
+"Duke Dennis"
+]
+},
+"uyXVzN4U1uk": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 71.9,
+"streamers": [
+"CaseOh",
+"Dashie"
+]
+},
+"FBimYOgZv-s": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 3.0,
+"payoff_at_s": 8.3,
+"streamers": [
+"Fanum",
+"Duke Dennis"
+]
+},
+"QWz4sUlDb4s": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.4,
+"streamers": [
+"Duke Dennis",
+"Rakai"
+]
+},
+"2tYu7BjgPo8": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 2.8,
+"payoff_at_s": 15.9,
+"streamers": [
+"Adin Ross"
+]
+},
+"dsJtSCJPpwA": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.5,
+"streamers": [
+"Adin Ross",
+"Drake"
+]
+},
+"6l2Hinq-ONQ": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.5,
+"payoff_at_s": 111.7,
+"streamers": [
+"CaseOh"
+]
+},
+"_GWmtY3R8QY": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 25.9,
+"streamers": [
+"KSI",
+"Stable Ronaldo"
+]
+},
+"BsUrFD6nh_Y": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 3.6,
+"payoff_at_s": 13.8,
+"streamers": [
+"Jynxzi"
+]
+},
+"4cuzqxTojxc": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 23.6,
+"streamers": [
+"Fanum"
+]
+},
+"6kKVBQFSKEo": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 7.5,
+"payoff_at_s": 62.2,
+"streamers": [
+"Jynxzi"
+]
+},
+"PcU_CRhmjIM": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 14.5,
+"streamers": [
+"IShowSpeed"
+]
+},
+"bemPD3Ywzg4": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 42.1,
+"streamers": [
+"IShowSpeed"
+]
+},
+"K2QUECUOG_8": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 58.0,
+"streamers": [
+"CaseOh"
+]
+},
+"TcPauEubyBg": {
+"category": "other",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 4.3,
+"payoff_at_s": 25.8,
+"streamers": [
+"xQc"
+]
+},
+"oXZMY8-NUj8": {
+"category": "consequence",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 2.7,
+"payoff_at_s": 7.4,
+"streamers": [
+"Adin Ross",
+"Jynxzi",
+"Stable Ronaldo"
+]
+},
+"MilRVhhqAEw": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.4,
+"payoff_at_s": 3.7,
+"streamers": [
+"IShowSpeed"
+]
+},
+"ifPMUq2hHg0": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.5,
+"streamers": [
+"Adin Ross"
+]
+},
+"IOcbYJ1WHBc": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.9,
+"streamers": [
+"Lacy"
+]
+},
+"t4X_AOrX8XA": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 123.0,
+"streamers": [
+"CaseOh"
+]
+},
+"TQRZehScG9E": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.0,
+"streamers": [
+"Jynxzi",
+"LosPollos"
+]
+},
+"oPt7oTye4CU": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 52.2,
+"streamers": [
+"CaseOh"
+]
+},
+"eJyfu6Aetag": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.5,
+"streamers": [
+"Kai Cenat"
+]
+},
+"oBsBMvcPSBc": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 3.5,
+"payoff_at_s": 26.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"w92AIlDZfLQ": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.8,
+"streamers": [
+"LosPollos"
+]
+},
+"D5H7kQfkArU": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 4.2,
+"payoff_at_s": 25.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"1M03e2RUt4M": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.7,
+"streamers": [
+"Clix"
+]
+},
+"UcBfRxrf0-s": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.2,
+"streamers": [
+"Fanum",
+"Bendadonn"
+]
+},
+"SyPIqSjdLlI": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 34.4,
+"streamers": [
+"Kai Cenat",
+"Duke Dennis"
+]
+},
+"LQhTJwk2Hqg": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 5.3,
+"streamers": [
+"Marlon",
+"StableRonaldo"
+]
+},
+"tOl__2BQ93g": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 4.4,
+"payoff_at_s": 6.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"YB2o68giNJ4": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "after",
+"premise_at_s": 2.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"awQnaaY5gsM": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.0,
+"payoff_at_s": 15.2,
+"streamers": [
+"IShowSpeed",
+"Kai Cenat"
+]
+},
+"tuLysCwntYM": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.1,
+"streamers": [
+"IShowSpeed"
+]
+},
+"-y5tQkV2K8g": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.6,
+"payoff_at_s": 37.5,
+"streamers": [
+"Kai Cenat"
+]
+},
+"2flCFDuptBM": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.7,
+"streamers": [
+"Agent00"
+]
+},
+"28Zd9Wc6m4g": {
+"category": "misunderstanding",
+"cause_shown": "event_only",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.4,
+"streamers": []
+},
+"Ua4Tle4KVwg": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 41.5,
+"streamers": [
+"Kai Cenat",
+"IShowSpeed"
+]
+},
+"boTXN3nVtKQ": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 13.9,
+"streamers": [
+"Kai Cenat"
+]
+},
+"x4TKAAA-5IY": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.5,
+"payoff_at_s": 4.4,
+"streamers": [
+"Rakai"
+]
+},
+"DZx1gbMTMwU": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.4,
+"streamers": [
+"Jynxzi",
+"StableRonaldo"
+]
+},
+"vn1AAoAL8wo": {
+"category": "other",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"IShowSpeed",
+"Kai Cenat"
+]
+},
+"qcVs5TkTejs": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 2.0,
+"payoff_at_s": 27.9,
+"streamers": [
+"IShowSpeed"
+]
+},
+"cx219YKVqeM": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 54.2,
+"streamers": [
+"CaseOh"
+]
+},
+"zVVTsefSRPI": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 15.5,
+"streamers": [
+"Marlon"
+]
+},
+"CjUdob6nTm0": {
+"category": "live_event",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 3.0,
+"payoff_at_s": 62.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"7WHwpXNcHT0": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "after",
+"premise_at_s": 5.0,
+"payoff_at_s": 10.9,
+"streamers": [
+"Kai Cenat"
+]
+},
+"PKSsOxLrI-E": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"zrvB3PjWLOA": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 4.0,
+"streamers": [
+"Kai Cenat",
+"Tota"
+]
+},
+"an-B-q-bQrM": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 12.0,
+"streamers": [
+"Marlon"
+]
+},
+"xB9Pky8ztO0": {
+"category": "live_event",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"Kai Cenat",
+"IShowSpeed"
+]
+},
+"TO_mDMC0mBM": {
+"category": "consequence",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "static_gameplay",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 7.0,
+"streamers": []
+},
+"x6k6zucRBps": {
+"category": "consequence",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 6.8,
+"streamers": []
+},
+"8YlhKrO0csg": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"j0hReU3uGTI": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.9,
+"streamers": [
+"Kai Cenat"
+]
+},
+"JQfI1fYCYjU": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 31.0,
+"streamers": [
+"IShowSpeed",
+"Kai Cenat",
+"Fanum Tax"
+]
+},
+"dLVFZf026z8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 24.4,
+"streamers": [
+"IShowSpeed"
+]
+},
+"T3JjOBtf4S0": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 5.8,
+"streamers": [
+"Kai Cenat"
+]
+},
+"AjYjvW2vsfg": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.3,
+"streamers": [
+"Adin Ross",
+"xQc",
+"Pokimane"
+]
+},
+"HaDYwmTd5eg": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 8.0,
+"payoff_at_s": 14.2,
+"streamers": [
+"Kai Cenat"
+]
+},
+"k_thfffDDSU": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "question",
+"ending": "reaction",
+"premise_at_s": 2.0,
+"payoff_at_s": 27.7,
+"streamers": [
+"Kai Cenat"
+]
+},
+"DK1fjMlOa6M": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 7.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"-7BF54FVXB0": {
+"category": "consequence",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 2.0,
+"payoff_at_s": 18.1,
+"streamers": [
+"Kai Cenat"
+]
+},
+"TUO8nCL-Cl4": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.7,
+"streamers": [
+"Fanum Tax"
+]
+},
+"ZrFhL4s_3aU": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.0,
+"payoff_at_s": 12.5,
+"streamers": []
+},
+"h6D9l5Uz4FA": {
+"category": "live_event",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.0,
+"streamers": [
+"Adin Ross",
+"IShowSpeed"
+]
+},
+"IZwU4shZAek": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 138.1,
+"streamers": [
+"CaseOh"
+]
+},
+"sjfq1lPraKY": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 25.0,
+"streamers": [
+"Jynxzi",
+"Clix"
+]
+},
+"gViUee349Hc": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.3,
+"payoff_at_s": 19.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"fqtURpy4l_0": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.3,
+"payoff_at_s": 7.1,
+"streamers": [
+"IShowSpeed"
+]
+},
+"7jEQBZ2xQjQ": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.9,
+"streamers": [
+"Kai Cenat",
+"IShowSpeed"
+]
+},
+"q4Owtxv8apU": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 27.1,
+"streamers": [
+"Kai Cenat",
+"Sexyy Red"
+]
+},
+"gVvuo1zRgAE": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.1,
+"streamers": [
+"Kai Cenat",
+"Drake",
+"MrBeast"
+]
+},
+"R6idfceYXeo": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.1,
+"payoff_at_s": null,
+"streamers": []
+},
+"J-Szn-1uJ3g": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 2.7,
+"payoff_at_s": 10.1,
+"streamers": [
+"Kai Cenat"
+]
+},
+"auN7bMHIFhI": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "static_gameplay",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 6.8,
+"streamers": [
+"Kai Cenat",
+"Fanum Tax"
+]
+},
+"UZgsZFsmUBY": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.2,
+"streamers": [
+"Kai Cenat"
+]
+},
+"YRkAodrrjpw": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.7,
+"streamers": [
+"Kai Cenat",
+"Lil Tay"
+]
+},
+"F0FEkafbZUY": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 11.6,
+"streamers": [
+"Kai Cenat"
+]
+},
+"lIfsCmqNG-M": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.1,
+"payoff_at_s": 23.2,
+"streamers": [
+"IShowSpeed"
+]
+},
+"C95p_vcK_wg": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.1,
+"payoff_at_s": 21.5,
+"streamers": [
+"Lacy"
+]
+},
+"v6mfuBgiB2s": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.3,
+"streamers": [
+"IShowSpeed"
+]
+},
+"evPUiv1Hh_s": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.3,
+"payoff_at_s": 3.0,
+"streamers": [
+"Lacy"
+]
+},
+"I1c0AIsR99E": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 3.8,
+"payoff_at_s": 65.3,
+"streamers": [
+"Jynxzi"
+]
+},
+"ove9V-w7fIg": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.9,
+"streamers": [
+"Rakai",
+"Kai Cenat"
+]
+},
+"VHogq2SPeas": {
+"category": "crossover",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 4.1,
+"streamers": [
+"Kai Cenat",
+"Rakai"
+]
+},
+"Qua5xEVA4lY": {
+"category": "misunderstanding",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 23.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Tco52A1YA0w": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 6.6,
+"streamers": [
+"PlaqueBoyMax",
+"Stable Ronaldo",
+"Fanum"
+]
+},
+"h0iKwHnPn7k": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 4.0,
+"payoff_at_s": 16.5,
+"streamers": [
+"IShowSpeed",
+"MrBeast"
+]
+},
+"WtgoBngqgJM": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.4,
+"payoff_at_s": 4.1,
+"streamers": [
+"Kai Cenat"
+]
+},
+"mAZPSZVxrs0": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.5,
+"streamers": [
+"Kai Cenat",
+"CashMeow"
+]
+},
+"3n4mmZiz-tw": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 3.1,
+"payoff_at_s": 30.8,
+"streamers": [
+"CaseOh"
+]
+},
+"_CatpeJXYus": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.8,
+"streamers": [
+"Adin Ross"
+]
+},
+"EOQVHU0scPY": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.2,
+"streamers": [
+"Fanum",
+"Kai Cenat"
+]
+},
+"XmWAhLeIV-E": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.1,
+"payoff_at_s": 15.4,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Wa22QExfD8M": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.0,
+"streamers": []
+},
+"FsnE9qTOCOg": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 14.8,
+"streamers": [
+"Marlon",
+"Lacy"
+]
+},
+"SOpl1i6LZ3c": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "static_gameplay",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 4.7,
+"streamers": [
+"Marlon",
+"Lacy"
+]
+},
+"CkByoP7PYRI": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.8,
+"streamers": [
+"Fanum"
+]
+},
+"BjhQpk8_E7k": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.5,
+"payoff_at_s": 9.1,
+"streamers": []
+},
+"X1xePW7hVSw": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 11.0,
+"streamers": [
+"Lacy"
+]
+},
+"1_M-EZbD5RQ": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 7.7,
+"streamers": [
+"Kai Cenat",
+"Duke Dennis"
+]
+},
+"VFecgX749IQ": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 16.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"ZCeZjUsdpbQ": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 5.7,
+"streamers": []
+},
+"YJGm8J0MxNg": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 11.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"dpcU1MwQw0c": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 1.5,
+"streamers": [
+"Kai Cenat"
+]
+},
+"wwsTMA7zcSs": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 6.7,
+"streamers": [
+"Kai Cenat"
+]
+},
+"OeZ_P9scGDE": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 2.7,
+"payoff_at_s": 7.5,
+"streamers": [
+"Fanum"
+]
+},
+"yofXYUL-zNc": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 29.4,
+"streamers": [
+"xQc"
+]
+},
+"4Yq_TLGTgtQ": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 2.0,
+"streamers": [
+"Duke Dennis"
+]
+},
+"E2MR4aGPWmM": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 2.3,
+"streamers": [
+"Jynxzi",
+"Stompn"
+]
+},
+"gtZOA8Ov0rk": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.4,
+"streamers": [
+"Kai Cenat",
+"IShowSpeed"
+]
+},
+"fzQoKx6nfCE": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 2.5,
+"payoff_at_s": 6.9,
+"streamers": []
+},
+"FYzUF2j8ICg": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "after",
+"premise_at_s": 6.2,
+"payoff_at_s": 34.8,
+"streamers": [
+"CaseOh"
+]
+},
+"SiRqiZ4fVN4": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 7.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"a9oeC2NuFHc": {
+"category": "discovery",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.1,
+"payoff_at_s": 2.9,
+"streamers": [
+"Kai Cenat"
+]
+},
+"P8QjD3m9iOw": {
+"category": "other",
+"cause_shown": "event_only",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.0,
+"streamers": []
+},
+"eihHMYP6Nek": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 5.8,
+"payoff_at_s": 43.5,
+"streamers": [
+"Stable Ronaldo"
+]
+},
+"3L6KCQQPFAo": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 42.8,
+"streamers": [
+"Jynxzi"
+]
+},
+"zyHc7Epn3qE": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.6,
+"streamers": [
+"Adin Ross"
+]
+},
+"FMI5eF3VQoo": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 7.5,
+"payoff_at_s": 26.5,
+"streamers": [
+"IShowSpeed"
+]
+},
+"tttEYu9wI6Q": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.7,
+"streamers": [
+"Fanum",
+"Walton"
+]
+},
+"UOxpvtzoEgU": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.1,
+"payoff_at_s": 11.4,
+"streamers": [
+"CaseOh"
+]
+},
+"_j1CIG0hCzc": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 4.6,
+"payoff_at_s": 8.2,
+"streamers": [
+"Marlon"
+]
+},
+"meO5sjcJ4JY": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 7.4,
+"streamers": [
+"IShowSpeed"
+]
+},
+"L2bTwjod0Ts": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.1,
+"streamers": []
+},
+"dZ_TGaHgnCY": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 4.2,
+"payoff_at_s": 17.6,
+"streamers": [
+"Kai Cenat"
+]
+},
+"zltN-ImdnFg": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.1,
+"payoff_at_s": 7.9,
+"streamers": [
+"CaseOh"
+]
+},
+"mnhUm-4TGYU": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 12.5,
+"streamers": [
+"Marlon"
+]
+},
+"RqWdWMRWFcA": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 11.7,
+"streamers": [
+"Kai Cenat"
+]
+},
+"T4OSeUiVD-c": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "question",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 9.0,
+"streamers": []
+},
+"-ZVYt-OOlCE": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 2.0,
+"payoff_at_s": 9.5,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Hi3YuSzBpB4": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "question",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 12.0,
+"streamers": [
+"Jynxzi",
+"Joe Bart"
+]
+},
+"T6_AZ2NSjjM": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 2.0,
+"payoff_at_s": 7.5,
+"streamers": [
+"Kai Cenat",
+"Marshmello"
+]
+},
+"t0dOkThq9F4": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 1.0,
+"payoff_at_s": 9.0,
+"streamers": [
+"Jynxzi",
+"Yeat"
+]
+},
+"gtYGk3HxWmM": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 38.0,
+"streamers": [
+"Jynxzi"
+]
+},
+"UX4rQDijAXM": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 20.4,
+"streamers": [
+"Duke Dennis"
+]
+},
+"OOxm0lCO9oc": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "repeats_visual",
+"ending": "punchline",
+"premise_at_s": 3.0,
+"payoff_at_s": 21.2,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Io5hkG_ScIQ": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "question",
+"ending": "after",
+"premise_at_s": 2.0,
+"payoff_at_s": 4.7,
+"streamers": [
+"Kai Cenat"
+]
+},
+"hNKhqNt9ZUc": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 2.0,
+"payoff_at_s": 44.0,
+"streamers": [
+"Caseoh"
+]
+},
+"CXC8caV5SS8": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "repeats_visual",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 9.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"UZvjN87T-4g": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 24.2,
+"streamers": [
+"Jynxzi",
+"DrDonut"
+]
+},
+"xU4ErEv_Wzg": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 21.0,
+"streamers": [
+"xQc",
+"Dean"
+]
+},
+"oB6_GO0feQ8": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.7,
+"streamers": [
+"IShowSpeed"
+]
+},
+"FjOREiI_y7k": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.2,
+"streamers": [
+"Marlon"
+]
+},
+"KtFTk4oMjNU": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"Kai Cenat",
+"Agent00"
+]
+},
+"Cn0lQuNc780": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 22.6,
+"streamers": [
+"Adin Ross"
+]
+},
+"-cUuWsn_qNE": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 86.8,
+"streamers": []
+},
+"dsqU6fCDs1U": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 34.9,
+"streamers": [
+"CaseOh"
+]
+},
+"s94E1NsfhD8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.5,
+"streamers": [
+"Kai Cenat",
+"IShowSpeed"
+]
+},
+"iLfp75VwaMM": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.3,
+"streamers": [
+"Kai Cenat"
+]
+},
+"321waJUGZhM": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 26.9,
+"streamers": [
+"IShowSpeed"
+]
+},
+"JAo_lpF3Sos": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.1,
+"payoff_at_s": 11.3,
+"streamers": [
+"Darla",
+"Lacy"
+]
+},
+"3HmT7CDE12U": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 23.7,
+"streamers": [
+"Fanum",
+"Kai Cenat",
+"Duke Dennis"
+]
+},
+"NNu4f-Z7-Ik": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 5.0,
+"payoff_at_s": 100.6,
+"streamers": [
+"CaseOh"
+]
+},
+"4NA3NWfJGwQ": {
+"category": "discovery",
+"cause_shown": "reaction_only",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 21.0,
+"streamers": [
+"Marlon"
+]
+},
+"GRK8QDdOaUo": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 30.9,
+"streamers": [
+"Kai Cenat",
+"Fanum"
+]
+},
+"bDMdzhPC128": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.5,
+"payoff_at_s": 44.9,
+"streamers": [
+"CaseOh"
+]
+},
+"AEZdiOE1Jgs": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 45.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"icr-Ja715x0": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.0,
+"streamers": [
+"Tota",
+"Nina"
+]
+},
+"A45FB4c9mug": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"oPlsrIaeBwc": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.0,
+"streamers": [
+"Marlon"
+]
+},
+"-_SkaKjqQd8": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 2.0,
+"payoff_at_s": 12.0,
+"streamers": [
+"Barcode",
+"Rakai"
+]
+},
+"Y8SdO2uzXkY": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 50.0,
+"streamers": [
+"CaseOh"
+]
+},
+"P2HBOsAVhIM": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 3.0,
+"payoff_at_s": 27.0,
+"streamers": [
+"xQc"
+]
+},
+"GD_0X8lWayc": {
+"category": "reward",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 21.0,
+"streamers": [
+"Fanum"
+]
+},
+"xFWwsmdK-kQ": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 9.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"AEJch_J69ys": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "repeats_visual",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 43.0,
+"streamers": [
+"Fanum",
+"Kai Cenat"
+]
+},
+"ybqtxcpeLks": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Q9VApIHqXG8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 13.0,
+"streamers": [
+"Jelly"
+]
+},
+"PC2l7NOd70w": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 21.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"YMQtfjrJy3A": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 1.0,
+"payoff_at_s": 14.0,
+"streamers": [
+"Jynxzi"
+]
+},
+"UqNqAkLpVZs": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 32.0,
+"streamers": [
+"Fanum"
+]
+},
+"zPaqycRczpw": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.9,
+"streamers": []
+},
+"rRCN7zCH2Lg": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.1,
+"payoff_at_s": 19.9,
+"streamers": [
+"CaseOh"
+]
+},
+"FV44TMk0gQw": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 1.1,
+"payoff_at_s": 19.8,
+"streamers": [
+"Kai Cenat"
+]
+},
+"-rKv4uTzl5M": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.3,
+"payoff_at_s": 14.9,
+"streamers": [
+"Lacy"
+]
+},
+"w6ylOJC3eEw": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.8,
+"streamers": [
+"Kai Cenat"
+]
+},
+"exEynOc4BZw": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 5.9,
+"streamers": []
+},
+"4VTjlk627o0": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.4,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Chm7qh4TpD8": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 5.5,
+"payoff_at_s": 8.2,
+"streamers": [
+"Kai Cenat"
+]
+},
+"upholCDv8zQ": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 4.1,
+"payoff_at_s": 12.8,
+"streamers": [
+"Adin Ross"
+]
+},
+"mZJZQZi8IdU": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.1,
+"payoff_at_s": 53.6,
+"streamers": []
+},
+"0WWbTeVANPg": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.1,
+"payoff_at_s": 65.0,
+"streamers": [
+"CaseOh"
+]
+},
+"CsfLICvJysI": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.1,
+"payoff_at_s": 18.1,
+"streamers": [
+"Kai Cenat"
+]
+},
+"r3KLLuxXYHs": {
+"category": "reward",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 0.4,
+"payoff_at_s": 21.6,
+"streamers": [
+"Fanum"
+]
+},
+"GFiJ1wMA8_w": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 6.8,
+"streamers": [
+"Lacy"
+]
+},
+"21GHkEnx8bQ": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 40.0,
+"streamers": [
+"Kai Cenat",
+"Fanum"
+]
+},
+"BNBNcTs3tvM": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 30.0,
+"streamers": [
+"Los"
+]
+},
+"SosPSMBuD6k": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.0,
+"streamers": [
+"Jynxzi"
+]
+},
+"f6dN-kKJJCg": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 5.0,
+"payoff_at_s": 18.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"NTaF51ZYajM": {
+"category": "consequence",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 3.0,
+"payoff_at_s": 14.0,
+"streamers": [
+"Rakai",
+"Ceej"
+]
+},
+"0ksO39hJs5k": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.0,
+"streamers": [
+"xQc"
+]
+},
+"gVj0ipikcnk": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 84.0,
+"streamers": [
+"CaseOh"
+]
+},
+"rDelT8pn0pE": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 42.0,
+"streamers": [
+"ohnePixel",
+"Jynxzi"
+]
+},
+"zb1vq2_80T4": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 4.0,
+"streamers": [
+"iShowSpeed"
+]
+},
+"4E1SLorAH8A": {
+"category": "live_event",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"c8px52OhWgQ": {
+"category": "other",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 22.0,
+"streamers": []
+},
+"nKDlQVDsZTQ": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 96.0,
+"streamers": [
+"CaseOh"
+]
+},
+"6ldAh_0wqWc": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.0,
+"streamers": [
+"Marlon"
+]
+},
+"EK9_1vqEX9Y": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"WKlSyIzd_rY": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 3.0,
+"payoff_at_s": 11.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"YCmM9kCd1CU": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 3.0,
+"payoff_at_s": 15.0,
+"streamers": [
+"MrBeast"
+]
+},
+"Ht6iWz66W7o": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.3,
+"payoff_at_s": 4.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"oUxvNgtmU9A": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.6,
+"streamers": [
+"IShowSpeed",
+"MrBeast"
+]
+},
+"Icdi_T6R9Uw": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 4.1,
+"payoff_at_s": 14.3,
+"streamers": [
+"IShowSpeed"
+]
+},
+"1XZXvOXZ7yU": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 3.9,
+"streamers": []
+},
+"-QXydDbFzI8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.5,
+"streamers": [
+"Cinna",
+"Marlon"
+]
+},
+"L9UC3c65vVY": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 25.4,
+"streamers": [
+"Kai Cenat"
+]
+},
+"feUgVTnTBro": {
+"category": "discovery",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.2,
+"streamers": [
+"Kai Cenat"
+]
+},
+"mo5thZgVsqU": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.3,
+"payoff_at_s": 8.2,
+"streamers": [
+"IShowSpeed"
+]
+},
+"tq7WJVsW_bw": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.0,
+"streamers": [
+"Adin Ross",
+"RaKai",
+"Silky",
+"Cuffem"
+]
+},
+"76qXu9EHVcg": {
+"category": "consequence",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 5.2,
+"payoff_at_s": 11.4,
+"streamers": [
+"Kai Cenat",
+"DDG"
+]
+},
+"zyLyoSzFquU": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 2.6,
+"streamers": [
+"Tfue"
+]
+},
+"hl1op-qYMdo": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 2.3,
+"streamers": [
+"CaseOh"
+]
+},
+"MDto-SKvdNE": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.2,
+"payoff_at_s": 11.2,
+"streamers": [
+"IShowSpeed"
+]
+},
+"hL4xoYW9B-U": {
+"category": "discovery",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 2.5,
+"streamers": []
+},
+"RshlX17ks-U": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 7.5,
+"payoff_at_s": 15.7,
+"streamers": [
+"OhnePixel",
+"Jynxzi"
+]
+},
+"n6BBlIDpV1M": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 3.0,
+"payoff_at_s": 96.1,
+"streamers": [
+"CaseOh"
+]
+},
+"oxG9YfKbWkI": {
+"category": "reward",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 14.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"aXlH5-pPYxA": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 4.5,
+"streamers": [
+"LosPollos",
+"StableRonaldo"
+]
+},
+"aYBZfmInltg": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 12.8,
+"streamers": [
+"IShowSpeed"
+]
+},
+"I3VHiNmgXC0": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"H9PbZ9Sqluc": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 5.5,
+"payoff_at_s": 9.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"NdZQRfF9FmQ": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 7.6,
+"streamers": [
+"Kai Cenat"
+]
+},
+"NmLbGQ1gHPY": {
+"category": "other",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.1,
+"streamers": []
+},
+"_PgmZ5VRvZ0": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.3,
+"streamers": [
+"KSI"
+]
+},
+"gxMp_FdmSzo": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.1,
+"payoff_at_s": 61.9,
+"streamers": [
+"CaseOh"
+]
+},
+"aabY79A_h3A": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.1,
+"payoff_at_s": 5.8,
+"streamers": [
+"Kai Cenat"
+]
+},
+"1p9D8sPVP00": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.6,
+"streamers": [
+"Kai Cenat"
+]
+},
+"p8FnQu1qzMI": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 2.6,
+"payoff_at_s": 77.0,
+"streamers": [
+"CaseOh"
+]
+},
+"9S184H2XIxM": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.2,
+"payoff_at_s": 43.3,
+"streamers": [
+"Jynxzi"
+]
+},
+"o-oTaOlt-fw": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 20.8,
+"streamers": [
+"Lacy",
+"Marlon"
+]
+},
+"6KBf3DDE680": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 16.3,
+"streamers": [
+"Adin Ross"
+]
+},
+"_7Pt1wN6yc0": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 15.6,
+"streamers": [
+"Adin Ross"
+]
+},
+"C_C_UxaWlvc": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 14.4,
+"streamers": []
+},
+"a-liSWZykrM": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 17.6,
+"streamers": [
+"Kai Cenat"
+]
+},
+"7YmhD8oDX7M": {
+"category": "character_behaviour",
+"cause_shown": "reaction_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.7,
+"streamers": [
+"Agent"
+]
+},
+"JysXGQ6xfFE": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.7,
+"payoff_at_s": 30.4,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Yu_EkuNnKEM": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.4,
+"payoff_at_s": 10.1,
+"streamers": [
+"Kai Cenat",
+"Jynxzi"
+]
+},
+"mcAc25sdKgw": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 128.0,
+"streamers": [
+"Jynxzi"
+]
+},
+"jG42Wuc2SLs": {
+"category": "live_event",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.2,
+"streamers": [
+"Jynxzi"
+]
+},
+"2Tlyg0dh4Gk": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "question",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 56.4,
+"streamers": [
+"CaseOh"
+]
+},
+"t-Nz0AHEO0A": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 18.2,
+"streamers": [
+"Rakai"
+]
+},
+"VjKvbIWDxIs": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.7,
+"payoff_at_s": 49.9,
+"streamers": [
+"IShowSpeed"
+]
+},
+"s1dWPWS_5kk": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.9,
+"streamers": [
+"Rakai"
+]
+},
+"Ddv7ePzW0Pk": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": null,
+"streamers": [
+"IShowSpeed"
+]
+},
+"0KubejHpvq4": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 46.1,
+"streamers": [
+"IShowSpeed"
+]
+},
+"brwbZRv8TU8": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 62.8,
+"streamers": [
+"CaseOh"
+]
+},
+"mWlRP1DNJ1M": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.7,
+"streamers": [
+"CaseOh"
+]
+},
+"0_XnZMwsbs4": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 13.9,
+"streamers": [
+"IShowSpeed",
+"MrBeast"
+]
+},
+"8xs7CnyFfRs": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 7.8,
+"streamers": [
+"IShowSpeed"
+]
+},
+"t90K8wSOLas": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 22.0,
+"streamers": [
+"CaseOh"
+]
+},
+"4wktQXox5wo": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 13.7,
+"streamers": [
+"Kai Cenat"
+]
+},
+"Xl-RJGBMYn4": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 16.3,
+"streamers": [
+"Bilzo"
+]
+},
+"P0r8ZolRga4": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 10.1,
+"streamers": [
+"Kai Cenat"
+]
+},
+"OMENjJ_aJN8": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 4.0,
+"payoff_at_s": 17.2,
+"streamers": [
+"CaseOh"
+]
+},
+"2LTZ8DR3Efk": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 44.5,
+"streamers": [
+"Kai Cenat",
+"NLE Choppa"
+]
+},
+"2yU4hYq6NfI": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 36.3,
+"streamers": [
+"CaseOh"
+]
+},
+"enX9QOJqdxw": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 5.6,
+"streamers": [
+"Lacy",
+"Marlon"
+]
+},
+"QpX-MnFL3f0": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 3.0,
+"payoff_at_s": 59.0,
+"streamers": [
+"CaseOh"
+]
+},
+"eWpncUMx1pI": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "action",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 3.0,
+"payoff_at_s": 15.9,
+"streamers": [
+"Kai Cenat"
+]
+},
+"SbCLUGMfBCU": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 4.0,
+"payoff_at_s": 47.3,
+"streamers": [
+"xQc",
+"AikoBliss"
+]
+},
+"Ydlpu9rdA5g": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 2.8,
+"payoff_at_s": 36.1,
+"streamers": [
+"IShowSpeed"
+]
+},
+"N6qK6A3ZMvs": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 2.3,
+"payoff_at_s": 127.0,
+"streamers": [
+"CaseOh"
+]
+},
+"ENLU6vTuUhY": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 24.3,
+"streamers": [
+"Kai Cenat"
+]
+},
+"z5r5IMKfWYg": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 8.0,
+"streamers": [
+"IShowSpeed"
+]
+},
+"relrJFc8l9c": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 0.1,
+"payoff_at_s": 34.9,
+"streamers": [
+"CaseOh"
+]
+},
+"lhFAnpBad0U": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 4.3,
+"payoff_at_s": 11.2,
+"streamers": [
+"Lacy",
+"Marlon"
+]
+},
+"goe9mgoJzwA": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 21.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"PwCmn86J3O8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 21.8,
+"streamers": [
+"Kai Cenat"
+]
+},
+"z2d44_pAuPs": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 37.2,
+"streamers": [
+"Jynxzi"
+]
+},
+"v03Q5zcRMME": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.3,
+"streamers": [
+"Kai Cenat"
+]
+},
+"ICRiPsVi-zE": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 11.5,
+"streamers": [
+"Fanum"
+]
+},
+"22mzvykoREo": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 8.6,
+"streamers": [
+"IShowSpeed"
+]
+},
+"v1ZwaGOmweA": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 14.6,
+"streamers": [
+"Fanum",
+"Pochy"
+]
+},
+"syFydrm273I": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.0,
+"payoff_at_s": 4.0,
+"streamers": [
+"Dezz",
+"Reggie"
+]
+},
+"jf6-rmxvYk8": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "talking",
+"visual_hook": "other",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.0,
+"payoff_at_s": 9.7,
+"streamers": []
+},
+"0ZnAHYMJV2A": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "repeats_visual",
+"ending": "punchline",
+"premise_at_s": 2.5,
+"payoff_at_s": 38.6,
+"streamers": [
+"CaseOh"
+]
+},
+"l2eNqmLXpgw": {
+"category": "character_behaviour",
+"cause_shown": "event_only",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 1.0,
+"payoff_at_s": 12.7,
+"streamers": [
+"Kai Cenat",
+"Rakai"
+]
+},
+"RALGeAp7Jx0": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 1.0,
+"payoff_at_s": 20.5,
+"streamers": [
+"Kai Cenat",
+"Tota",
+"Rakai"
+]
+},
+"jf_hT0q4zsA": {
+"category": "chemistry",
+"cause_shown": "reaction_only",
+"opening": "reaction_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 0.5,
+"payoff_at_s": 16.5,
+"streamers": [
+"Kai Cenat",
+"FlightReacts"
+]
+},
+"C2jIramazME": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.5,
+"payoff_at_s": 61.9,
+"streamers": []
+},
+"IRSdOPFMrdg": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 1.7,
+"payoff_at_s": 17.6,
+"streamers": [
+"Adin Ross",
+"PlaqueBoyMax"
+]
+},
+"PCHtaYR9bW8": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "none",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 21.7,
+"streamers": [
+"Marlon"
+]
+},
+"0FrRnfXDSQA": {
+"category": "character_behaviour",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 7.5,
+"streamers": [
+"CaseOh"
+]
+},
+"Trqfgk03EkA": {
+"category": "crossover",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "punchline",
+"premise_at_s": 2.0,
+"payoff_at_s": 22.4,
+"streamers": [
+"Kai Cenat",
+"ImDontai",
+"MrBeast"
+]
+},
+"Oq3dGX9ISjc": {
+"category": "discovery",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 1.9,
+"payoff_at_s": 6.5,
+"streamers": [
+"Tylil",
+"Dezz",
+"Rakai"
+]
+},
+"z6SQvPonyps": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "text_card",
+"text_role": "adds_context",
+"ending": "after",
+"premise_at_s": 0.0,
+"payoff_at_s": 4.0,
+"streamers": [
+"Kai Cenat"
+]
+},
+"kuc4sfCrNwM": {
+"category": "misunderstanding",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "label_only",
+"ending": "reaction",
+"premise_at_s": 1.7,
+"payoff_at_s": 20.0,
+"streamers": [
+"Lil RT"
+]
+},
+"hiiIYnBoM9E": {
+"category": "chemistry",
+"cause_shown": "cause_and_reaction",
+"opening": "action_first",
+"visual_hook": "action",
+"text_role": "adds_context",
+"ending": "reaction",
+"premise_at_s": 0.0,
+"payoff_at_s": 1.9,
+"streamers": [
+"Tota",
+"Marlon"
+]
+},
+"scN8M_dDt8I": {
+"category": "consequence",
+"cause_shown": "cause_and_reaction",
+"opening": "setup_first",
+"visual_hook": "face_reaction",
+"text_role": "adds_context",
+"ending": "mid_sentence",
+"premise_at_s": 0.5,
+"payoff_at_s": 12.2,
+"streamers": [
+"Marlon",
+"Lacy"
+]
+}
+}

@@ -16,7 +16,7 @@ class TempData(unittest.TestCase):
         self.patches = [mock.patch.object(viral, k, d / v) for k, v in
                         (("DATA", "."), ("MEDIA", "media"), ("VIDEOS", "videos.json"), ("MEASURES", "measures.json"),
                          ("SCORES", "gemini"), ("REPORT", "report.md"), ("LABELS", "labels.json"),
-                         ("OPENINGS", "openings.json"))]
+                         ("OPENINGS", "openings.json"), ("SAMPLE", "sample100k.json"))]
         for p in self.patches:
             p.start()
 

@@ -27,6 +27,7 @@ SCORES = DATA / "gemini"
 REPORT = DATA / "report.md"
 LABELS = DATA / "labels.json"      # blind title labels: {id: {..., "labeled_at"}}
 OPENINGS = DATA / "openings.json"  # first-5s features of cached media: {id: {..., "opened_at"}}
+SAMPLE = DATA / "sample100k.json"  # the 100K+ measured sample: {id: {group, ch, ..., "measured_at"}}
 TRIGGERS = ["curiosity_gap", "viewer_judge", "play_along", "suspense", "irony", "confession", "status_celebrity",
             "absurd_premise", "none"]
 LABEL_FIELDS = ["cold_readable", "turn", "setup_withheld", "streamer_first"]
@@ -96,7 +97,7 @@ def purge(keep_days=KEEP_DAYS, t=None):
             f.unlink()
             gone["files"] += 1
     for path, key in ((MEASURES, "measured_at"), (LABELS, "labeled_at"), (OPENINGS, "opened_at"),
-                      (DATA / "pairs.json", "paired_at"), (DATA / "ab.json", "ab_at")):
+                      (DATA / "pairs.json", "paired_at"), (DATA / "ab.json", "ab_at"), (SAMPLE, "measured_at")):
         m = _load(path, {})
         m2 = {k: v for k, v in m.items() if k in ids and v.get(key, 0) >= cutoff}
         if len(m2) != len(m):
@@ -957,6 +958,234 @@ def _val_lines(val, sample, what="code metrics"):
             f"Rules used (runs): {val['rules_used'] or 'none passed'}.", ""]
 
 
+# ---------- 100K+ measured sample (research/100k-profile-2026-11.md) ----------
+
+SAMPLE_PER_SIDE = 150
+SAMPLE_TIMES = (0.3, 1.0, 2.0, 3.0)
+FLASH_JUMP = 40       # mean-luma jump (0-255) that counts as a flash when it falls back within FLASH_BACK_S
+FLASH_BACK_S = 0.4
+LOOP_DIFF = 18        # first vs last frame mean abs difference (0-255) under which the clip loops visually
+PAUSE_S = 1.0         # a gap between words this long counts as dead space
+
+
+def sample_pairs(rows, per_side=SAMPLE_PER_SIDE, cached=lambda vid: False, seed=13):
+    """Channel-matched sample: round-robin over channels, one high and one low per channel per pass (cached media
+    first inside each lane), until `per_side` of each. `rows` are split rows ({id, ch, group, dur?})."""
+    rng = random.Random(seed)
+    lanes = {}
+    for r in rows:
+        if r.get("id") and (r.get("dur") is None or r["dur"] <= SHORT_MAX_S):
+            lanes.setdefault(r["ch"], {"high": [], "low": []})[r["group"]].append(r)
+    for lane in lanes.values():
+        for k in lane:
+            rng.shuffle(lane[k])
+            lane[k].sort(key=lambda r: not cached(r["id"]))
+    out, chans = [], sorted(c for c, ln in lanes.items() if ln["high"] and ln["low"])
+    while len(out) < 2 * per_side and any(lanes[c]["high"] and lanes[c]["low"] for c in chans):
+        for c in chans:
+            if len(out) >= 2 * per_side:
+                break
+            if lanes[c]["high"] and lanes[c]["low"]:
+                out += [lanes[c]["high"].pop(0), lanes[c]["low"].pop(0)]
+    return out
+
+
+def luma_series(mp4, fps=10):
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(mp4), "-vf", f"fps={fps},scale=32:56",
+                          "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True).stdout
+    n = len(raw) // (32 * 56)
+    return np.frombuffer(raw[:n * 32 * 56], np.uint8).reshape(n, 56, 32).astype(float) if n else None
+
+
+def flash_count(means, fps=10, jump=FLASH_JUMP, back_s=FLASH_BACK_S):
+    """Brightness spikes that rise by `jump` and fall back within `back_s` (white flashes, impact frames)."""
+    out, i, k = 0, 1, max(1, int(round(back_s * fps)))
+    while i < len(means):
+        if means[i] - means[i - 1] >= jump and any(means[j] <= means[i - 1] + jump / 2
+                                                    for j in range(i + 1, min(len(means), i + 1 + k))):
+            out += 1
+            i += k
+        i += 1
+    return out
+
+
+def dead_space(words, length, pause=PAUSE_S):
+    """Seconds before the first word plus every gap of `pause`+ between words, plus the silent tail."""
+    if not words:
+        return round(length, 2)
+    gaps = [words[0]["s"]] + [b["s"] - a["e"] for a, b in zip(words, words[1:]) if b["s"] - a["e"] >= pause]
+    tail = length - words[-1]["e"]
+    return round(sum(gaps) + (tail if tail >= pause else 0), 2)
+
+
+def text_kind(text):
+    """What the opening text does: question, label (2-6 word situation), detail (a concrete fact) or other."""
+    from . import hooks
+    t = (text or "").strip()
+    if not t:
+        return "none"
+    if hook_is_question(t):
+        return "question"
+    return hooks.hook_angle(t) or "other"
+
+
+def layout_of(frames):
+    """split (a face box in the top half, smaller than a full-frame face), full (a face filling 15%+ of the frame),
+    game (no face) from Apple Vision frames."""
+    faces = [max(f["faces"], key=lambda x: x["area"]) for f in frames if f.get("faces")]
+    if len(faces) < max(1, len(frames) // 2):
+        return "game"
+    if st.median(x["area"] for x in faces) >= 0.15:
+        return "full"
+    return "split" if st.median(x["y"] for x in faces) < 0.5 else "face_low"
+
+
+def caption_style(frames, words):
+    """Burned-in captions = on-screen text that follows the speech in 2+ of the 1-3 s frames; style = upper-case
+    share and where the boxes sit (y, 0 = top)."""
+    spoken = {re.sub(r"[^a-z0-9]", "", w["w"].lower()) for w in words} - {""}
+    hit = lambda b: {re.sub(r"[^a-z0-9]", "", x.lower()) for x in b["s"].split()} & spoken  # noqa: E731
+    per_frame = [[b for b in f.get("text", []) if hit(b)] for f in frames[1:]]
+    boxes = [b for bs in per_frame for b in bs]
+    if sum(bool(bs) for bs in per_frame) < 2:
+        return {"captions": False}
+    letters = "".join(re.sub(r"[^A-Za-z]", "", b["s"]) for b in boxes)
+    return {"captions": True, "caption_upper": round(sum(c.isupper() for c in letters) / max(1, len(letters)), 2),
+            "caption_y": round(st.median(b["y"] for b in boxes), 2),
+            "caption_words": round(st.median(len(b["s"].split()) for b in boxes), 1)}
+
+
+def sample_lines(words, max_gap=0.7, max_words=14):
+    """Transcript as timed lines ("[3.2] text") for the blind labellers."""
+    lines, cur = [], []
+    for w in words:
+        if cur and (w["s"] - cur[-1]["e"] > max_gap or len(cur) >= max_words):
+            lines.append(cur)
+            cur = []
+        cur.append(w)
+    if cur:
+        lines.append(cur)
+    return "\n".join(f"[{ln[0]['s']:.1f}] " + " ".join(str(w["w"]) for w in ln) for ln in lines)
+
+
+VISION_TIMEOUT_S = 30  # Apple Vision has hung on the Neural Engine; a hung frame batch counts as no text, no faces
+
+
+def vision_frames(exe, paths, timeout=VISION_TIMEOUT_S, tries=2):
+    """Apple Vision frames, or None when it times out or fails every try."""
+    for _ in range(tries):
+        try:
+            res = subprocess.run([str(exe), *map(str, paths)], capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            print(f"[sample] apple-vision timed out on {Path(paths[0]).name}", flush=True)
+            continue
+        got = json.loads(res.stdout) if res.returncode == 0 and res.stdout else []
+        if len(got) == len(paths):
+            return got
+    return None
+
+
+def measure_sample_one(vid, mp4, cfg, exe):
+    """Code measurements of one whole Short, plus a contact sheet and timed transcript for the blind labels."""
+    from . import hooks, pairs, signals
+    words = pairs.words_for(vid, mp4, cfg)
+    length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+                                   str(mp4)], capture_output=True, text=True, check=True, timeout=60).stdout.strip())
+    scene = subprocess.run(["ffmpeg", "-nostats", "-i", str(mp4), "-vf", f"select='gt(scene,{SCENE_CUT})',showinfo",
+                            "-an", "-f", "null", "-"], capture_output=True, text=True, timeout=300)
+    times = [t for t in SAMPLE_TIMES if t < length] + [max(length - 0.15, 0)]
+    paths = []
+    for t in times:
+        fp = MEDIA / f"{vid}.p{int(round(t * 10)):03d}.jpg"
+        if not fp.exists():
+            subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-ss", f"{t:.2f}", "-i", str(mp4),
+                            "-frames:v", "1", "-vf", "scale=-2:960", str(fp)], check=False, timeout=60)
+        paths.append(fp)
+    paths = [x for x in paths if x.exists()]
+    got = vision_frames(exe, paths) if paths else None
+    frames = got or []
+    lufs = signals.loudness_per_second(mp4)
+    peak = max(range(len(lufs)), key=lambda i: lufs[i]) + 0.5 if lufs else None
+    jumps = signals.jump_per_second(lufs)[1] if lufs else []
+    jump_at = (max(range(len(jumps)), key=lambda i: jumps[i]) + 0.5) if len(jumps) and max(jumps) > 0 else peak
+    luma = luma_series(mp4)
+    means = [float(x.mean()) for x in luma] if luma is not None else []
+    loop = round(float(abs(luma[0] - luma[-1]).mean()), 1) if luma is not None and len(luma) > 1 else None
+    voiced = {i for i in range(len(lufs)) if any(w["s"] < i + 1 and w["e"] > i for w in words)}
+    quiet = [lufs[i] for i in range(len(lufs)) if i not in voiced and lufs[i] > signals.SILENCE + 1]
+    first = frames[0] if frames else {"text": [], "faces": []}
+    text0 = " ".join(b["s"] for b in first.get("text", []))
+    last = words[-1] if words else None
+    dead = dead_space(words, length)
+    first_line, last_line = pairs.first_line(words), pairs.last_line(words)
+    out = {"vision_ok": got is not None, "length_s": round(length, 2), "first_word_s": round(words[0]["s"], 2) if words else None,
+           "words_per_s": round(len(words) / length, 2) if length else 0,
+           "cuts_per_min": round(count_cuts(scene.stderr) / length * 60, 1) if length else 0,
+           "dead_space_s": dead, "dead_share": round(dead / length, 2) if length else None,
+           "loudest_s": peak, "biggest_jump_s": jump_at,
+           "tail_after_jump_s": round(length - jump_at, 1) if jump_at is not None else None,
+           "jump_share": round(jump_at / length, 2) if jump_at is not None and length else None,
+           "text_0_3": bool(text0.strip()), "text_0_3_words": len(re.findall(r"[A-Za-z0-9']+", text0)),
+           "text_0_3_area": round(sum(b["area"] for b in first.get("text", [])), 4), "text_0_3_kind": text_kind(text0),
+           "face_0_3": round(max((x["area"] for x in first.get("faces", [])), default=0.0), 4),
+           "layout": layout_of(frames[:-1] or frames), **caption_style(frames[:-1], words),
+           "flashes": flash_count(means),
+           "bed_vs_speech_lu": round(st.median(quiet) - st.median([lufs[i] for i in voiced]), 1)
+           if quiet and voiced else None,
+           "ends_mid_sentence": bool(last and length - last["e"] < 0.4 and not re.search(r"[.!?]$", str(last["w"]))),
+           "speech_in_last_1s": bool(last and last["e"] > length - 1.0),
+           "first_last_diff": loop, "loops_visually": loop is not None and loop < LOOP_DIFF,
+           "opening_type": hooks.opening_type(first_line), "ocr_0_3": text0, "first_line": first_line,
+           "last_line": last_line}
+    (MEDIA / f"{vid}.lines.txt").write_text(sample_lines(words), encoding="utf-8")
+    shown = [{"at": round(t, 2)} for t, _ in zip(times, paths)]
+    pairs.contact_sheet([(vid, {"frame_paths": [str(x) for x in paths], "frames": shown})],
+                        MEDIA / f"{vid}.s100k.jpg", height=480)
+    return out
+
+
+def measure_sample(cfg, split_path, per_side=SAMPLE_PER_SIDE, pause=6.0, max_failures=8):
+    """Download (one at a time, pausing, stopping at a bot check) and measure the channel-matched 100K+ sample."""
+    from . import transcribe
+    exe = transcribe.apple_binary(VISION_SRC, "apple-vision")
+    split = json.loads(Path(split_path).read_text(encoding="utf-8"))
+    picks = sample_pairs(split["videos"], per_side, cached=lambda vid: (MEDIA / f"{vid}.mp4").exists())
+    done = _load(SAMPLE, {})
+    failures = 0
+    for i, r in enumerate(picks, 1):
+        vid = r["id"]
+        if vid in done:
+            continue
+        mp4 = MEDIA / f"{vid}.mp4"
+        if not mp4.exists():
+            try:
+                download([vid], pause=0)
+            except BotCheck:
+                print(f"[sample] YouTube's bot check at {vid}: stopped ({len(done)} measured); try later", flush=True)
+                break
+            time.sleep(pause + random.random() * pause / 2)
+        if not mp4.exists():
+            failures += 1
+            print(f"[sample] {vid}: download failed", flush=True)
+            if failures >= max_failures:
+                print(f"[sample] {failures} failures in a row: stopping", flush=True)
+                break
+            continue
+        failures = 0
+        try:
+            done[vid] = {"group": r["group"], "ch": r["ch"], **measure_sample_one(vid, mp4, cfg, exe),
+                         "measured_at": now()}
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, SystemExit, IndexError) as e:
+            print(f"[sample] {vid}: measure failed ({e})", flush=True)
+            continue
+        _save(SAMPLE, done)
+        if i % 10 == 0:
+            print(f"[sample] {len(done)} measured ({i}/{len(picks)})", flush=True)
+    return {"measured": len(done), "high": sum(d["group"] == "high" for d in done.values()),
+            "low": sum(d["group"] == "low" for d in done.values())}
+
+
 def _save_text(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -993,4 +1222,6 @@ def run(action, cfg, args):
         return score(names, args.model, args.limit)
     if action == "report":
         return report(args.runs, args.sample, args.seed)
+    if action == "sample":
+        return measure_sample(cfg, args.path or ROOT / "research" / "100k-split-2026-11.json", pause=args.pause)
     return gone

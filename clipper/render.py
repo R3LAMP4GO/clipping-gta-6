@@ -111,7 +111,7 @@ def clip_fx(pick, words, dur):
     """The pick's `fx` (source seconds, or clip seconds for a segment pick) in clip seconds; without `fx`, auto_fx
     (minus its sound hit when `music` is an explicit [], meaning no added audio). A hit keeps its `sound` id."""
     if pick.get("fx") is None:
-        fx = auto_fx(words, dur, pick.get("payoff_at"))
+        fx = auto_fx(words, dur, None if pick.get("fx_no_payoff") else pick.get("payoff_at"))
         return [f for f in fx if f["type"] != "hit"] if pick.get("music") == [] else fx
     off = float(pick.get("start") or 0)
     out = []
@@ -529,6 +529,42 @@ def angle_arm(pick, job, meta):
     return ANGLES[int(digest[:8], 16) % len(ANGLES)]
 
 
+OPENING_ARMS = ("in_event", "setup_start")
+PAYOFF_ARMS = ("payoff_fx", "plain")
+
+
+def experiment_arm(pick, job, meta, name, arms):
+    """A hashed arm for experiment `name`: the same moment always lands in the same arm."""
+    fp = footage(pick, job, meta)[0]
+    digest = hashlib.sha1(f"{name}:{fp['source']}:{fp['from']:.2f}".encode()).hexdigest()
+    return arms[int(digest[:8], 16) % len(arms)]
+
+
+def apply_experiment(pick, job, meta, cfg):
+    """(pick, experiment, arm) for the config's one active experiment. hook_angle keeps its existing arm (set in
+    render); opening starts `setup_start` clips on the setup; payoff_edit drops the payoff flash and hit. In
+    `principles: shadow` (or off) only hook_angle runs, so the arms stay as they were."""
+    from .profile100k import mode_of
+    name = config.active_experiment(cfg)
+    if name in (None, "hook_angle") or mode_of(cfg) != "on" or pick.get("segments") or pick.get("campaign"):
+        return pick, name if name == "hook_angle" else None, None
+    if name == "opening":
+        try:
+            setup = float(pick["setup_start"])
+        except (KeyError, TypeError, ValueError):
+            return pick, name, None  # no setup line named: not in the test
+        arm = experiment_arm(pick, job, meta, name, OPENING_ARMS)
+        if arm == "setup_start" and setup < float(pick["start"]):
+            return {**pick, "start": setup}, name, arm
+        return pick, name, arm
+    if name == "payoff_edit":
+        arm = experiment_arm(pick, job, meta, name, PAYOFF_ARMS)
+        if arm == "plain" and pick.get("fx") is None:
+            return {**pick, "fx_no_payoff": True}, name, arm
+        return pick, name, arm
+    return pick, None, None
+
+
 def lead_with_angle(full, pick, arm):
     """`pick` (maybe cut to its top hooks) with a hook of the assigned angle first, taken from `full` if the cut
     dropped it; titles follow their hooks. Unchanged when no hook has that angle."""
@@ -545,7 +581,25 @@ def lead_with_angle(full, pick, arm):
     return out
 
 
-def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None):
+def principles_fields(pick, cfg, words=None):
+    """What the 100K+ rules decided about a pick, for upload.json: category, cause, the review's criterion scores
+    and totals, profile_match and the decision, and the principles mode it was made under."""
+    from . import hooks as h
+    from . import profile100k
+    mode = profile100k.mode_of(cfg)
+    check = profile100k.check_pick(pick, profile100k.load_profile(), mode, None if pick.get("segments") else words) \
+        if mode != "off" else None
+    match = profile100k.profile_match(check)
+    review = pick.get("review") if isinstance(pick.get("review"), dict) else None
+    scores = h.review_scores(review, h.review_weights(cfg)) if review else {"moment": None, "packaging": None}
+    return {"principles": mode, "category": pick.get("category"), "cause": pick.get("cause"),
+            "why_care": pick.get("why_care"), "review": review, "moment_score": scores["moment"],
+            "packaging_score": scores["packaging"], "profile_match": match,
+            "decision": h.review_decision(scores, h.review_thresholds(cfg)) if review else None}
+
+
+def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None,
+                    experiment=None, experiment_arm_=None, words=None, angle_of=None):
     """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
     (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
     from .hooks import hook_angle, loop_frame, structures
@@ -558,6 +612,10 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
     version = code_version()
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
+    rules = principles_fields(pick, cfg, words)
+    if angle_of is None:  # the declared angle per hook text, from the pick as written (render may reorder hooks)
+        hs, declared = pick.get("hooks") or [], pick.get("hook_angles")
+        angle_of = dict(zip(hs, declared)) if isinstance(declared, list) and len(declared) == len(hs) else {}
     out = []
     for i, v in enumerate(variants):
         types = [t for t in structures(v["hook"]) if t not in MODIFIERS and t in table]
@@ -580,7 +638,10 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
                     "source": creds[0][1], "sources": [link for _, link in creds],
                     "duration": v["check"].get("duration"), "footage": fp, "moment_at": when,
                     "predicted": pred.get(v["hook"]), "moment": moment, "music": list(music_used or []),
-                    "clipper_version": version})
+                    "clipper_version": version, **rules,
+                    "hook_angle_declared": angle_of.get(v["hook"]),
+                    "experiment": experiment, "experiment_arm": arm if experiment == "hook_angle" and not none
+                    else experiment_arm_})
     return out
 
 
@@ -628,7 +689,10 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
         if top:  # only the best hook(s) get an MP4; the rest would never be posted
             pick = top_hooks(pick, cfg, top)
         from .hooks import is_gta
-        arm = angle_arm(full, job, meta) if is_gta(cfg) else None
+        pick, experiment, exp_arm = apply_experiment(pick, job, meta, cfg)
+        fh, fa = full.get("hooks") or [], full.get("hook_angles")
+        angle_of = dict(zip(fh, fa)) if isinstance(fa, list) and len(fa) == len(fh) else {}
+        arm = angle_arm(full, job, meta) if is_gta(cfg) and experiment in (None, "hook_angle") else None
         if arm:
             pick = lead_with_angle(full, pick, arm)
         hooks = pick.get("hooks") or [pick.get("hook", "")]
@@ -636,7 +700,8 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
             hooks = hooks[:1]
         titles = pick.get("titles") or [pick.get("title") or hooks[0]]
         hooks, titles = drop_banned_hooks(hooks, titles)
-        if no_hook_arm(pick, job, meta, cfg.get("no_hook_share", 0.5)):
+        from .profile100k import no_hook_share
+        if no_hook_arm(pick, job, meta, no_hook_share(cfg)):
             print(f"[render] video {n}: no-hook arm (one MP4, no banner, best title)", flush=True)
             hooks, titles = [""], titles[:1]
         n, folder = claim_video_folder(out_dir, n)
@@ -658,7 +723,8 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                 encode_variant(src_job, flat, prep, hook, cfg, mp4, tmp)
                 variants.append({"file": str(mp4), "hook": hook, "check": probe(mp4)})
         (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job,
-                                                                       prep.get("music"), arm),
+                                                                       prep.get("music"), arm, experiment, exp_arm,
+                                                                       fallback, angle_of),
                                                        indent=2, ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),

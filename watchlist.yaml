@@ -36,6 +36,19 @@ caption_style: bold
 censor_captions: true      # mask swears in captions (F*CK, SH*T), drop slurs; the audio is untouched
 no_hook_share: 0.5         # this share of clips posts with no on-screen hook (upload.json arm: no-hook): big hook vs none
 
+# The 100K+ rules (research/100k-profile-2026-11.md): off = the old checks only; shadow = picks carry a review, scores
+# and a profile match, but thresholds and profile fails are notes and posting order, the no-hook arm and the
+# experiment arms stay as they were; on = they fail, the no-hook arm stops and the autopilot orders posts by score.
+principles: shadow
+review_weights:            # 0-10 criterion scores in a pick's `review`; `clipper calibrate` suggests, never writes
+  moment: {standalone: 1, surprise: 1, payoff: 1, stakes: 1, emotion: 1, demand: 1}
+  packaging: {hook: 1, opening: 1, pacing: 1, ending: 1, title: 1, visual: 1}
+review_thresholds: {moment: 70, test: 60, packaging: 60}  # moment 60-69 = test tier (posts only under the floor)
+min_posts_per_day: 4       # the test tier fills up to this many posts a day (the autopilot enforces it)
+experiments:               # one at a time: hook_angle (label vs detail), then opening (in-event vs setup_start), then payoff_edit
+  active: hook_angle
+  queue: [opening, payoff_edit]
+
 # Speakers: Demucs splits voices from game audio, WhisperKit labels who is talking.
 separate_voices: true
 diarize: true

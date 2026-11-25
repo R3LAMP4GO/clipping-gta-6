@@ -1,0 +1,2337 @@
+{
+ "built": "2026-11-25",
+ "note": "100K+ (5x+ channel) clips from the measured sample; opening_text is OCR at 0.3 s",
+ "by_category": {
+  "reward": [
+   {
+    "id": "bemPD3Ywzg4",
+    "channel": "Speedyshorts",
+    "views": 13731360,
+    "lift": 541.667,
+    "title": "Even the Strongest Guys Couldn’t Lift Speed’s $10K Cube 😳💀",
+    "opening_text": "LIFT THIS CUBE WIN 10K",
+    "first_line": "Fuck it! Pump!",
+    "category": "reward",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 42.1,
+    "length_s": 56.95,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "C95p_vcK_wg",
+    "channel": "Aurafy",
+    "views": 2942225,
+    "lift": 66.6667,
+    "title": "Lacy Receiving Darla’s Unique Christmas Gift! 😭🎁",
+    "opening_text": "MY",
+    "first_line": "My personal favorite gift that Darla got me, I don't care about, like, money",
+    "category": "reward",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.1,
+    "payoff_at_s": 21.5,
+    "length_s": 26.0,
+    "streamers": [
+     "Lacy"
+    ]
+   },
+   {
+    "id": "RshlX17ks-U",
+    "channel": "iboclips",
+    "views": 4134063,
+    "lift": 52.288,
+    "title": "OhnePixel Gives Jynxzi the Most Awkward Early Birthday Gift! 💀😭",
+    "opening_text": "SCAR-20 1444 mant Rex SEAL Frogman IT'S JYNXZI'S agiexa: it's lynxzi's",
+    "first_line": "Jesus' birthday? Say Walahi, bro. I don't have a gift bro. Give me the",
+    "category": "reward",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 7.5,
+    "payoff_at_s": 15.7,
+    "length_s": 27.4,
+    "streamers": [
+     "OhnePixel",
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "oxG9YfKbWkI",
+    "channel": "WClipMedia",
+    "views": 12354412,
+    "lift": 15.7687,
+    "title": "Kai Cenat Accepted Suburb Baby to Streamer University Over Rakai 😂",
+    "opening_text": "STUDENTS THIS",
+    "first_line": "This person did everything to get into SU.",
+    "category": "reward",
+    "opening": "setup_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 14.0,
+    "length_s": 20.27,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "1M03e2RUt4M",
+    "channel": "Aurafy",
+    "views": 229398,
+    "lift": 11.1,
+    "title": "Clix Surprises Lacy With The Greatest Gift Ever! 🎁😱",
+    "opening_text": "GOT",
+    "first_line": "I got you something. What? I got something made 6 months ago for myself.",
+    "category": "reward",
+    "opening": "setup_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 15.7,
+    "length_s": 20.15,
+    "streamers": [
+     "Clix"
+    ]
+   },
+   {
+    "id": "UqNqAkLpVZs",
+    "channel": "Fanum Live",
+    "views": 1845015,
+    "lift": 5.3492,
+    "title": "Fanum Shows How Far He’s Come! 😂",
+    "opening_text": "Fanum Shows How Far He's Come!",
+    "first_line": "Leave, boy.",
+    "category": "reward",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 32.0,
+    "length_s": 32.67,
+    "streamers": [
+     "Fanum"
+    ]
+   }
+  ],
+  "discovery": [
+   {
+    "id": "feUgVTnTBro",
+    "channel": "Insomnia Clipz",
+    "views": 1814618,
+    "lift": 459.459,
+    "title": "KAI CENAT LEAKED GTA 6 INFO!🔥 (PART 2)",
+    "opening_text": "B-BALL'S AUTOS GTAG LEAK #2 одле Jaig",
+    "first_line": "GTA 6 is the ones who have. Is gonna be an Easter egg? Well,",
+    "category": "discovery",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 10.2,
+    "length_s": 16.85,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "aabY79A_h3A",
+    "channel": "WClipMedia",
+    "views": 27595798,
+    "lift": 59.4714,
+    "title": "Kai Cenat Found Alopecia When Cutting Corey’s Hair 😂",
+    "opening_text": "EWW!",
+    "first_line": "Ew. You got out of pizza. I know. What the I'm literally looking at",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.1,
+    "payoff_at_s": 5.8,
+    "length_s": 17.35,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "zyLyoSzFquU",
+    "channel": "Stable Ronaldo Live",
+    "views": 7171688,
+    "lift": 40.3409,
+    "title": "Tfue Visits His Old House & Setup! 😂",
+    "opening_text": "Tfue's abandoned house...",
+    "first_line": "Oh my god, is that what I think it is? Is that the window?",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 2.6,
+    "length_s": 18.29,
+    "streamers": [
+     "Tfue"
+    ]
+   },
+   {
+    "id": "w6ylOJC3eEw",
+    "channel": "Insomnia Clipz",
+    "views": 169023,
+    "lift": 31.619,
+    "title": "KAI CENAT LEAKED GTA 6 INFO!🚘(PART 3)",
+    "opening_text": "B-BALL'S AUTOS CTAG LEAK #3 grand CheFt auto",
+    "first_line": "GTA 6 is the ones who have the radio station, Blaze music, but during",
+    "category": "discovery",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 8.8,
+    "length_s": 17.01,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "jf6-rmxvYk8",
+    "channel": "Stable Ronaldo Live",
+    "views": 2294588,
+    "lift": 22.5641,
+    "title": "\"Check Your Trunk!\" 😂",
+    "opening_text": "thekidmichaelttv: ESEHS \"Check your trunk\" 23",
+    "first_line": "Yo, Marlik, you do me a favor? Check your trunk.",
+    "category": "discovery",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 9.7,
+    "length_s": 15.83,
+    "streamers": []
+   },
+   {
+    "id": "w92AIlDZfLQ",
+    "channel": "iboclips",
+    "views": 4526820,
+    "lift": 17.5299,
+    "title": "LosPollos Discovers How to Craft Bread In Minecraft! 💀😭",
+    "opening_text": "*CRAFTS BREAD* 29",
+    "first_line": "Got this, Slos. I believe in you, man.",
+    "category": "discovery",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 20.8,
+    "length_s": 24.53,
+    "streamers": [
+     "LosPollos"
+    ]
+   }
+  ],
+  "chemistry": [
+   {
+    "id": "VjKvbIWDxIs",
+    "channel": "Speedyshorts",
+    "views": 11986104,
+    "lift": 372.881,
+    "title": "IShowSpeed Met a WHOLE Family on Omegle 😭❤️",
+    "opening_text": "BUDATUD OTU 03392 SPEEDY _SHORTS",
+    "first_line": "Yo, speed. Speed. What's up? You, I wanted to tell you. I'm really big",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.7,
+    "payoff_at_s": 49.9,
+    "length_s": 59.67,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "rDelT8pn0pE",
+    "channel": "Jynxzi Clips",
+    "views": 7929780,
+    "lift": 62.948,
+    "title": "Bro finally made Jynxzi proud 😭✌️",
+    "opening_text": "bro finlly read the german signs a • ohnePixel",
+    "first_line": "This is EU. This has to be you, yes. Landis Klassen, Buddha, Deutsch. Buddha,",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 42.0,
+    "length_s": 44.15,
+    "streamers": [
+     "ohnePixel",
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "SiRqiZ4fVN4",
+    "channel": "OnShortz",
+    "views": 9428301,
+    "lift": 42.922,
+    "title": "Ray’s Answer Caught Kai Off Guard 😂#kaicenat #shorts",
+    "opening_text": "REMEMBER WHEN",
+    "first_line": "Remember when Kai asked Ray that one question, and he gave the most out",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 7.0,
+    "length_s": 15.91,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "hiiIYnBoM9E",
+    "channel": "Aurafy",
+    "views": 982431,
+    "lift": 27.6429,
+    "title": "Tota Shot His Shot At Marlon! 😂💋",
+    "opening_text": "*KISSES MARLON*",
+    "first_line": "What's up, my bro?",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 1.9,
+    "length_s": 8.75,
+    "streamers": [
+     "Tota",
+     "Marlon"
+    ]
+   },
+   {
+    "id": "E2MR4aGPWmM",
+    "channel": "iboclips",
+    "views": 1788142,
+    "lift": 23.944,
+    "title": "Jynxzi Cannot Stop Glazing Stompn! 😭💀",
+    "opening_text": "THE Jynxzi Cannot Stop Glazing Stompn ONE",
+    "first_line": "Where the is he at?",
+    "category": "chemistry",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 2.3,
+    "length_s": 15.41,
+    "streamers": [
+     "Jynxzi",
+     "Stompn"
+    ]
+   },
+   {
+    "id": "3HmT7CDE12U",
+    "channel": "Fanum Live",
+    "views": 5365069,
+    "lift": 21.285,
+    "title": "Fanum & Kai Cenat Prank Duke Dennis! 😂",
+    "opening_text": "Fanum & Kai Cenat Prank Duke Dennis!",
+    "first_line": "Help! Help! You hear me? You hear me? Open the door! Open the door!",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 23.7,
+    "length_s": 31.83,
+    "streamers": [
+     "Fanum",
+     "Kai Cenat",
+     "Duke Dennis"
+    ]
+   }
+  ],
+  "character_behaviour": [
+   {
+    "id": "s1dWPWS_5kk",
+    "channel": "WClipMedia",
+    "views": 68884441,
+    "lift": 180.611,
+    "title": "Rakai Always Wearing Double Durags 😂",
+    "opening_text": "STILL",
+    "first_line": "You still got this donut mask on, but you are not eating.",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 13.9,
+    "length_s": 18.01,
+    "streamers": [
+     "Rakai"
+    ]
+   },
+   {
+    "id": "L9UC3c65vVY",
+    "channel": "Insomnia Clipz",
+    "views": 1719346,
+    "lift": 157.068,
+    "title": "KAI CENAT BEAT All GTA GAMES...💀",
+    "opening_text": "WHAT'S",
+    "first_line": "What's going on, YouTube? It's your broadcast tonight. After every GTA game? Several citizens.",
+    "category": "character_behaviour",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 25.4,
+    "length_s": 41.39,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "UZgsZFsmUBY",
+    "channel": "Snickerly",
+    "views": 9183337,
+    "lift": 69.683,
+    "title": "Kai Feels Time Travelling When Sleeping 🤣",
+    "opening_text": "_01 PSTA",
+    "first_line": "Golden Steve is so weird. When you go to sleep, you wake up, like,",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 13.2,
+    "length_s": 19.39,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "wwsTMA7zcSs",
+    "channel": "Snickerly",
+    "views": 8826524,
+    "lift": 68.7783,
+    "title": "Kai Forgot He Was Streaming! 😭🤣",
+    "opening_text": "- 38,452 *WAKES UP*",
+    "first_line": "Paul?",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 6.7,
+    "length_s": 12.37,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "gViUee349Hc",
+    "channel": "Insomnia Clipz",
+    "views": 1416956,
+    "lift": 66.6667,
+    "title": "Kai - Funniest SU Student 😂 Pt9",
+    "opening_text": "Really?",
+    "first_line": "Here you go. Oh, my gosh. Thank you so much. You can now go",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.3,
+    "payoff_at_s": 19.0,
+    "length_s": 28.81,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "nKDlQVDsZTQ",
+    "channel": "MoreClipsForYou",
+    "views": 12411237,
+    "lift": 31.7041,
+    "title": "CaseOh CLUTCHED This Wordle 😭 #caseoh #wordle",
+    "opening_text": "Going with the",
+    "first_line": "Going with the greatest starter word of all time.",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 96.0,
+    "length_s": 99.63,
+    "streamers": [
+     "CaseOh"
+    ]
+   }
+  ],
+  "misunderstanding": [
+   {
+    "id": "kuc4sfCrNwM",
+    "channel": "Scshorts",
+    "views": 35850879,
+    "lift": 114.007,
+    "title": "Lil RT Got Tricked by a Hot Chip!😭😭",
+    "opening_text": "SIMONSES@. here",
+    "first_line": "Come here, auntie.",
+    "category": "misunderstanding",
+    "opening": "setup_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 1.7,
+    "payoff_at_s": 20.0,
+    "length_s": 21.71,
+    "streamers": [
+     "Lil RT"
+    ]
+   },
+   {
+    "id": "Qua5xEVA4lY",
+    "channel": "SpeedKaiClip",
+    "views": 3359523,
+    "lift": 60.5505,
+    "title": "KAI CENAT HAS A KID?!🤯",
+    "opening_text": "W.I",
+    "first_line": "I'm literally sleeping in my bed 10 AM in the morning. Didn't I get",
+    "category": "misunderstanding",
+    "opening": "talking",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 23.0,
+    "length_s": 29.97,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "FMI5eF3VQoo",
+    "channel": "Speedyshorts",
+    "views": 6648160,
+    "lift": 60.274,
+    "title": "IShowSpeed Couldn't Understand Céline Dept's Accent 😭😂",
+    "opening_text": "0 KOR E3 28:25 SPEEDY",
+    "first_line": "What? It's Japan. Korea, looking forward.",
+    "category": "misunderstanding",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 7.5,
+    "payoff_at_s": 26.5,
+    "length_s": 58.73,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "Xl-RJGBMYn4",
+    "channel": "WClipMedia",
+    "views": 5549204,
+    "lift": 30.9859,
+    "title": "Bilzo Met Ryah at Streamer University Asked For Her Number 😂",
+    "opening_text": "",
+    "first_line": "Hi, hey. I'm sorry for what happened to you yesterday.",
+    "category": "misunderstanding",
+    "opening": "action_first",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 2.0,
+    "payoff_at_s": 16.3,
+    "length_s": 22.05,
+    "streamers": [
+     "Bilzo"
+    ]
+   },
+   {
+    "id": "dZ_TGaHgnCY",
+    "channel": "KaiNFriends",
+    "views": 4775930,
+    "lift": 10.6455,
+    "title": "Why did that to my Rakai..... 💔 #rakai #yoona #kaicenat #ray  #tota  #marfiathon3  #edit  1",
+    "opening_text": "RAK Se et samuele beeframensupe RAKAI'S 'GF # Meridababys L HOMINGOgE SCHLA ROWY 771, WO HIE KAINFRIENDS",
+    "first_line": "Run!",
+    "category": "misunderstanding",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 4.2,
+    "payoff_at_s": 17.6,
+    "length_s": 30.33,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "sjfq1lPraKY",
+    "channel": "Stable Ronaldo Live",
+    "views": 696628,
+    "lift": 8.2857,
+    "title": "Bro Got Disrespected! 😂",
+    "opening_text": "«\"Jynxzi vs Clix 1v1",
+    "first_line": "Can I ask why Jinxy still didn't put me in his title and he",
+    "category": "misunderstanding",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 25.0,
+    "length_s": 35.13,
+    "streamers": [
+     "Jynxzi",
+     "Clix"
+    ]
+   }
+  ],
+  "other": [
+   {
+    "id": "NmLbGQ1gHPY",
+    "channel": "ClipCulture",
+    "views": 3738066,
+    "lift": 92.5,
+    "title": "your height = your streamer 😭😂",
+    "opening_text": "eve CLIPCULTUREGOAT P",
+    "first_line": "Every streamer fan is secretly the same height as their favorite streamer.",
+    "category": "other",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 18.1,
+    "length_s": 22.33,
+    "streamers": []
+   },
+   {
+    "id": "vn1AAoAL8wo",
+    "channel": "ClipCulture",
+    "views": 5334471,
+    "lift": 11.9101,
+    "title": "Streamers in the World Cup? 🌍🏆",
+    "opening_text": "CLIPCULTU (GOATI",
+    "first_line": "What if streamers played in the World Cup for their country?",
+    "category": "other",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 3.0,
+    "length_s": 16.31,
+    "streamers": [
+     "IShowSpeed",
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "c8px52OhWgQ",
+    "channel": "ClipCulture",
+    "views": 230335,
+    "lift": 5,
+    "title": "Where Streamers Came From 🌎📍",
+    "opening_text": "",
+    "first_line": "This is where your favorite streamer came from before they became famous. Spinning in",
+    "category": "other",
+    "opening": "talking",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 22.0,
+    "length_s": 22.73,
+    "streamers": []
+   }
+  ],
+  "consequence": [
+   {
+    "id": "9S184H2XIxM",
+    "channel": "Jynxzi Clips",
+    "views": 3394199,
+    "lift": 83.544,
+    "title": "Jynxzi can’t guess this song 😭💔",
+    "opening_text": "Jynxzi gets robbed",
+    "first_line": "I sit by myself Talking to the...",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 1.2,
+    "payoff_at_s": 43.3,
+    "length_s": 53.57,
+    "streamers": [
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "H9PbZ9Sqluc",
+    "channel": "Live Speedy",
+    "views": 2340701,
+    "lift": 66.667,
+    "title": "IShowSpeed Surviving A Fall Off A Cliff In Fortnite! 😭⛰️",
+    "opening_text": "YO",
+    "first_line": "Yo, Speed, how long you been grinding for it?",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 5.5,
+    "payoff_at_s": 9.6,
+    "length_s": 16.75,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "UZvjN87T-4g",
+    "channel": "Jynxzi Clips",
+    "views": 7850041,
+    "lift": 38.3292,
+    "title": "Jynxzi leaks base co-ordinates on Minecraft 💀😭",
+    "opening_text": "1,518 DrDonut crashes out after Jynxzi leaks cords® leaked it PENS LO",
+    "first_line": "I think I leaked it. I think I What? How? They're saying that I",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 24.2,
+    "length_s": 44.75,
+    "streamers": [
+     "Jynxzi",
+     "DrDonut"
+    ]
+   },
+   {
+    "id": "eJyfu6Aetag",
+    "channel": "Snickerly",
+    "views": 5166830,
+    "lift": 33.5616,
+    "title": "Kai Was About To Buy GTA 6 For His Young Fan But His Father Declined 💖",
+    "opening_text": "85475 GIVÊ ME ICKETS Drive to GTA V.",
+    "first_line": "Can you give me a pre order of GTA 6? You want GTA 6?",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 8.5,
+    "length_s": 12.95,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "x6k6zucRBps",
+    "channel": "Snickerly",
+    "views": 3809071,
+    "lift": 26.6667,
+    "title": "Pudgie Releases All Three States Of Matter! 😭🤣",
+    "opening_text": "NOT",
+    "first_line": "I'm not gonna lie. Pudgy sat on me one time and I thought I",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 6.8,
+    "length_s": 11.37,
+    "streamers": []
+   },
+   {
+    "id": "L2bTwjod0Ts",
+    "channel": "Live Speedy",
+    "views": 1067606,
+    "lift": 25,
+    "title": "GGs Karvaharva..",
+    "opening_text": "3-0 Ft ilere FRENCH",
+    "first_line": "The French League posted your posted, uh, this... Hendrick? It's not Hendrick.",
+    "category": "consequence",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.1,
+    "length_s": 16.51,
+    "streamers": []
+   }
+  ],
+  "live_event": [
+   {
+    "id": "CjUdob6nTm0",
+    "channel": "Insomnia Clipz",
+    "views": 1356156,
+    "lift": 54.1667,
+    "title": "Kai Reacts Stream U Hits the News 😳📺",
+    "opening_text": "W Shaz, y'all.",
+    "first_line": "W Chaz, y'all. If you see a clip of me and the news, I",
+    "category": "live_event",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 3.0,
+    "payoff_at_s": 62.0,
+    "length_s": 96.05,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "xB9Pky8ztO0",
+    "channel": "Snickerly",
+    "views": 1177571,
+    "lift": 9.1667,
+    "title": "Kai & Speed Can't Believe They Didn't Win \"Best Marathon\" Stream Award 💔",
+    "opening_text": "009",
+    "first_line": "Good? Good? You got it. Hi, Pepper. Oh, really? Oh,",
+    "category": "live_event",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 3.0,
+    "length_s": 7.31,
+    "streamers": [
+     "Kai Cenat",
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "h6D9l5Uz4FA",
+    "channel": "Adin Live",
+    "views": 243782,
+    "lift": 6.2308,
+    "title": "Adin Ross Was So Happy For Speed Performing at World Cup Final 😭🥀 #adinross #ishowspeed #worldcup",
+    "opening_text": "BRO",
+    "first_line": "Robbie Onisboro, this is genuinely fucking crazy, bro.",
+    "category": "live_event",
+    "opening": "reaction_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.0,
+    "length_s": 19.39,
+    "streamers": [
+     "Adin Ross",
+     "IShowSpeed"
+    ]
+   }
+  ],
+  "crossover": [
+   {
+    "id": "an-B-q-bQrM",
+    "channel": "Marlon Clipz",
+    "views": 933022,
+    "lift": 17.9423,
+    "title": "Marlon Had The Most Random Celebrity Encounter",
+    "opening_text": "WEIRDEST ENCOUNTER EVER &",
+    "first_line": "This streamer had the weirdest interaction with a famous actor. Wait, actor?",
+    "category": "crossover",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 12.0,
+    "length_s": 24.31,
+    "streamers": [
+     "Marlon"
+    ]
+   },
+   {
+    "id": "X1xePW7hVSw",
+    "channel": "Aurafy",
+    "views": 311219,
+    "lift": 16.7568,
+    "title": "Lacy Meets The Youngest Professional Fortnite Player In The World! 😂🙏",
+    "opening_text": "BLAC SHXRK",
+    "first_line": "Shark, what's up, brother? We've been looking for you. Every person I ask, I",
+    "category": "crossover",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 11.0,
+    "length_s": 12.75,
+    "streamers": [
+     "Lacy"
+    ]
+   },
+   {
+    "id": "mAZPSZVxrs0",
+    "channel": "DaPlug",
+    "views": 7207830,
+    "lift": 15.2981,
+    "title": "Kai Cenat Randomly Meets Streamer CashMeow Off Stream In Japan! ❤️",
+    "opening_text": "STREAMING?",
+    "first_line": "Are you Steven? Yeah, yeah. Hello, Kashmir. on Twitch. Hi, Chet. W Steven Att.",
+    "category": "crossover",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 9.5,
+    "length_s": 17.13,
+    "streamers": [
+     "Kai Cenat",
+     "CashMeow"
+    ]
+   },
+   {
+    "id": "k_thfffDDSU",
+    "channel": "OnShortz",
+    "views": 3857733,
+    "lift": 14.8438,
+    "title": "Kai Cenat didn't recognize the GOAT 💀 #kaicenat #shorts",
+    "opening_text": "IS IT A ROCK SONG INSHORTZ",
+    "first_line": "Is it Waxaw? I'm here to play some music. At first, Kai Sinat had",
+    "category": "crossover",
+    "opening": "action_first",
+    "text_role": "question",
+    "ending": "reaction",
+    "premise_at_s": 2.0,
+    "payoff_at_s": 27.7,
+    "length_s": 34.61,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "BsUrFD6nh_Y",
+    "channel": "iboclips",
+    "views": 2626636,
+    "lift": 13.2653,
+    "title": "Jynxzi Finds Out Yeat Was Max Rank in Rainbow Six Siege! 😱💀",
+    "opening_text": "WHADDUP",
+    "first_line": "Yo, what up, guys? Nice to meet you, Mr. Geet. Nice to meet you.",
+    "category": "crossover",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 3.6,
+    "payoff_at_s": 13.8,
+    "length_s": 28.21,
+    "streamers": [
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "VHogq2SPeas",
+    "channel": "KaiNFriends",
+    "views": 17172770,
+    "lift": 12.1429,
+    "title": "Rakai is insane #kaicenat  #ray #rakai  #tota  #marfiathon3  #edit  2",
+    "opening_text": "KAT",
+    "first_line": "Don't forget the call. Oh, you know what? Good, good, good. What?",
+    "category": "crossover",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 4.1,
+    "length_s": 18.0,
+    "streamers": [
+     "Kai Cenat",
+     "Rakai"
+    ]
+   }
+  ]
+ },
+ "by_streamer": {
+  "IShowSpeed": [
+   {
+    "id": "bemPD3Ywzg4",
+    "channel": "Speedyshorts",
+    "views": 13731360,
+    "lift": 541.667,
+    "title": "Even the Strongest Guys Couldn’t Lift Speed’s $10K Cube 😳💀",
+    "opening_text": "LIFT THIS CUBE WIN 10K",
+    "first_line": "Fuck it! Pump!",
+    "category": "reward",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 42.1,
+    "length_s": 56.95,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "VjKvbIWDxIs",
+    "channel": "Speedyshorts",
+    "views": 11986104,
+    "lift": 372.881,
+    "title": "IShowSpeed Met a WHOLE Family on Omegle 😭❤️",
+    "opening_text": "BUDATUD OTU 03392 SPEEDY _SHORTS",
+    "first_line": "Yo, speed. Speed. What's up? You, I wanted to tell you. I'm really big",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.7,
+    "payoff_at_s": 49.9,
+    "length_s": 59.67,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "H9PbZ9Sqluc",
+    "channel": "Live Speedy",
+    "views": 2340701,
+    "lift": 66.667,
+    "title": "IShowSpeed Surviving A Fall Off A Cliff In Fortnite! 😭⛰️",
+    "opening_text": "YO",
+    "first_line": "Yo, Speed, how long you been grinding for it?",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 5.5,
+    "payoff_at_s": 9.6,
+    "length_s": 16.75,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "FMI5eF3VQoo",
+    "channel": "Speedyshorts",
+    "views": 6648160,
+    "lift": 60.274,
+    "title": "IShowSpeed Couldn't Understand Céline Dept's Accent 😭😂",
+    "opening_text": "0 KOR E3 28:25 SPEEDY",
+    "first_line": "What? It's Japan. Korea, looking forward.",
+    "category": "misunderstanding",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 7.5,
+    "payoff_at_s": 26.5,
+    "length_s": 58.73,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "aYBZfmInltg",
+    "channel": "SpeedKaiClip",
+    "views": 1890047,
+    "lift": 24.8276,
+    "title": "Speed AVENGES His Dad After Prowler Kills Him💔🕷️",
+    "opening_text": "IT'S HIM",
+    "first_line": "Oh, kill him again. It's him. Hey! Hey! Come here, come here. Hey!",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.8,
+    "length_s": 49.47,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   },
+   {
+    "id": "MilRVhhqAEw",
+    "channel": "SpeedKaiClip",
+    "views": 1480827,
+    "lift": 22.4,
+    "title": "Speed Gets Badly Caught in 4K😭🥀",
+    "opening_text": "DO YOU",
+    "first_line": "Do you want to have kids in your life? Yeah, of course. Imagine the",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.4,
+    "payoff_at_s": 3.7,
+    "length_s": 17.29,
+    "streamers": [
+     "IShowSpeed"
+    ]
+   }
+  ],
+  "Kai Cenat": [
+   {
+    "id": "feUgVTnTBro",
+    "channel": "Insomnia Clipz",
+    "views": 1814618,
+    "lift": 459.459,
+    "title": "KAI CENAT LEAKED GTA 6 INFO!🔥 (PART 2)",
+    "opening_text": "B-BALL'S AUTOS GTAG LEAK #2 одле Jaig",
+    "first_line": "GTA 6 is the ones who have. Is gonna be an Easter egg? Well,",
+    "category": "discovery",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 10.2,
+    "length_s": 16.85,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "L9UC3c65vVY",
+    "channel": "Insomnia Clipz",
+    "views": 1719346,
+    "lift": 157.068,
+    "title": "KAI CENAT BEAT All GTA GAMES...💀",
+    "opening_text": "WHAT'S",
+    "first_line": "What's going on, YouTube? It's your broadcast tonight. After every GTA game? Several citizens.",
+    "category": "character_behaviour",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 25.4,
+    "length_s": 41.39,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "UZgsZFsmUBY",
+    "channel": "Snickerly",
+    "views": 9183337,
+    "lift": 69.683,
+    "title": "Kai Feels Time Travelling When Sleeping 🤣",
+    "opening_text": "_01 PSTA",
+    "first_line": "Golden Steve is so weird. When you go to sleep, you wake up, like,",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 13.2,
+    "length_s": 19.39,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "wwsTMA7zcSs",
+    "channel": "Snickerly",
+    "views": 8826524,
+    "lift": 68.7783,
+    "title": "Kai Forgot He Was Streaming! 😭🤣",
+    "opening_text": "- 38,452 *WAKES UP*",
+    "first_line": "Paul?",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 6.7,
+    "length_s": 12.37,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "gViUee349Hc",
+    "channel": "Insomnia Clipz",
+    "views": 1416956,
+    "lift": 66.6667,
+    "title": "Kai - Funniest SU Student 😂 Pt9",
+    "opening_text": "Really?",
+    "first_line": "Here you go. Oh, my gosh. Thank you so much. You can now go",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.3,
+    "payoff_at_s": 19.0,
+    "length_s": 28.81,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   },
+   {
+    "id": "Qua5xEVA4lY",
+    "channel": "SpeedKaiClip",
+    "views": 3359523,
+    "lift": 60.5505,
+    "title": "KAI CENAT HAS A KID?!🤯",
+    "opening_text": "W.I",
+    "first_line": "I'm literally sleeping in my bed 10 AM in the morning. Didn't I get",
+    "category": "misunderstanding",
+    "opening": "talking",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 23.0,
+    "length_s": 29.97,
+    "streamers": [
+     "Kai Cenat"
+    ]
+   }
+  ],
+  "Rakai": [
+   {
+    "id": "s1dWPWS_5kk",
+    "channel": "WClipMedia",
+    "views": 68884441,
+    "lift": 180.611,
+    "title": "Rakai Always Wearing Double Durags 😂",
+    "opening_text": "STILL",
+    "first_line": "You still got this donut mask on, but you are not eating.",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 13.9,
+    "length_s": 18.01,
+    "streamers": [
+     "Rakai"
+    ]
+   },
+   {
+    "id": "t-Nz0AHEO0A",
+    "channel": "Scshorts",
+    "views": 1097767,
+    "lift": 16.129,
+    "title": "Rakai Vs Punga Smile! 😭😭",
+    "opening_text": "Kakai @SCSHORTS",
+    "first_line": "Rakai and Punga were having a whole battle over who had the ugliest smile,",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 18.2,
+    "length_s": 23.49,
+    "streamers": [
+     "Rakai"
+    ]
+   },
+   {
+    "id": "VHogq2SPeas",
+    "channel": "KaiNFriends",
+    "views": 17172770,
+    "lift": 12.1429,
+    "title": "Rakai is insane #kaicenat  #ray #rakai  #tota  #marfiathon3  #edit  2",
+    "opening_text": "KAT",
+    "first_line": "Don't forget the call. Oh, you know what? Good, good, good. What?",
+    "category": "crossover",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 4.1,
+    "length_s": 18.0,
+    "streamers": [
+     "Kai Cenat",
+     "Rakai"
+    ]
+   },
+   {
+    "id": "x4TKAAA-5IY",
+    "channel": "DaPlug",
+    "views": 2315470,
+    "lift": 5.1744,
+    "title": "Rakai Is Going To Lose His Under Armour Deal After He Got Caught Wearing Nike! 💀😭",
+    "opening_text": "*PUTS ON NIKE*",
+    "first_line": "So, so.",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.5,
+    "payoff_at_s": 4.4,
+    "length_s": 14.65,
+    "streamers": [
+     "Rakai"
+    ]
+   }
+  ],
+  "Jynxzi": [
+   {
+    "id": "9S184H2XIxM",
+    "channel": "Jynxzi Clips",
+    "views": 3394199,
+    "lift": 83.544,
+    "title": "Jynxzi can’t guess this song 😭💔",
+    "opening_text": "Jynxzi gets robbed",
+    "first_line": "I sit by myself Talking to the...",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 1.2,
+    "payoff_at_s": 43.3,
+    "length_s": 53.57,
+    "streamers": [
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "rDelT8pn0pE",
+    "channel": "Jynxzi Clips",
+    "views": 7929780,
+    "lift": 62.948,
+    "title": "Bro finally made Jynxzi proud 😭✌️",
+    "opening_text": "bro finlly read the german signs a • ohnePixel",
+    "first_line": "This is EU. This has to be you, yes. Landis Klassen, Buddha, Deutsch. Buddha,",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 42.0,
+    "length_s": 44.15,
+    "streamers": [
+     "ohnePixel",
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "RshlX17ks-U",
+    "channel": "iboclips",
+    "views": 4134063,
+    "lift": 52.288,
+    "title": "OhnePixel Gives Jynxzi the Most Awkward Early Birthday Gift! 💀😭",
+    "opening_text": "SCAR-20 1444 mant Rex SEAL Frogman IT'S JYNXZI'S agiexa: it's lynxzi's",
+    "first_line": "Jesus' birthday? Say Walahi, bro. I don't have a gift bro. Give me the",
+    "category": "reward",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 7.5,
+    "payoff_at_s": 15.7,
+    "length_s": 27.4,
+    "streamers": [
+     "OhnePixel",
+     "Jynxzi"
+    ]
+   },
+   {
+    "id": "UZvjN87T-4g",
+    "channel": "Jynxzi Clips",
+    "views": 7850041,
+    "lift": 38.3292,
+    "title": "Jynxzi leaks base co-ordinates on Minecraft 💀😭",
+    "opening_text": "1,518 DrDonut crashes out after Jynxzi leaks cords® leaked it PENS LO",
+    "first_line": "I think I leaked it. I think I What? How? They're saying that I",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 24.2,
+    "length_s": 44.75,
+    "streamers": [
+     "Jynxzi",
+     "DrDonut"
+    ]
+   },
+   {
+    "id": "E2MR4aGPWmM",
+    "channel": "iboclips",
+    "views": 1788142,
+    "lift": 23.944,
+    "title": "Jynxzi Cannot Stop Glazing Stompn! 😭💀",
+    "opening_text": "THE Jynxzi Cannot Stop Glazing Stompn ONE",
+    "first_line": "Where the is he at?",
+    "category": "chemistry",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 2.3,
+    "length_s": 15.41,
+    "streamers": [
+     "Jynxzi",
+     "Stompn"
+    ]
+   },
+   {
+    "id": "BsUrFD6nh_Y",
+    "channel": "iboclips",
+    "views": 2626636,
+    "lift": 13.2653,
+    "title": "Jynxzi Finds Out Yeat Was Max Rank in Rainbow Six Siege! 😱💀",
+    "opening_text": "WHADDUP",
+    "first_line": "Yo, what up, guys? Nice to meet you, Mr. Geet. Nice to meet you.",
+    "category": "crossover",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 3.6,
+    "payoff_at_s": 13.8,
+    "length_s": 28.21,
+    "streamers": [
+     "Jynxzi"
+    ]
+   }
+  ],
+  "Lacy": [
+   {
+    "id": "C95p_vcK_wg",
+    "channel": "Aurafy",
+    "views": 2942225,
+    "lift": 66.6667,
+    "title": "Lacy Receiving Darla’s Unique Christmas Gift! 😭🎁",
+    "opening_text": "MY",
+    "first_line": "My personal favorite gift that Darla got me, I don't care about, like, money",
+    "category": "reward",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.1,
+    "payoff_at_s": 21.5,
+    "length_s": 26.0,
+    "streamers": [
+     "Lacy"
+    ]
+   },
+   {
+    "id": "JAo_lpF3Sos",
+    "channel": "Aurafy",
+    "views": 1334431,
+    "lift": 18.4397,
+    "title": "Darla Surprises Lacy With A Home Cooked Chicken Dinner! 💀😭",
+    "opening_text": "*NERVOUS* *13*",
+    "first_line": "I've never made chicken before, but it's cold.",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 1.1,
+    "payoff_at_s": 11.3,
+    "length_s": 16.91,
+    "streamers": [
+     "Darla",
+     "Lacy"
+    ]
+   },
+   {
+    "id": "X1xePW7hVSw",
+    "channel": "Aurafy",
+    "views": 311219,
+    "lift": 16.7568,
+    "title": "Lacy Meets The Youngest Professional Fortnite Player In The World! 😂🙏",
+    "opening_text": "BLAC SHXRK",
+    "first_line": "Shark, what's up, brother? We've been looking for you. Every person I ask, I",
+    "category": "crossover",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 11.0,
+    "length_s": 12.75,
+    "streamers": [
+     "Lacy"
+    ]
+   },
+   {
+    "id": "SOpl1i6LZ3c",
+    "channel": "Marlon Clipz",
+    "views": 534582,
+    "lift": 15.2571,
+    "title": "Marlon & Lacy Destroyed Their Minecraft Room",
+    "opening_text": "Dumb And Dumber ® creepers",
+    "first_line": "The creepers are coming.",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 4.7,
+    "length_s": 14.15,
+    "streamers": [
+     "Marlon",
+     "Lacy"
+    ]
+   },
+   {
+    "id": "-rKv4uTzl5M",
+    "channel": "Aurafy",
+    "views": 176915,
+    "lift": 5.4921,
+    "title": "Lacy Respectfully Rejected Tyla On Stream! 💀🙏",
+    "opening_text": "MANY",
+    "first_line": "How many letters is in the person's name? Cool.",
+    "category": "crossover",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 4.3,
+    "payoff_at_s": 14.9,
+    "length_s": 20.75,
+    "streamers": [
+     "Lacy"
+    ]
+   },
+   {
+    "id": "enX9QOJqdxw",
+    "channel": "Aurafy",
+    "views": 214557,
+    "lift": 5.2273,
+    "title": "Lacy Helping Marlon Find His Missing Earrings! 😭💎",
+    "opening_text": "LACY",
+    "first_line": "Wait! What myring? Your earring? Lacy. They need to find him. Oh. I found",
+    "category": "discovery",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 5.6,
+    "length_s": 18.31,
+    "streamers": [
+     "Lacy",
+     "Marlon"
+    ]
+   }
+  ],
+  "CaseOh": [
+   {
+    "id": "nKDlQVDsZTQ",
+    "channel": "MoreClipsForYou",
+    "views": 12411237,
+    "lift": 31.7041,
+    "title": "CaseOh CLUTCHED This Wordle 😭 #caseoh #wordle",
+    "opening_text": "Going with the",
+    "first_line": "Going with the greatest starter word of all time.",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 96.0,
+    "length_s": 99.63,
+    "streamers": [
+     "CaseOh"
+    ]
+   },
+   {
+    "id": "IZwU4shZAek",
+    "channel": "CaseOh Moments",
+    "views": 2283129,
+    "lift": 29.932,
+    "title": "CaseOh Goes Insane Over This Sausage 💀😭 #caseoh #meme",
+    "opening_text": "CASEOH GOES INSANE OVER HIS SAUSAGE",
+    "first_line": "Don't fling it. What do you mean, don't fling it? Look what happens if",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 138.1,
+    "length_s": 140.95,
+    "streamers": [
+     "CaseOh"
+    ]
+   },
+   {
+    "id": "NNu4f-Z7-Ik",
+    "channel": "CaseOh Moments",
+    "views": 4667827,
+    "lift": 22.3844,
+    "title": "CaseOh Might Mastered Meccha Chameleon",
+    "opening_text": "CASEOH MASTERS MECCHA CHAMELEON Hide Time",
+    "first_line": "It was meant to be.",
+    "category": "character_behaviour",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 5.0,
+    "payoff_at_s": 100.6,
+    "length_s": 111.65,
+    "streamers": [
+     "CaseOh"
+    ]
+   },
+   {
+    "id": "gVj0ipikcnk",
+    "channel": "MoreClipsForYou",
+    "views": 5319744,
+    "lift": 16.4557,
+    "title": "CaseOh Ranking Food That He Loves Except Steak 😭 #caseoh #meme",
+    "opening_text": "Rank these Rank these 6 foods but you can't change",
+    "first_line": "Rank these 6 foods, but you can't change.",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 84.0,
+    "length_s": 89.77,
+    "streamers": [
+     "CaseOh"
+    ]
+   },
+   {
+    "id": "OMENjJ_aJN8",
+    "channel": "CaseOh Moments",
+    "views": 1802254,
+    "lift": 13.7931,
+    "title": "CaseOh’s Fans Are Insane 💀😭 #caseoh #meme",
+    "opening_text": "MEAN eoh he Year 2024 KED - 00",
+    "first_line": "What do you mean, Bros built like a? Is this supposed to be me?",
+    "category": "character_behaviour",
+    "opening": "reaction_first",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 4.0,
+    "payoff_at_s": 17.2,
+    "length_s": 18.97,
+    "streamers": [
+     "CaseOh"
+    ]
+   },
+   {
+    "id": "t90K8wSOLas",
+    "channel": "MoreClipsForYou",
+    "views": 9811431,
+    "lift": 10.9742,
+    "title": "CaseOh Wanted To Choose Blue Here 😭 #caseoh #meme",
+    "opening_text": "Unlimited money OR",
+    "first_line": "Unlimited money or unlimited food. buddy, do you think I'm in kindergarten? Anybody with",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 22.0,
+    "length_s": 55.03,
+    "streamers": [
+     "CaseOh"
+    ]
+   }
+  ],
+  "Tota": [
+   {
+    "id": "hiiIYnBoM9E",
+    "channel": "Aurafy",
+    "views": 982431,
+    "lift": 27.6429,
+    "title": "Tota Shot His Shot At Marlon! 😂💋",
+    "opening_text": "*KISSES MARLON*",
+    "first_line": "What's up, my bro?",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 1.9,
+    "length_s": 8.75,
+    "streamers": [
+     "Tota",
+     "Marlon"
+    ]
+   },
+   {
+    "id": "RALGeAp7Jx0",
+    "channel": "WClipMedia",
+    "views": 2470846,
+    "lift": 7.1856,
+    "title": "Kai Cenat & Tota Made a Song on Stream 😂",
+    "opening_text": "RAKAI URN OP",
+    "first_line": "But, I, I, I, I, I, They might be gay. I don't know what",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 20.5,
+    "length_s": 29.09,
+    "streamers": [
+     "Kai Cenat",
+     "Tota",
+     "Rakai"
+    ]
+   }
+  ],
+  "Marlon": [
+   {
+    "id": "hiiIYnBoM9E",
+    "channel": "Aurafy",
+    "views": 982431,
+    "lift": 27.6429,
+    "title": "Tota Shot His Shot At Marlon! 😂💋",
+    "opening_text": "*KISSES MARLON*",
+    "first_line": "What's up, my bro?",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 1.9,
+    "length_s": 8.75,
+    "streamers": [
+     "Tota",
+     "Marlon"
+    ]
+   },
+   {
+    "id": "oPlsrIaeBwc",
+    "channel": "Marlon Clipz",
+    "views": 703173,
+    "lift": 18.0256,
+    "title": "Marlon Tried To Be The Toughest Security Guard 😭",
+    "opening_text": "BRO'S TOO LOCKED IN streamer",
+    "first_line": "This streamer took his security job way too seriously. You on the list? Yes.",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 13.0,
+    "length_s": 19.93,
+    "streamers": [
+     "Marlon"
+    ]
+   },
+   {
+    "id": "an-B-q-bQrM",
+    "channel": "Marlon Clipz",
+    "views": 933022,
+    "lift": 17.9423,
+    "title": "Marlon Had The Most Random Celebrity Encounter",
+    "opening_text": "WEIRDEST ENCOUNTER EVER &",
+    "first_line": "This streamer had the weirdest interaction with a famous actor. Wait, actor?",
+    "category": "crossover",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 12.0,
+    "length_s": 24.31,
+    "streamers": [
+     "Marlon"
+    ]
+   },
+   {
+    "id": "SOpl1i6LZ3c",
+    "channel": "Marlon Clipz",
+    "views": 534582,
+    "lift": 15.2571,
+    "title": "Marlon & Lacy Destroyed Their Minecraft Room",
+    "opening_text": "Dumb And Dumber ® creepers",
+    "first_line": "The creepers are coming.",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 4.7,
+    "length_s": 14.15,
+    "streamers": [
+     "Marlon",
+     "Lacy"
+    ]
+   },
+   {
+    "id": "_j1CIG0hCzc",
+    "channel": "Marlon Clipz",
+    "views": 543438,
+    "lift": 14.48,
+    "title": "Marlon Showed His Wholesome Side On Stream",
+    "opening_text": "MOST WHOLESOME STREAMER this",
+    "first_line": "This streamer just proved why everyone loves him. Do you ever pray before you?",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 4.6,
+    "payoff_at_s": 8.2,
+    "length_s": 18.33,
+    "streamers": [
+     "Marlon"
+    ]
+   },
+   {
+    "id": "FjOREiI_y7k",
+    "channel": "Marlon Clipz",
+    "views": 359620,
+    "lift": 9.8356,
+    "title": "Marlon Made Diamond Gym Look Easy 💀",
+    "opening_text": "BRO'S BUILT DIFFERENT core",
+    "first_line": "The core members trained at the world's most dangerous gym, but Marlon made it",
+    "category": "character_behaviour",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 18.2,
+    "length_s": 21.19,
+    "streamers": [
+     "Marlon"
+    ]
+   }
+  ],
+  "xQc": [
+   {
+    "id": "yofXYUL-zNc",
+    "channel": "Variety Roleplay",
+    "views": 254489,
+    "lift": 22,
+    "title": "🎵xQc Reacts to GGEZ song #Shorts",
+    "opening_text": "KICK.COM/xQc",
+    "first_line": "Did you friggin' me, easy?",
+    "category": "character_behaviour",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 29.4,
+    "length_s": 56.65,
+    "streamers": [
+     "xQc"
+    ]
+   },
+   {
+    "id": "xU4ErEv_Wzg",
+    "channel": "Variety Roleplay",
+    "views": 333758,
+    "lift": 9.514,
+    "title": "😭Dean Trying to Have A Civil Conversation with xQc #Shorts",
+    "opening_text": "KICK.COM/xQc TWITCH.TV/D just try to",
+    "first_line": "I just try to help you guys out, but make sure you guys are",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 21.0,
+    "length_s": 21.93,
+    "streamers": [
+     "xQc",
+     "Dean"
+    ]
+   },
+   {
+    "id": "AjYjvW2vsfg",
+    "channel": "Adin Live",
+    "views": 299037,
+    "lift": 6.5,
+    "title": "“at least i got higher than pokimane”🤣🤣🤣 #adinross #xqc #pokimane #funny",
+    "opening_text": "I WILL-PUT",
+    "first_line": "I would ate in curling the sea. It's all right. currently, you know? Aiden's",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 10.3,
+    "length_s": 13.83,
+    "streamers": [
+     "Adin Ross",
+     "xQc",
+     "Pokimane"
+    ]
+   },
+   {
+    "id": "SbCLUGMfBCU",
+    "channel": "Variety Roleplay",
+    "views": 226447,
+    "lift": 5.947,
+    "title": "😭xQc & Marty Know How to Make Ginger(Aiko) Jealous! 💢 #Shorts",
+    "opening_text": "KICK.COM/AikoBliss AND",
+    "first_line": "And I know that you have an intimate relationship with my vice president, Ginger.",
+    "category": "chemistry",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 4.0,
+    "payoff_at_s": 47.3,
+    "length_s": 61.15,
+    "streamers": [
+     "xQc",
+     "AikoBliss"
+    ]
+   },
+   {
+    "id": "k1hVuDC0BtY",
+    "channel": "Variety Roleplay",
+    "views": 225147,
+    "lift": 5.034,
+    "title": "💀xQc gets Jumpscared by Morag Goul in NoPixel V! #Shorts",
+    "opening_text": "KICK.COM/xQc",
+    "first_line": "Oh. Oh, my fucking God, hello? What the hell are you doing? What in",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 1.0,
+    "length_s": 33.15,
+    "streamers": [
+     "xQc"
+    ]
+   }
+  ],
+  "Fanum": [
+   {
+    "id": "3HmT7CDE12U",
+    "channel": "Fanum Live",
+    "views": 5365069,
+    "lift": 21.285,
+    "title": "Fanum & Kai Cenat Prank Duke Dennis! 😂",
+    "opening_text": "Fanum & Kai Cenat Prank Duke Dennis!",
+    "first_line": "Help! Help! You hear me? You hear me? Open the door! Open the door!",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 23.7,
+    "length_s": 31.83,
+    "streamers": [
+     "Fanum",
+     "Kai Cenat",
+     "Duke Dennis"
+    ]
+   },
+   {
+    "id": "e_Yt2pyLiw4",
+    "channel": "Fanum Live",
+    "views": 2839874,
+    "lift": 19.788,
+    "title": "Kai Forgets to Call Fanum During His Seafood Boil😂",
+    "opening_text": "\"you ain't called me!\"",
+    "first_line": "You have seafood boil? Hashtag, don't tell fantom.",
+    "category": "chemistry",
+    "opening": "setup_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.7,
+    "length_s": 21.73,
+    "streamers": [
+     "Kai Cenat",
+     "Fanum"
+    ]
+   },
+   {
+    "id": "tttEYu9wI6Q",
+    "channel": "Fanum Live",
+    "views": 6028002,
+    "lift": 14.4231,
+    "title": "Fanum & Walton Order Every Single Item At McDonald’s! 😂",
+    "opening_text": "\"throw a diet coke, I'm losing weight!",
+    "first_line": "A cheeseburger with medium fries and a water bottle. Okay. You want some smoke?",
+    "category": "character_behaviour",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 16.7,
+    "length_s": 49.7,
+    "streamers": [
+     "Fanum",
+     "Walton"
+    ]
+   },
+   {
+    "id": "4cuzqxTojxc",
+    "channel": "Fanum Live",
+    "views": 6037991,
+    "lift": 14.4231,
+    "title": "Fanum Gets Trolled While Opening P.O. Box! 😂",
+    "opening_text": "The Bronx FANURG Whoever Sent This To Fanum Is Dead Wrong!",
+    "first_line": "You said what?",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 23.6,
+    "length_s": 39.67,
+    "streamers": [
+     "Fanum"
+    ]
+   },
+   {
+    "id": "GRK8QDdOaUo",
+    "channel": "Scshorts",
+    "views": 8875045,
+    "lift": 11.9565,
+    "title": "Kai & Fanum Started A Star Wars Battle!😭😭",
+    "opening_text": "AN IN apan + lo161 getbacki *confused® BASTAR 14012 A @SCSHORTS HEARIT",
+    "first_line": "No, no, no.",
+    "category": "chemistry",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 30.9,
+    "length_s": 35.61,
+    "streamers": [
+     "Kai Cenat",
+     "Fanum"
+    ]
+   },
+   {
+    "id": "FBimYOgZv-s",
+    "channel": "Plug Finesser",
+    "views": 1761362,
+    "lift": 6.6406,
+    "title": "Fanum & Duke Dennis Noticed The AMP House Was Empty! 😳💀",
+    "opening_text": "HOLD ON",
+    "first_line": "No, hold on. There's cribble like this, like somebody, like they, it's like they",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 3.0,
+    "payoff_at_s": 8.3,
+    "length_s": 15.59,
+    "streamers": [
+     "Fanum",
+     "Duke Dennis"
+    ]
+   }
+  ],
+  "Adin Ross": [
+   {
+    "id": "ifPMUq2hHg0",
+    "channel": "Adin Live",
+    "views": 771242,
+    "lift": 19.7692,
+    "title": "Adin Ross Blew HALF His Money on a Lamborghini at 19 👀😳💰 #adinross #lamborghini",
+    "opening_text": "MONEY",
+    "first_line": "How much money did you have when you bought your yours? Oh, God, like",
+    "category": "character_behaviour",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.5,
+    "length_s": 18.37,
+    "streamers": [
+     "Adin Ross"
+    ]
+   },
+   {
+    "id": "upholCDv8zQ",
+    "channel": "Adin Live",
+    "views": 1060462,
+    "lift": 16.9492,
+    "title": "When Adin Ross Got PRESSED by Gypsy 🤣🤣🤣 #adinross #funny #comedy",
+    "opening_text": "ALLJ*WS",
+    "first_line": "Oh, we're all we're all good people, dude. Like, look, there's bad apples in",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 4.1,
+    "payoff_at_s": 12.8,
+    "length_s": 42.25,
+    "streamers": [
+     "Adin Ross"
+    ]
+   },
+   {
+    "id": "6KBf3DDE680",
+    "channel": "Adin Live",
+    "views": 229525,
+    "lift": 15.0345,
+    "title": "Adin Ross' Accountant Was WORRIED After Seeing His October Earnings 👀😳 #adinross #streamer",
+    "opening_text": "SAND",
+    "first_line": "Yo, guys, my accountant texted me today. Listen to this, you guys are gonna",
+    "category": "consequence",
+    "opening": "talking",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 16.3,
+    "length_s": 17.35,
+    "streamers": [
+     "Adin Ross"
+    ]
+   },
+   {
+    "id": "zyHc7Epn3qE",
+    "channel": "Adin Live",
+    "views": 399932,
+    "lift": 10.2308,
+    "title": "Khabib Was Not a Fan of Adin Ross 😭😭😭 #adinross #khabib #ufc #islammakhachev",
+    "opening_text": "DOING SIR?",
+    "first_line": "How you doing, sir? Who are you? Aidan, pleasure to meet you. I'm good,",
+    "category": "crossover",
+    "opening": "action_first",
+    "text_role": "none",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 16.6,
+    "length_s": 20.17,
+    "streamers": [
+     "Adin Ross"
+    ]
+   },
+   {
+    "id": "AjYjvW2vsfg",
+    "channel": "Adin Live",
+    "views": 299037,
+    "lift": 6.5,
+    "title": "“at least i got higher than pokimane”🤣🤣🤣 #adinross #xqc #pokimane #funny",
+    "opening_text": "I WILL-PUT",
+    "first_line": "I would ate in curling the sea. It's all right. currently, you know? Aiden's",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 10.3,
+    "length_s": 13.83,
+    "streamers": [
+     "Adin Ross",
+     "xQc",
+     "Pokimane"
+    ]
+   },
+   {
+    "id": "h6D9l5Uz4FA",
+    "channel": "Adin Live",
+    "views": 243782,
+    "lift": 6.2308,
+    "title": "Adin Ross Was So Happy For Speed Performing at World Cup Final 😭🥀 #adinross #ishowspeed #worldcup",
+    "opening_text": "BRO",
+    "first_line": "Robbie Onisboro, this is genuinely fucking crazy, bro.",
+    "category": "live_event",
+    "opening": "reaction_first",
+    "text_role": "none",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 12.0,
+    "length_s": 19.39,
+    "streamers": [
+     "Adin Ross",
+     "IShowSpeed"
+    ]
+   }
+  ],
+  "LosPollos": [
+   {
+    "id": "w92AIlDZfLQ",
+    "channel": "iboclips",
+    "views": 4526820,
+    "lift": 17.5299,
+    "title": "LosPollos Discovers How to Craft Bread In Minecraft! 💀😭",
+    "opening_text": "*CRAFTS BREAD* 29",
+    "first_line": "Got this, Slos. I believe in you, man.",
+    "category": "discovery",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 20.8,
+    "length_s": 24.53,
+    "streamers": [
+     "LosPollos"
+    ]
+   },
+   {
+    "id": "TQRZehScG9E",
+    "channel": "iboclips",
+    "views": 2675390,
+    "lift": 10.0775,
+    "title": "Jynxzi Proves LosPollos Wrong and Gives a Positive Message to the Youth! 🥺❤️‍🩹",
+    "opening_text": "FUNNY",
+    "first_line": "It's just funny that Jinxy like acts cruel, but he's also a virgin, you",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 18.0,
+    "length_s": 21.51,
+    "streamers": [
+     "Jynxzi",
+     "LosPollos"
+    ]
+   }
+  ],
+  "Duke Dennis": [
+   {
+    "id": "1_M-EZbD5RQ",
+    "channel": "OnShortz",
+    "views": 3426044,
+    "lift": 16.2291,
+    "title": "Kai Cenat & Duke Went Crazy After Duke's Ex Left😂 #kaicenat #shorts",
+    "opening_text": "WHAT YOU • camel a2001 artino 34• chuis2c KAA @ONAHE eeBlock",
+    "first_line": "You don't have this.",
+    "category": "chemistry",
+    "opening": "talking",
+    "text_role": "none",
+    "ending": "mid_sentence",
+    "premise_at_s": 1.0,
+    "payoff_at_s": 7.7,
+    "length_s": 33.69,
+    "streamers": [
+     "Kai Cenat",
+     "Duke Dennis"
+    ]
+   },
+   {
+    "id": "FBimYOgZv-s",
+    "channel": "Plug Finesser",
+    "views": 1761362,
+    "lift": 6.6406,
+    "title": "Fanum & Duke Dennis Noticed The AMP House Was Empty! 😳💀",
+    "opening_text": "HOLD ON",
+    "first_line": "No, hold on. There's cribble like this, like somebody, like they, it's like they",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 3.0,
+    "payoff_at_s": 8.3,
+    "length_s": 15.59,
+    "streamers": [
+     "Fanum",
+     "Duke Dennis"
+    ]
+   },
+   {
+    "id": "4Yq_TLGTgtQ",
+    "channel": "Zylok",
+    "views": 2721407,
+    "lift": 5.2889,
+    "title": "Duke & Davis Accidentally Recreated The Dub Meme! 😭",
+    "opening_text": "Welcome to (amad) g ALRIGHT",
+    "first_line": "All right, keep working, game. All right, man. You gonna be on some... Me?",
+    "category": "chemistry",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "after",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 2.0,
+    "length_s": 24.71,
+    "streamers": [
+     "Duke Dennis"
+    ]
+   }
+  ],
+  "Clix": [
+   {
+    "id": "1M03e2RUt4M",
+    "channel": "Aurafy",
+    "views": 229398,
+    "lift": 11.1,
+    "title": "Clix Surprises Lacy With The Greatest Gift Ever! 🎁😱",
+    "opening_text": "GOT",
+    "first_line": "I got you something. What? I got something made 6 months ago for myself.",
+    "category": "reward",
+    "opening": "setup_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 15.7,
+    "length_s": 20.15,
+    "streamers": [
+     "Clix"
+    ]
+   },
+   {
+    "id": "sjfq1lPraKY",
+    "channel": "Stable Ronaldo Live",
+    "views": 696628,
+    "lift": 8.2857,
+    "title": "Bro Got Disrespected! 😂",
+    "opening_text": "«\"Jynxzi vs Clix 1v1",
+    "first_line": "Can I ask why Jinxy still didn't put me in his title and he",
+    "category": "misunderstanding",
+    "opening": "talking",
+    "text_role": "adds_context",
+    "ending": "mid_sentence",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 25.0,
+    "length_s": 35.13,
+    "streamers": [
+     "Jynxzi",
+     "Clix"
+    ]
+   }
+  ],
+  "Agent00": [
+   {
+    "id": "KtFTk4oMjNU",
+    "channel": "ClipCulture",
+    "views": 4730005,
+    "lift": 6.9785,
+    "title": "Streamers in the World Cup Stickers 📖⚽",
+    "opening_text": "aSn CLIPCUL TUREGOAT -I",
+    "first_line": "What if streamers were in the World Cup Sticker album? I smoke Twitter. I",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "label_only",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 3.0,
+    "length_s": 16.47,
+    "streamers": [
+     "Kai Cenat",
+     "Agent00"
+    ]
+   },
+   {
+    "id": "2flCFDuptBM",
+    "channel": "Zylok",
+    "views": 4120661,
+    "lift": 5.7665,
+    "title": "Agent00 Is Shocked By The New Tesla Roadster’s Acceleration! 🤯",
+    "opening_text": "BUT ELON ЧОм",
+    "first_line": "But Elon, how fast did you want to go to 060? Well, you got",
+    "category": "discovery",
+    "opening": "reaction_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 10.7,
+    "length_s": 17.07,
+    "streamers": [
+     "Agent00"
+    ]
+   }
+  ],
+  "Dezz": [
+   {
+    "id": "Oq3dGX9ISjc",
+    "channel": "DaPlug",
+    "views": 1942961,
+    "lift": 6.655,
+    "title": "Tylil & Dezz Realise Rakai’s New Shoe Price! 💀😭",
+    "opening_text": "PH 2₴ OKAY!",
+    "first_line": "Okay, okay.",
+    "category": "discovery",
+    "opening": "action_first",
+    "text_role": "label_only",
+    "ending": "reaction",
+    "premise_at_s": 1.9,
+    "payoff_at_s": 6.5,
+    "length_s": 11.61,
+    "streamers": [
+     "Tylil",
+     "Dezz",
+     "Rakai"
+    ]
+   },
+   {
+    "id": "syFydrm273I",
+    "channel": "Plug Finesser",
+    "views": 1526927,
+    "lift": 6.0484,
+    "title": "Dezz Was Upset To See Reggie Sell His Clover Chain! 😔💔",
+    "opening_text": "SOLD Thank you s",
+    "first_line": "Show your ing chain, bro? My friends? Who didn't even get one of these?",
+    "category": "consequence",
+    "opening": "action_first",
+    "text_role": "adds_context",
+    "ending": "punchline",
+    "premise_at_s": 0.0,
+    "payoff_at_s": 4.0,
+    "length_s": 17.89,
+    "streamers": [
+     "Dezz",
+     "Reggie"
+    ]
+   }
+  ]
+ }
+}

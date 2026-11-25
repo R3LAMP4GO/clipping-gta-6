@@ -437,6 +437,187 @@ def check_angles(pick):
     return ([msg], []) if len(hs) >= 3 else ([], [msg])
 
 
+# ---------- the 100K+ moment rules (research/100k-profile-2026-11.md) ----------
+
+# The moment's category, in order of measured 100K+ lift inside each channel (research/100k-profile-2026-11.md; all
+# lean, none clear): live event 1.22x, discovery 1.17x, chemistry 1.16x, crossover 1.16x, misunderstanding 1.01x,
+# consequence 0.89x, character behaviour 0.86x, reward 0.76x.
+CATEGORIES = {
+    "live_event": "a scheduled or public happening the audience follows (award, milestone, launch)",
+    "discovery": "finding or seeing something surprising",
+    "chemistry": "two or more people playing off each other",
+    "crossover": "people from different worlds meet (a celebrity, a parent, another streamer)",
+    "misunderstanding": "someone misreads a person or situation",
+    "consequence": "an act with a real cost or result (arrested, loses money, banned)",
+    "character_behaviour": "a person acting in a striking, in-character way",
+    "reward": "a gift, prize, money or win given or received",
+}
+HYPE_ADJ = re.compile(r"\b(insane|crazy|craziest|wild|wildest|unbelievable|epic|legendary|hilarious|funniest|"
+                      r"shocking|amazing|unreal|chaotic|mind[- ]?blowing|incredible|ridiculous|savage|iconic|"
+                      r"unhinged|hysterical|perfect|best|worst|biggest|greatest)\b", re.I)
+# A premise that names how someone reacted instead of what happened.
+REACTION_WORDS = re.compile(r"\b(reacts?|reacting|reaction|shocked|stunned|speechless|loses it|lost it|freaks? out|"
+                            r"freaked out|can'?t believe|could ?n'?t believe|in disbelief|screams?|screaming|"
+                            r"laughs?|laughing|crying|cries|rages?|raging|melts? down|goes off|went off|"
+                            r"is (not|n't) ready|was (not|n't) ready)\b", re.I)
+CAUSE_MAX_WORDS = 16
+GENERIC_WORDS = {"crazy", "insane", "wild", "moment", "moments", "believe", "unbelievable", "funny", "funniest", "best",
+                 "worst", "ever", "end", "watch", "wait", "happened", "happens", "thing", "things", "something",
+                 "everything", "nothing", "real", "really", "omg", "bro", "chat", "clip", "stream", "live", "epic",
+                 "lol", "lmao", "reaction", "reacts", "ready", "expect", "expected", "coming", "see", "look", "guys",
+                 "craziest", "wildest", "never", "last", "part", "true", "story", "time", "yes", "out", "got",
+                 "goes", "went", "gone", "right", "wrong"}
+HOOK_ANGLES = {"label": "a 2-6 word situation label (THE EASIEST MISSION)",
+               "detail": "the concrete surprising detail (ONE GUN COSTS $590?!)",
+               "question": "the question the moment raises (IS HE CHEATING?)",
+               "stakes": "what's at stake (HIS WHOLE $500K ON ONE BET)",
+               "contrast": "the mismatch (A 13-YEAR-OLD RUNS THE GANG)"}
+REVIEW = {"moment": ("standalone", "surprise", "payoff", "stakes", "emotion", "demand"),
+          "packaging": ("hook", "opening", "pacing", "ending", "title", "visual")}
+REVIEW_DEFAULT_WEIGHTS = {k: {c: 1.0 for c in cs} for k, cs in REVIEW.items()}
+REVIEW_DEFAULT_THRESHOLDS = {"moment": 70, "test": 60, "packaging": 60}
+
+
+def generic_hook(hook):
+    """A hook with no word that says what's happening ("WAIT FOR IT", "THIS IS CRAZY", "NOT READY 💀")."""
+    words = [w for w in content_words(hook) if w.lower().strip("'") not in GENERIC_WORDS | TOPIC_WORDS]
+    return not words
+
+
+def new_schema(pick):
+    return any(k in pick for k in ("review", "category", "cause"))
+
+
+def legacy_pick(pick):
+    """An old pick (premise_type/selection, no review): it keeps the old selection gate."""
+    return not new_schema(pick) and ("premise_type" in pick or "selection" in pick)
+
+
+def check_cause(pick):
+    """Fails: `category` from CATEGORIES, a `cause` that names the event (not the reaction) in plain words with no
+    hype adjectives, and a `why_care` line."""
+    fails = []
+    cat = pick.get("category")
+    if cat not in CATEGORIES:
+        fails.append(f"`category` must be one of {', '.join(CATEGORIES)} ({'got ' + repr(cat) if cat else 'missing'})")
+    cause = str(pick.get("cause") or "").strip()
+    if not cause:
+        fails.append("no `cause`: what happened to set the moment off, in plain words (\"a fan hands him a $5,000 "
+                     "watch\"), not how the streamer reacted")
+    else:
+        if len(cause.split()) > CAUSE_MAX_WORDS:
+            fails.append(f"cause is {len(cause.split())} words: name the event in <= {CAUSE_MAX_WORDS}")
+        hype = sorted({m.group(0).lower() for m in HYPE_ADJ.finditer(cause)})
+        if hype:
+            fails.append(f"cause uses hype words ({', '.join(hype)}): name the concrete event instead")
+        if REACTION_WORDS.search(cause):
+            rest = HYPE_ADJ.sub(" ", REACTION_WORDS.sub(" ", cause))
+            weak = GENERIC_WORDS | STREAMERS | {"has", "had", "have", "gets", "does", "did", "makes", "made", "huge",
+                                                 "big", "after", "while", "when", "then", "just"}
+            if len([w for w in content_words(rest) if w.lower() not in weak]) < 2:
+                fails.append(f"cause names the reaction ({REACTION_WORDS.search(cause).group(0)!r}), not the event: "
+                             "what did someone do or what happened that caused it?")
+    if not str(pick.get("why_care") or "").strip():
+        fails.append("no `why_care`: one line on why a stranger scrolling past would care")
+    return fails
+
+
+def check_hook_angles(pick):
+    """(fails, notes): each hook declares its angle (`hook_angles`) and the question it raises (`hook_questions`);
+    generic hooks fail; 3+ hooks need distinct angles."""
+    hs = [h for h in pick.get("hooks") or [] if (h or "").strip()]
+    fails, notes = [], []
+    generic = [h for h in hs if generic_hook(h)]
+    if generic:
+        fails.append(f"generic hooks ({', '.join(repr(h) for h in generic)}): say what's happening with a concrete "
+                     "word from the moment")
+    angles, questions = pick.get("hook_angles"), pick.get("hook_questions")
+    if not isinstance(angles, list) or len(angles) != len(hs):
+        fails.append(f"`hook_angles` must list one angle per hook ({', '.join(HOOK_ANGLES)})")
+    else:
+        bad = [a for a in angles if a not in HOOK_ANGLES]
+        if bad:
+            fails.append(f"unknown hook angles {bad} (use {', '.join(HOOK_ANGLES)})")
+        if len(hs) >= 3 and len(set(angles)) < len(angles):
+            fails.append(f"3+ hooks need distinct angles (got {angles}): each variant tests a different idea")
+        for h, a in zip(hs, angles):
+            code = hook_angle(h)
+            if a in ("label", "detail") and code and code != a and code != "reaction":
+                notes.append(f"hook {h!r} is declared {a} but reads as {code}")
+    if not isinstance(questions, list) or len(questions) != len(hs) or not all(str(q).strip() for q in questions):
+        fails.append("`hook_questions` must give, per hook, the question it puts in a stranger's head")
+    elif len(hs) >= 2 and len({str(q).strip().lower() for q in questions}) < len(questions):
+        fails.append("two hooks raise the same question: vary the angle")
+    return fails, notes
+
+
+def review_weights(cfg):
+    w = (cfg or {}).get("review_weights") or {}
+    return {k: {c: float((w.get(k) or {}).get(c, REVIEW_DEFAULT_WEIGHTS[k][c])) for c in cs} for k, cs in REVIEW.items()}
+
+
+def review_thresholds(cfg):
+    return {**REVIEW_DEFAULT_THRESHOLDS, **((cfg or {}).get("review_thresholds") or {})}
+
+
+def review_scores(review, weights):
+    """{'moment': 0-100, 'packaging': 0-100} from 0-10 criterion scores and the config weights; None for a part
+    with a missing or out-of-range score."""
+    out = {}
+    for part, cs in REVIEW.items():
+        got = (review or {}).get(part) or {}
+        try:
+            vals = {c: float(got[c]) for c in cs}
+        except (KeyError, TypeError, ValueError):
+            out[part] = None
+            continue
+        if not all(0 <= v <= 10 for v in vals.values()):
+            out[part] = None
+            continue
+        tot = sum(weights[part].values())
+        out[part] = round(sum(vals[c] * weights[part][c] for c in cs) / tot * 10, 1) if tot else None
+    return out
+
+
+def review_decision(scores, thresholds):
+    """pass / test / reject: the moment score decides first, so packaging can't carry a weak moment."""
+    m, pk = scores.get("moment"), scores.get("packaging")
+    if m is None or pk is None:
+        return "reject"
+    if m >= thresholds["moment"]:
+        return "pass" if pk >= thresholds["packaging"] else "reject"
+    if m >= thresholds["test"]:
+        return "test" if pk >= thresholds["packaging"] else "reject"
+    return "reject"
+
+
+def check_review(pick, cfg, match=None):
+    """(fails, notes, summary): the `review` block's scores, totals and decision. Thresholds fail only with
+    `principles: on`; in shadow they're notes."""
+    from .profile100k import mode_of
+    mode = mode_of(cfg)
+    review = pick.get("review")
+    if not isinstance(review, dict):
+        msg = ("no `review`: score the moment {" + ", ".join(f'"{c}": 0-10' for c in REVIEW["moment"]) +
+               "} and the packaging {" + ", ".join(f'"{c}": 0-10' for c in REVIEW["packaging"]) + "}")
+        return ([msg], [], None) if mode == "on" else ([], [msg], None)
+    scores = review_scores(review, review_weights(cfg))
+    th = review_thresholds(cfg)
+    fails, notes = [], []
+    for part, val in scores.items():
+        if val is None:
+            fails.append(f"review.{part} needs every criterion scored 0-10: {', '.join(REVIEW[part])}")
+    decision = review_decision(scores, th)
+    summary = {**scores, "profile_match": match, "decision": decision}
+    if all(v is not None for v in scores.values()) and decision != "pass":
+        why = (f"moment {scores['moment']:g} < {th['test']}" if scores["moment"] < th["test"] else
+               f"packaging {scores['packaging']:g} < {th['packaging']}" if scores["packaging"] < th["packaging"] else
+               f"moment {scores['moment']:g} is in the test band ({th['test']}-{th['moment'] - 1}): posts only "
+               "under the daily floor")
+        (fails if mode == "on" and decision == "reject" else notes).append(f"review {decision}: {why}")
+    return fails, notes, summary
+
+
 MOOD_TITLE = re.compile(r"\s*(me|us|pov|when (you|your|ur))\b", re.I)
 MOOD_NOTE = ("\"Me…\" / \"POV:\" / \"When you…\" hides the streamer and names a mood, not a moment: tell the setup with "
              "the streamer first and withhold the ending (\"Kai Cenat Tried To Steal A Car Off A Moving Truck In GTA 6 😱\")")
@@ -751,9 +932,16 @@ def check_picks(picks, cfg=None, words=None, load=None):
     gta, topic, playbook = is_gta(cfg), title_topic(cfg), for_profile(cfg)
     gate = (cfg or {}).get("selection_gate", gta)  # the own-channel selection rules; `streamers` opts in
     names = [w for c in (cfg or {}).get("channels") or [] for w in str(c.get("name", "")).split()]
+    from . import profile100k
+    mode = profile100k.mode_of(cfg)
+    prof = profile100k.load_profile() if mode != "off" else None
     report = {}
     for n, pick in enumerate(picks, 1):
         entry = {}
+        prof_check = None if pick.get("campaign") else profile100k.check_pick(
+            pick, prof, mode, None if pick.get("segments") else words)
+        if prof_check and (prof_check["fails"] or prof_check["notes"]):
+            entry["profile"] = {k: v for k, v in prof_check.items() if v or k == "match"}
         for h in pick.get("hooks") or [pick.get("hook", "")]:
             f, nt = check_hook(h, gta, names)
             if f or nt:
@@ -797,8 +985,8 @@ def check_picks(picks, cfg=None, words=None, load=None):
             entry["fx"] = check_fx(pick)
         if check_stranger(pick):
             entry["stranger"] = check_stranger(pick)
-        if gate and check_selection(pick):
-            entry["selection"] = check_selection(pick)
+        if gate and not pick.get("campaign"):
+            entry.update(principle_checks(pick, cfg, mode, prof_check))
         a_fails, a_notes = check_angles(pick) if gta else ([], [])
         if a_fails or a_notes:
             entry["angles"] = {"fails": a_fails, "notes": a_notes} if a_notes else {"fails": a_fails}
@@ -937,10 +1125,38 @@ def is_debate(text):
     return bool("?" in t and DEBATE.search(t) and VERDICT.search(t))
 
 
+def principle_checks(pick, cfg, mode, prof_check=None):
+    """The moment/hook/review entries for one pick: new-schema picks get the 100K+ rules, legacy picks
+    (premise_type/selection, no review) the old selection gate. A pick with neither fails only with `principles: on`."""
+    out = {}
+    if legacy_pick(pick) or (mode == "off" and not new_schema(pick)):
+        if check_selection(pick):
+            out["selection"] = check_selection(pick)
+        return out
+    soft = not new_schema(pick) and mode != "on"  # shadow: a pick still written the old way gets notes
+    cause = check_cause(pick)
+    if cause:
+        out["moment"] = {"notes": cause} if soft else {"fails": cause}
+    a_fails, a_notes = check_hook_angles(pick)
+    if soft:
+        a_fails, a_notes = [], a_fails + a_notes
+    if a_fails or a_notes:
+        out["hook_angles"] = {k: v for k, v in (("fails", a_fails), ("notes", a_notes)) if v}
+    from .profile100k import profile_match
+    r_fails, r_notes, summary = check_review(pick, cfg, profile_match(prof_check))
+    if soft:
+        r_fails, r_notes = [], r_fails + r_notes
+    out["review"] = {k: v for k, v in (("fails", r_fails), ("notes", r_notes), ("summary", summary)) if v}
+    if not out["review"]:
+        del out["review"]
+    return out
+
+
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \
         or any("variety" in e or "length" in e or "labels" in e or "footage" in e or "fx" in e or "facecam" in e or "narration" in e
                or "stranger" in e or "selection" in e or (e.get("loop") or {}).get("fails") or (e.get("question") or {}).get("fails")
-               or (e.get("angles") or {}).get("fails")
+               or (e.get("angles") or {}).get("fails") or (e.get("profile") or {}).get("fails")
+               or any((e.get(k) or {}).get("fails") for k in ("moment", "hook_angles", "review"))
                for e in report.values())

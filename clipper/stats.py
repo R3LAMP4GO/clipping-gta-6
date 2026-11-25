@@ -141,7 +141,9 @@ def join(rows, manifests, now=None):
         if m:
             r.update({k: m.get(k) for k in ("profile", "clip_type", "arm", "hook", "hook_type", "turn", "cold_premise",
                                             "loop", "predicted", "angle_arm", "hook_angle", "premise_type",
-                                            "selection_score", "kind", "question")})
+                                            "selection_score", "kind", "question", "category", "decision",
+                                            "moment_score", "packaging_score", "profile_match", "principles",
+                                            "experiment", "experiment_arm", "review")})
         from .hooks import loop_frame
         r["title_frame"] = loop_frame(r["t"])  # the posted title, matched or not: every upload counts here
     return rows
@@ -160,9 +162,20 @@ def report(rows):
     groups = {"all settled": ok, "matched to an upload.json": [r for r in ok if r.get("profile")]}
     for key, name in (("profile", "profile"), ("kind", "shape"), ("question", "question type"), ("clip_type", "clip type"), ("arm", "hook arm"), ("hook_type", "hook type"),
                       ("title_frame", "title frame"), ("angle_arm", "hook angle (assigned)"),
-                      ("hook_angle", "hook angle (posted)"), ("premise_type", "premise type")):
+                      ("hook_angle", "hook angle (posted)"), ("premise_type", "premise type"),
+                      ("category", "category"), ("decision", "decision"), ("principles", "principles mode")):
         for v in sorted({r.get(key) for r in ok if r.get(key)}):
             groups[f"{name}: {v}"] = [r for r in ok if r.get(key) == v]
+    for r in ok:  # one experiment at a time: group by its arm
+        if r.get("experiment") and r.get("experiment_arm"):
+            groups.setdefault(f"experiment {r['experiment']}: {r['experiment_arm']}", []).append(r)
+    for key, name, cuts in (("moment_score", "moment score", (60, 70, 80)), ("profile_match", "profile match",
+                                                                            (0.34, 0.67))):
+        scored = [r for r in ok if r.get(key) is not None]
+        for lo, hi in zip((None,) + cuts, cuts + (None,)):
+            band = [r for r in scored if (lo is None or r[key] >= lo) and (hi is None or r[key] < hi)]
+            if band:
+                groups[f"{name} {'<' + str(hi) if lo is None else str(lo) + '+' if hi is None else f'{lo}-{hi}'}"] = band
     with_turn = [r for r in ok if r.get("profile") and r.get("turn")]
     if with_turn:
         groups["turn named"] = with_turn
@@ -186,6 +199,53 @@ def format_report(channel, rep):
     for k, s in rep.items():
         lines.append(f"| {k} | {s['n']} | {s['views']} | {s['lift']} | {s['engaged']} | {s['ret50']} |")
     return "\n".join(lines)
+
+
+CALIBRATE_MIN = 60     # scored posts needed before rank correlations mean anything
+TRACKING_RHO = 0.15    # |rho| below this: the score isn't tracking views
+
+
+def calibrate(rows, weights=None, min_n=CALIBRATE_MIN):
+    """Each review criterion's and total's rank correlation with views on settled scored uploads, and suggested
+    weights (current weight x (1 + 2 rho), floored at a quarter). Read-only: weights live in watchlist.yaml."""
+    from .hooks import REVIEW, review_weights
+    from .viral import spearman
+    w = weights or review_weights(None)
+    scored = [r for r in rows if r.get("settled") and isinstance(r.get("review"), dict) and r.get("views") is not None]
+    out = {"n": len(scored), "min_n": min_n, "criteria": {}, "totals": {}, "suggested": {}}
+    views = [r["views"] for r in scored]
+    for part, cs in REVIEW.items():
+        for c in cs:
+            xs = [((r["review"].get(part) or {}).get(c)) for r in scored]
+            rho = spearman(xs, views)
+            out["criteria"][f"{part}.{c}"] = round(rho, 3) if rho is not None else None
+            if rho is not None and len(scored) >= min_n:
+                out["suggested"].setdefault(part, {})[c] = round(max(0.25, w[part][c] * (1 + 2 * rho)), 2)
+    for key in ("moment_score", "packaging_score", "profile_match"):
+        rho = spearman([r.get(key) for r in scored], views)
+        out["totals"][key] = round(rho, 3) if rho is not None else None
+    return out
+
+
+def format_calibration(c):
+    lines = [f"# Calibration: {c['n']} settled scored uploads (needs {c['min_n']})"]
+    if c["n"] < c["min_n"]:
+        lines.append(f"too few scored posts: {c['n']} of {c['min_n']}; correlations below are not reliable")
+    for k, rho in {**c["totals"], **c["criteria"]}.items():
+        flag = " not tracking views" if rho is not None and abs(rho) < TRACKING_RHO else ""
+        lines.append(f"- {k}: rho {rho}{flag}")
+    if c["suggested"]:
+        lines += ["", "Suggested review_weights (copy into watchlist.yaml by hand; nothing was written):"]
+        for part, ws in c["suggested"].items():
+            lines.append(f"  {part}: " + ", ".join(f"{k}: {v}" for k, v in ws.items()))
+    return "\n".join(lines)
+
+
+def run_calibrate(cfg=None):
+    """Read research/own-stats.json (written by `clipper stats`) and print the calibration; never writes."""
+    from .hooks import review_weights
+    rows = json.loads(STATS.read_text(encoding="utf-8")).get("uploads", []) if STATS.exists() else []
+    return format_calibration(calibrate(rows, review_weights(cfg)))
 
 
 def run(save=True):

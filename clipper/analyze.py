@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 
 import numpy as np
@@ -126,6 +127,30 @@ def prescore(wav, info, cfg):
             + w.get("heatmap", 0) * signals.heatmap_per_second(info, n)), float(n)
 
 
+LEAD_UP_S = 45  # the cause usually happens in the 45 s before the loudest reaction
+REACTION_MARK = re.compile(r"\b(oh my (god|gosh)|no way|what the|wtf|bro+|yo+|let'?s go+|holy|nah+|ayo|stop|"
+                           r"are you serious|i can'?t|bruh|oh no|oh shit|what\?)\b|!{1,}|^\W*(a+h+|o+h+|w+o+a+h*)\b",
+                           re.I)
+
+
+def reaction_line(text, loud=False):
+    """A line that is someone reacting (exclamations, "no way", "oh my god", or shouted) rather than saying what
+    happened; the lead-up block marks these so the cause can be found in the other lines."""
+    words = re.findall(r"[a-z']+", text.lower())
+    marks = len(REACTION_MARK.findall(text))
+    return bool(loud and marks) or (marks and len(words) <= 6) or marks >= 3
+
+
+def lead_up(sentences, peak, energy=None, before=LEAD_UP_S, loud_at=0.6):
+    """[(s, text, is_reaction)] for the sentences in the `before` seconds up to and including the peak's line."""
+    out = []
+    for x in sentences:
+        if peak - before <= x["s"] <= peak + 2:
+            loud = energy is not None and energy(x) >= loud_at
+            out.append((round(x["s"], 1), x["text"], reaction_line(x["text"], loud)))
+    return out
+
+
 def analyze(job, cfg, fast=False, force=False):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     info = json.loads((job / "source.info.json").read_text(encoding="utf-8"))
@@ -200,7 +225,7 @@ def analyze(job, cfg, fast=False, force=False):
             a, b = int(x["s"]), max(int(x["s"]) + 1, int(x["e"]) + 1)
             return float(score[a:b].max()) if a < n else 0.0
 
-        hook = " ".join(max(sents, key=energy)["text"].split()[:12]) if sents else ""
+        loudest = " ".join(max(sents, key=energy)["text"].split()[:12]) if sents else ""
         sheet = review / f"cand_{i:02d}.jpg"
         contact_sheet(src, s, e, sheet)
         abs_s = s + meta.get("offset", 0)
@@ -215,7 +240,8 @@ def analyze(job, cfg, fast=False, force=False):
                 "most_replayed": round(float(heat[int(s):int(e) + 1].max()), 2) if heat.any() else None,
                 "hype_hits": hits,
             },
-            "hook": hook[:120],
+            "loudest_line": loudest[:120],
+            "lead_up": [{"s": a, "text": t, "reaction": r} for a, t, r in lead_up(sentences, c["peak"], energy)],
             "first_line": sents[0]["text"][:120] if sents else "",
             "opens_with": hooks.opening_type(sents[0]["text"]) if sents else "no speech",
             "transcript": " ".join(x["text"] for x in sents),
@@ -236,7 +262,8 @@ def analyze(job, cfg, fast=False, force=False):
     recommended = cand.recommend([c["tier"] for c in out], duration)
     loud_events = any(h.startswith("(") for sec in kw_hits for h in sec)
     clip_type = playbook.guess_type(meta.get("title", ""), profile, len(words) / max(1.0, duration / 60), loud_events)
-    result = {"video": meta, "weights": {k: round(v, 3) for k, v in w.items()}, "has_heatmap": bool(heat.any()),
+    from . import demand
+    result = {"demand": demand.line_for(f"{meta.get('channel', '')} {meta.get('title', '')}"), "video": meta, "weights": {k: round(v, 3) for k, v in w.items()}, "has_heatmap": bool(heat.any()),
               "profile": profile, "loudness_spread_lu": spread, "clip_length": lengths,
               "recommended": recommended, "clip_type": clip_type, "hook_plan": playbook.plan_text(clip_type, playbook.for_profile(cfg)),
               "candidates": out, "scenarios": scenarios,
@@ -244,6 +271,17 @@ def analyze(job, cfg, fast=False, force=False):
     (job / "candidates.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     (job / "candidates.md").write_text(to_markdown(result), encoding="utf-8")
     return result
+
+
+def lead_up_lines(c):
+    """The lead-up block: the 45 s before the peak, reactions marked, so the pick names the cause, not the reaction."""
+    lines = c.get("lead_up") or []
+    if not lines:
+        return []
+    out = [f"**Lead-up (the {LEAD_UP_S} s before the peak at {fmt(c['peak'])}; find the cause in the unmarked lines, "
+           "[reaction] lines are the effect):**"]
+    out += [f"- {fmt(x['s'])} {'[reaction] ' if x['reaction'] else ''}{x['text'][:160]}" for x in lines[-14:]]
+    return out + [""]
 
 
 def to_markdown(r):
@@ -254,6 +292,7 @@ def to_markdown(r):
              f"(loudness spread {r['loudness_spread_lu']} LU) · clip length {r['clip_length']['min']}–"
              f"{r['clip_length']['max']}s, aim {r['clip_length']['target']}s", "",
              f"**Suggested clip type → hook plan:** {r.get('hook_plan', '')}",
+             *([f"**{r['demand']}**", ""] if r.get("demand") else []),
              *([f"**Twitch ad breaks (excluded from every candidate):** "
                 + ", ".join(f"{fmt(a)}-{fmt(b)}" for a, b in r["ad_breaks"]), ""] if r.get("ad_breaks") else []),
              "(Confirm the type per clip from the contact sheet and transcript. A reaction stream can still contain a "
@@ -269,7 +308,7 @@ def to_markdown(r):
         lines += ["", f"## #{c['id']} · {c['tier']} · {c['timestamp']} · score {c['score']}",
                   f"Contact sheet: `{c['contact_sheet']}`", "",
                   f"**Opens with:** {c.get('opens_with', '?')}: \"{c.get('first_line', '')}\"", "",
-                  f"**Suggested hook:** {c['hook']}", "",
+                  *lead_up_lines(c),
                   f"> {c['transcript'][:900]}"]
     if r.get("scenarios"):
         lines += ["", "## Scenario candidates (quiet premise → payoff; not loudness-ranked)",

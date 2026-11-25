@@ -2,6 +2,8 @@
 
 Based on 28 GTA creator Shorts with 500k–51M views (raw data: `viral-gta-shorts-data.md`), studied frame by frame on 2026-11-09. Use this when picking clips and writing hooks and titles.
 
+> **Newer, measured inside each channel (2026-11-25):** `100k-profile-2026-11.md` compares 648 Shorts with 100K+ views (5x+ their channel) against 1,312 flops from the same 25 clip channels, and 299 of them measured and labelled frame by frame. Where it disagrees with this page on moments, layout or opening text, it wins; titles still follow this page.
+
 ## The four formats that win
 
 | Format | Example (views) | Length | What it looks like |

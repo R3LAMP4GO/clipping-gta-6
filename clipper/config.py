@@ -103,10 +103,33 @@ def load(path=None, profile=None):
             if k in base and isinstance(v, (int, float)):  # bounded: a bad file can't silence or swamp a signal
                 cfg["weights"][k] = round(min(max(float(v), 0.5 * base[k]), 1.5 * base[k]), 4)
     cfg["profile"] = profile
+    check_experiments(cfg)
     creators = profile_file("creators.yaml")
     if "channels" not in cfg and creators.exists():
         cfg["channels"] = (yaml.safe_load(creators.read_text(encoding="utf-8")) or {}).get("creators") or []
     return cfg
+
+
+EXPERIMENTS = ("hook_angle", "opening", "payoff_edit")  # one at a time, in this order
+
+
+def active_experiment(cfg):
+    """The one running experiment's name, or None. `experiments.active` is a name or a one-item list."""
+    act = ((cfg or {}).get("experiments") or {}).get("active")
+    if isinstance(act, list):
+        act = act[0] if act else None
+    return act or None
+
+
+def check_experiments(cfg):
+    """Refuse a config that runs more than one experiment, or an unknown one: two at once can't be read apart."""
+    act = ((cfg or {}).get("experiments") or {}).get("active")
+    names = act if isinstance(act, list) else [act] if act else []
+    if len(names) > 1:
+        raise SystemExit(f"experiments.active lists {names}: run one experiment at a time (queue the rest)")
+    bad = [n for n in names + list(((cfg or {}).get("experiments") or {}).get("queue") or []) if n not in EXPERIMENTS]
+    if bad:
+        raise SystemExit(f"unknown experiments {bad} (use {', '.join(EXPERIMENTS)})")
 
 
 def find_model(cfg, fast=False):

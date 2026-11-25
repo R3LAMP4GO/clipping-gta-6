@@ -140,6 +140,11 @@ python3 -m clipper bank purge [--dry-run]        # the long-form deletions on th
 python3 -m clipper render <id> --picks picks.json --top-hooks 1   # only the best-ranked hook (or CLIPPER_TOP_HOOKS=1 in .env)
 python3 -m clipper simulate picks.json          # rank hook variants with a simulated swipe test
 python3 -m clipper check picks.json --job <id>  # research rules + fail picks reusing exported footage
+python3 -m clipper check picks.json --rendered "video 1/x.mp4"  # also compare a rendered MP4 with the 100K+ profile
+python3 -m clipper profile100k build|show     # what 100K+ clips do vs the same channels' flops (research/100k-profile-2026-11.json)
+python3 -m clipper demand build|show          # each streamer's and subject's 100K+ rate on the 25 clip channels
+python3 -m clipper calibrate                  # review criteria vs our views: suggested weights, printed only
+python3 -m clipper viral sample               # download + measure the channel-matched 100K+ sample (one at a time)
 python3 -m clipper find "moment of truth"       # one line across every stream of the last 6 h (multi-streamer edits)
 python3 -m clipper live add twitch:xqc kick:xqc youtube:@KaiCenat   # streams to record while they play GTA 6
 python3 -m clipper live watch                  # start recorders for live GTA 6 streams (run every few minutes)
@@ -179,6 +184,7 @@ Everything the clipper decides comes from three files you can read:
 
 - [**viral-gta-shorts.md**](research/viral-gta-shorts.md): the playbook. The four winning formats, hook and title rules, how viral clips open, hook formulas per clip type, the measured effects and how many hooks per clip to post.
 - [**viral-gta-shorts-data.md**](research/viral-gta-shorts-data.md): the 28 Shorts with 500k–51M views, studied frame by frame.
+- [**100k-profile-2026-11.md**](research/100k-profile-2026-11.md): 648 Shorts with 100K+ views vs 1,312 flops from the same 25 clip channels, 299 measured frame by frame. What `clipper check` compares picks against (`principles: shadow|on` in `watchlist.yaml`).
 - [**gaming-shorts-titles.json**](research/gaming-shorts-titles.json): 3,481 gaming Shorts (titles and views only) that `clipper simulate` uses to rank hooks.
 
 ## Learn with me

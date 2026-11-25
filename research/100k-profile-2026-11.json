@@ -1,0 +1,1846 @@
+{
+ "built": "2026-11-25",
+ "split": {
+  "high": 648,
+  "low": 1312,
+  "channels": 25
+ },
+ "rule": {
+  "high": "views >= 100K and lift >= 5",
+  "low": "views < 100K and lift < 1",
+  "channels": "research/viral-channels.txt, with both groups",
+  "lift": [
+   "lift (open-loop-titles.json)",
+   "lift (moment-pairs.json)"
+  ]
+ },
+ "verdicts": {
+  "clear": "90% range excludes 1x and n >= 30",
+  "lean": "range includes 1x but lift beyond 1.15x either way, or range excludes 1x with n < 30",
+  "no difference": "neither"
+ },
+ "traits": {
+  "caps_word": {
+   "trait": "caps_word",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.182,
+   "low_share": 0.256,
+   "lift": 0.894,
+   "range": [
+    0.726,
+    1.063
+   ],
+   "n": 454,
+   "verdict": "no difference"
+  },
+  "concrete_detail_code": {
+   "trait": "concrete_detail_code",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.944,
+   "low_share": 0.934,
+   "lift": 1.045,
+   "range": [
+    0.749,
+    2.01
+   ],
+   "n": 123,
+   "verdict": "no difference"
+  },
+  "duration_s": {
+   "trait": "duration_s",
+   "kind": "number",
+   "source": "metadata",
+   "n_high": 222,
+   "n_low": 332,
+   "high": {
+    "p25": 19,
+    "median": 23,
+    "p75": 35
+   },
+   "low": {
+    "p25": 19,
+    "median": 24,
+    "p75": 36
+   },
+   "lift": 1.02,
+   "range": [
+    0.93,
+    1.128
+   ],
+   "n": 222,
+   "verdict": "no difference"
+  },
+  "emoji": {
+   "trait": "emoji",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.909,
+   "low_share": 0.901,
+   "lift": 0.698,
+   "range": [
+    0.514,
+    1.101
+   ],
+   "n": 189,
+   "verdict": "lean"
+  },
+  "end_emoji": {
+   "trait": "end_emoji",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.881,
+   "low_share": 0.834,
+   "lift": 0.851,
+   "range": [
+    0.582,
+    1.226
+   ],
+   "n": 295,
+   "verdict": "lean"
+  },
+  "hashtags": {
+   "trait": "hashtags",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.224,
+   "low_share": 0.187,
+   "lift": 0.717,
+   "range": [
+    0.32,
+    2.227
+   ],
+   "n": 390,
+   "verdict": "lean"
+  },
+  "hype_no_detail": {
+   "trait": "hype_no_detail",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.002,
+   "low_share": 0.005,
+   "lift": 0.358,
+   "range": [
+    0.0,
+    1.528
+   ],
+   "n": 8,
+   "verdict": "lean"
+  },
+  "label_category=character_behaviour": {
+   "trait": "label_category=character_behaviour",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.275,
+   "low_share": 0.327,
+   "lift": 0.86,
+   "range": [
+    0.665,
+    1.12
+   ],
+   "n": 90,
+   "verdict": "lean"
+  },
+  "label_category=chemistry": {
+   "trait": "label_category=chemistry",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.154,
+   "low_share": 0.12,
+   "lift": 1.164,
+   "range": [
+    0.836,
+    1.494
+   ],
+   "n": 41,
+   "verdict": "lean"
+  },
+  "label_category=consequence": {
+   "trait": "label_category=consequence",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.188,
+   "low_share": 0.22,
+   "lift": 0.894,
+   "range": [
+    0.627,
+    1.198
+   ],
+   "n": 61,
+   "verdict": "no difference"
+  },
+  "label_category=crossover": {
+   "trait": "label_category=crossover",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.087,
+   "low_share": 0.067,
+   "lift": 1.164,
+   "range": [
+    0.726,
+    1.661
+   ],
+   "n": 23,
+   "verdict": "lean"
+  },
+  "label_category=discovery": {
+   "trait": "label_category=discovery",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.154,
+   "low_share": 0.12,
+   "lift": 1.17,
+   "range": [
+    0.839,
+    1.496
+   ],
+   "n": 41,
+   "verdict": "lean"
+  },
+  "label_category=live_event": {
+   "trait": "label_category=live_event",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.02,
+   "low_share": 0.013,
+   "lift": 1.223,
+   "range": [
+    0.382,
+    2.212
+   ],
+   "n": 5,
+   "verdict": "lean"
+  },
+  "label_category=misunderstanding": {
+   "trait": "label_category=misunderstanding",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.06,
+   "low_share": 0.06,
+   "lift": 1.012,
+   "range": [
+    0.535,
+    1.6
+   ],
+   "n": 18,
+   "verdict": "no difference"
+  },
+  "label_category=other": {
+   "trait": "label_category=other",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.02,
+   "low_share": 0.013,
+   "lift": 1.286,
+   "range": [
+    0.0,
+    3.0
+   ],
+   "n": 5,
+   "verdict": "lean"
+  },
+  "label_category=reward": {
+   "trait": "label_category=reward",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.04,
+   "low_share": 0.06,
+   "lift": 0.76,
+   "range": [
+    0.455,
+    0.942
+   ],
+   "n": 15,
+   "verdict": "lean"
+  },
+  "label_cause_shown=cause_and_reaction": {
+   "trait": "label_cause_shown=cause_and_reaction",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.893,
+   "low_share": 0.807,
+   "lift": 1.538,
+   "range": [
+    1.038,
+    2.4
+   ],
+   "n": 45,
+   "verdict": "clear"
+  },
+  "label_cause_shown=event_only": {
+   "trait": "label_cause_shown=event_only",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.074,
+   "low_share": 0.127,
+   "lift": 0.684,
+   "range": [
+    0.327,
+    1.15
+   ],
+   "n": 30,
+   "verdict": "lean"
+  },
+  "label_cause_shown=reaction_only": {
+   "trait": "label_cause_shown=reaction_only",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.034,
+   "low_share": 0.067,
+   "lift": 0.628,
+   "range": [
+    0.318,
+    1.0
+   ],
+   "n": 15,
+   "verdict": "lean"
+  },
+  "label_ending=after": {
+   "trait": "label_ending=after",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.134,
+   "low_share": 0.12,
+   "lift": 1.079,
+   "range": [
+    0.734,
+    1.494
+   ],
+   "n": 38,
+   "verdict": "no difference"
+  },
+  "label_ending=mid_sentence": {
+   "trait": "label_ending=mid_sentence",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.148,
+   "low_share": 0.18,
+   "lift": 0.874,
+   "range": [
+    0.652,
+    1.144
+   ],
+   "n": 49,
+   "verdict": "no difference"
+  },
+  "label_ending=punchline": {
+   "trait": "label_ending=punchline",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.443,
+   "low_share": 0.413,
+   "lift": 1.068,
+   "range": [
+    0.877,
+    1.279
+   ],
+   "n": 128,
+   "verdict": "no difference"
+  },
+  "label_ending=reaction": {
+   "trait": "label_ending=reaction",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.275,
+   "low_share": 0.287,
+   "lift": 0.969,
+   "range": [
+    0.805,
+    1.16
+   ],
+   "n": 84,
+   "verdict": "no difference"
+  },
+  "label_opening=action_first": {
+   "trait": "label_opening=action_first",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.315,
+   "low_share": 0.3,
+   "lift": 1.054,
+   "range": [
+    0.817,
+    1.319
+   ],
+   "n": 92,
+   "verdict": "no difference"
+  },
+  "label_opening=reaction_first": {
+   "trait": "label_opening=reaction_first",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.168,
+   "low_share": 0.153,
+   "lift": 1.064,
+   "range": [
+    0.777,
+    1.43
+   ],
+   "n": 48,
+   "verdict": "no difference"
+  },
+  "label_opening=setup_first": {
+   "trait": "label_opening=setup_first",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.235,
+   "low_share": 0.287,
+   "lift": 0.834,
+   "range": [
+    0.67,
+    1.005
+   ],
+   "n": 78,
+   "verdict": "lean"
+  },
+  "label_opening=talking": {
+   "trait": "label_opening=talking",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.282,
+   "low_share": 0.26,
+   "lift": 1.061,
+   "range": [
+    0.793,
+    1.367
+   ],
+   "n": 81,
+   "verdict": "no difference"
+  },
+  "label_payoff_at_s": {
+   "trait": "label_payoff_at_s",
+   "kind": "number",
+   "source": "label",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 9.0,
+    "median": 14.9,
+    "p75": 23.7
+   },
+   "low": {
+    "p25": 9.0,
+    "median": 15.0,
+    "p75": 22.6
+   },
+   "lift": 1.043,
+   "range": [
+    0.903,
+    1.191
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "label_payoff_share": {
+   "trait": "label_payoff_share",
+   "kind": "number",
+   "source": "label",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 0.44,
+    "median": 0.65,
+    "p75": 0.81
+   },
+   "low": {
+    "p25": 0.5,
+    "median": 0.65,
+    "p75": 0.81
+   },
+   "lift": 0.983,
+   "range": [
+    0.895,
+    1.073
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "label_premise_at_s": {
+   "trait": "label_premise_at_s",
+   "kind": "number",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 1.0
+   },
+   "low": {
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 1.5
+   },
+   "lift": null,
+   "range": null,
+   "n": 149,
+   "verdict": "no difference",
+   "why": "median is 0 on one side; see the yes/no version of this trait"
+  },
+  "label_tail_after_payoff_s": {
+   "trait": "label_tail_after_payoff_s",
+   "kind": "number",
+   "source": "label",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 4.45,
+    "median": 8.59,
+    "p75": 13.89
+   },
+   "low": {
+    "p25": 4.77,
+    "median": 7.81,
+    "p75": 12.21
+   },
+   "lift": 1.027,
+   "range": [
+    0.863,
+    1.221
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "label_text_role=adds_context": {
+   "trait": "label_text_role=adds_context",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.624,
+   "low_share": 0.607,
+   "lift": 1.058,
+   "range": [
+    0.88,
+    1.292
+   ],
+   "n": 115,
+   "verdict": "no difference"
+  },
+  "label_text_role=label_only": {
+   "trait": "label_text_role=label_only",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.181,
+   "low_share": 0.127,
+   "lift": 1.265,
+   "range": [
+    0.93,
+    1.623
+   ],
+   "n": 46,
+   "verdict": "lean"
+  },
+  "label_text_role=none": {
+   "trait": "label_text_role=none",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.161,
+   "low_share": 0.24,
+   "lift": 0.717,
+   "range": [
+    0.52,
+    0.935
+   ],
+   "n": 60,
+   "verdict": "clear"
+  },
+  "label_text_role=question": {
+   "trait": "label_text_role=question",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.02,
+   "low_share": 0.013,
+   "lift": 1.222,
+   "range": [
+    0.379,
+    2.2
+   ],
+   "n": 5,
+   "verdict": "lean"
+  },
+  "label_text_role=repeats_visual": {
+   "trait": "label_text_role=repeats_visual",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.013,
+   "low_share": 0.013,
+   "lift": 1.0,
+   "range": [
+    0.0,
+    2.2
+   ],
+   "n": 4,
+   "verdict": "no difference"
+  },
+  "label_visual_hook=action": {
+   "trait": "label_visual_hook=action",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.228,
+   "low_share": 0.227,
+   "lift": 1.011,
+   "range": [
+    0.735,
+    1.296
+   ],
+   "n": 68,
+   "verdict": "no difference"
+  },
+  "label_visual_hook=face_reaction": {
+   "trait": "label_visual_hook=face_reaction",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.631,
+   "low_share": 0.633,
+   "lift": 0.99,
+   "range": [
+    0.772,
+    1.303
+   ],
+   "n": 110,
+   "verdict": "no difference"
+  },
+  "label_visual_hook=other": {
+   "trait": "label_visual_hook=other",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.054,
+   "low_share": 0.08,
+   "lift": 0.771,
+   "range": [
+    0.448,
+    1.164
+   ],
+   "n": 20,
+   "verdict": "lean"
+  },
+  "label_visual_hook=static_gameplay": {
+   "trait": "label_visual_hook=static_gameplay",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.013,
+   "low_share": 0.007,
+   "lift": 1.375,
+   "range": [
+    0.0,
+    2.2
+   ],
+   "n": 3,
+   "verdict": "lean"
+  },
+  "label_visual_hook=text_card": {
+   "trait": "label_visual_hook=text_card",
+   "kind": "binary",
+   "source": "label",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.074,
+   "low_share": 0.053,
+   "lift": 1.254,
+   "range": [
+    0.871,
+    1.714
+   ],
+   "n": 19,
+   "verdict": "lean"
+  },
+  "likes_per_1k": {
+   "trait": "likes_per_1k",
+   "kind": "number",
+   "source": "metadata",
+   "n_high": 626,
+   "n_low": 1239,
+   "high": {
+    "p25": 10.66,
+    "median": 17.14,
+    "p75": 25.46
+   },
+   "low": {
+    "p25": 13.76,
+    "median": 19.27,
+    "p75": 27.14
+   },
+   "lift": 0.922,
+   "range": [
+    0.845,
+    1.006
+   ],
+   "n": 626,
+   "verdict": "no difference"
+  },
+  "m_any_flash": {
+   "trait": "m_any_flash",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.477,
+   "low_share": 0.48,
+   "lift": 0.998,
+   "range": [
+    0.826,
+    1.196
+   ],
+   "n": 143,
+   "verdict": "no difference"
+  },
+  "m_bed_vs_speech_lu": {
+   "trait": "m_bed_vs_speech_lu",
+   "kind": "number",
+   "source": "video",
+   "n_high": 123,
+   "n_low": 129,
+   "high": {
+    "p25": -6.3,
+    "median": -2.1,
+    "p75": -0.1
+   },
+   "low": {
+    "p25": -5.8,
+    "median": -2.6,
+    "p75": 0.2
+   },
+   "lift": null,
+   "range": null,
+   "n": 123,
+   "verdict": "no difference",
+   "why": "median is 0 on one side; see the yes/no version of this trait"
+  },
+  "m_biggest_jump_s": {
+   "trait": "m_biggest_jump_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 7.5,
+    "median": 14.5,
+    "p75": 23.5
+   },
+   "low": {
+    "p25": 7.5,
+    "median": 10.5,
+    "p75": 22.5
+   },
+   "lift": 1.18,
+   "range": [
+    1.001,
+    1.375
+   ],
+   "n": 149,
+   "verdict": "clear"
+  },
+  "m_caption_upper": {
+   "trait": "m_caption_upper",
+   "kind": "number",
+   "source": "video",
+   "n_high": 97,
+   "n_low": 97,
+   "high": {
+    "p25": 0.19,
+    "median": 1.0,
+    "p75": 1.0
+   },
+   "low": {
+    "p25": 0.25,
+    "median": 1.0,
+    "p75": 1.0
+   },
+   "lift": 0.859,
+   "range": [
+    0.619,
+    1.046
+   ],
+   "n": 97,
+   "verdict": "lean"
+  },
+  "m_caption_words": {
+   "trait": "m_caption_words",
+   "kind": "number",
+   "source": "video",
+   "n_high": 97,
+   "n_low": 97,
+   "high": {
+    "p25": 1,
+    "median": 1.5,
+    "p75": 3
+   },
+   "low": {
+    "p25": 1,
+    "median": 2.0,
+    "p75": 3.0
+   },
+   "lift": 0.934,
+   "range": [
+    0.831,
+    1.063
+   ],
+   "n": 97,
+   "verdict": "no difference"
+  },
+  "m_caption_y": {
+   "trait": "m_caption_y",
+   "kind": "number",
+   "source": "video",
+   "n_high": 97,
+   "n_low": 97,
+   "high": {
+    "p25": 0.46,
+    "median": 0.5,
+    "p75": 0.53
+   },
+   "low": {
+    "p25": 0.48,
+    "median": 0.5,
+    "p75": 0.58
+   },
+   "lift": 0.963,
+   "range": [
+    0.909,
+    1.032
+   ],
+   "n": 97,
+   "verdict": "no difference"
+  },
+  "m_captions": {
+   "trait": "m_captions",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.655,
+   "low_share": 0.655,
+   "lift": 0.997,
+   "range": [
+    0.768,
+    1.283
+   ],
+   "n": 102,
+   "verdict": "no difference"
+  },
+  "m_cuts_per_min": {
+   "trait": "m_cuts_per_min",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 3.9,
+    "median": 12.7,
+    "p75": 26.1
+   },
+   "low": {
+    "p25": 6.2,
+    "median": 14.8,
+    "p75": 24.8
+   },
+   "lift": 0.842,
+   "range": [
+    0.682,
+    1.032
+   ],
+   "n": 149,
+   "verdict": "lean"
+  },
+  "m_dead_share": {
+   "trait": "m_dead_share",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 0.07,
+    "median": 0.21,
+    "p75": 0.41
+   },
+   "low": {
+    "p25": 0.06,
+    "median": 0.17,
+    "p75": 0.33
+   },
+   "lift": 1.277,
+   "range": [
+    0.956,
+    1.736
+   ],
+   "n": 149,
+   "verdict": "lean"
+  },
+  "m_dead_space_s": {
+   "trait": "m_dead_space_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 1.67,
+    "median": 4.44,
+    "p75": 12.69
+   },
+   "low": {
+    "p25": 1.51,
+    "median": 4.08,
+    "p75": 8.76
+   },
+   "lift": 1.293,
+   "range": [
+    0.811,
+    2.0
+   ],
+   "n": 149,
+   "verdict": "lean"
+  },
+  "m_face_0_3": {
+   "trait": "m_face_0_3",
+   "kind": "number",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 0.0127,
+    "median": 0.0332,
+    "p75": 0.0717
+   },
+   "low": {
+    "p25": 0.0134,
+    "median": 0.0342,
+    "p75": 0.0606
+   },
+   "lift": 0.959,
+   "range": [
+    0.747,
+    1.231
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "m_first_last_diff": {
+   "trait": "m_first_last_diff",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 42.5,
+    "median": 54.1,
+    "p75": 70.9
+   },
+   "low": {
+    "p25": 44.4,
+    "median": 57.9,
+    "p75": 73.5
+   },
+   "lift": 1.027,
+   "range": [
+    0.953,
+    1.113
+   ],
+   "n": 149,
+   "verdict": "no difference"
+  },
+  "m_first_word_s": {
+   "trait": "m_first_word_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 0,
+    "median": 0,
+    "p75": 0.06
+   },
+   "low": {
+    "p25": 0,
+    "median": 0,
+    "p75": 0.06
+   },
+   "lift": null,
+   "range": null,
+   "n": 149,
+   "verdict": "no difference",
+   "why": "median is 0 on one side; see the yes/no version of this trait"
+  },
+  "m_flashes": {
+   "trait": "m_flashes",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 0,
+    "median": 0,
+    "p75": 2
+   },
+   "low": {
+    "p25": 0,
+    "median": 0,
+    "p75": 2
+   },
+   "lift": null,
+   "range": null,
+   "n": 149,
+   "verdict": "no difference",
+   "why": "median is 0 on one side; see the yes/no version of this trait"
+  },
+  "m_jump_share": {
+   "trait": "m_jump_share",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 0.37,
+    "median": 0.58,
+    "p75": 0.85
+   },
+   "low": {
+    "p25": 0.35,
+    "median": 0.6,
+    "p75": 0.82
+   },
+   "lift": 1.027,
+   "range": [
+    0.918,
+    1.145
+   ],
+   "n": 149,
+   "verdict": "no difference"
+  },
+  "m_layout=face_low": {
+   "trait": "m_layout=face_low",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.088,
+   "low_share": 0.142,
+   "lift": 0.72,
+   "range": [
+    0.47,
+    1.003
+   ],
+   "n": 34,
+   "verdict": "lean"
+  },
+  "m_layout=full": {
+   "trait": "m_layout=full",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.054,
+   "low_share": 0.061,
+   "lift": 0.932,
+   "range": [
+    0.346,
+    1.495
+   ],
+   "n": 17,
+   "verdict": "no difference"
+  },
+  "m_layout=game": {
+   "trait": "m_layout=game",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.061,
+   "low_share": 0.108,
+   "lift": 0.656,
+   "range": [
+    0.365,
+    1.042
+   ],
+   "n": 25,
+   "verdict": "lean"
+  },
+  "m_layout=split": {
+   "trait": "m_layout=split",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.797,
+   "low_share": 0.689,
+   "lift": 1.423,
+   "range": [
+    1.048,
+    2.001
+   ],
+   "n": 76,
+   "verdict": "clear"
+  },
+  "m_length_s": {
+   "trait": "m_length_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 18.29,
+    "median": 23.49,
+    "p75": 41.39
+   },
+   "low": {
+    "p25": 17.21,
+    "median": 22.69,
+    "p75": 35.63
+   },
+   "lift": 1.093,
+   "range": [
+    1.004,
+    1.19
+   ],
+   "n": 149,
+   "verdict": "clear"
+  },
+  "m_loops_visually": {
+   "trait": "m_loops_visually",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.027,
+   "low_share": 0.02,
+   "lift": 1.166,
+   "range": [
+    0.314,
+    2.024
+   ],
+   "n": 7,
+   "verdict": "lean"
+  },
+  "m_loudest_s": {
+   "trait": "m_loudest_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 6.5,
+    "median": 13.5,
+    "p75": 22.5
+   },
+   "low": {
+    "p25": 6.5,
+    "median": 10.5,
+    "p75": 22.5
+   },
+   "lift": 0.987,
+   "range": [
+    0.789,
+    1.201
+   ],
+   "n": 149,
+   "verdict": "no difference"
+  },
+  "m_opening_type=action cold open": {
+   "trait": "m_opening_type=action cold open",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.181,
+   "low_share": 0.16,
+   "lift": 1.086,
+   "range": [
+    0.818,
+    1.373
+   ],
+   "n": 51,
+   "verdict": "no difference"
+  },
+  "m_opening_type=claim / news": {
+   "trait": "m_opening_type=claim / news",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.013,
+   "low_share": 0.013,
+   "lift": 1.027,
+   "range": [
+    0.0,
+    2.2
+   ],
+   "n": 4,
+   "verdict": "no difference"
+  },
+  "m_opening_type=in-scene cold open": {
+   "trait": "m_opening_type=in-scene cold open",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.02,
+   "low_share": 0.04,
+   "lift": 0.64,
+   "range": [
+    0.192,
+    1.092
+   ],
+   "n": 9,
+   "verdict": "lean"
+  },
+  "m_opening_type=question": {
+   "trait": "m_opening_type=question",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.356,
+   "low_share": 0.287,
+   "lift": 1.179,
+   "range": [
+    0.971,
+    1.425
+   ],
+   "n": 96,
+   "verdict": "lean"
+  },
+  "m_opening_type=setup tease": {
+   "trait": "m_opening_type=setup tease",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.0,
+   "low_share": 0.013,
+   "lift": 0.0,
+   "range": [
+    0.0,
+    0.0
+   ],
+   "n": 2,
+   "verdict": "lean"
+  },
+  "m_opening_type=statement": {
+   "trait": "m_opening_type=statement",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.43,
+   "low_share": 0.487,
+   "lift": 0.873,
+   "range": [
+    0.711,
+    1.069
+   ],
+   "n": 137,
+   "verdict": "no difference"
+  },
+  "m_speaks_by_0_5s": {
+   "trait": "m_speaks_by_0_5s",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.866,
+   "low_share": 0.9,
+   "lift": 0.841,
+   "range": [
+    0.612,
+    1.242
+   ],
+   "n": 35,
+   "verdict": "lean"
+  },
+  "m_speech_in_last_1s": {
+   "trait": "m_speech_in_last_1s",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high_share": 0.685,
+   "low_share": 0.647,
+   "lift": 1.103,
+   "range": [
+    0.845,
+    1.479
+   ],
+   "n": 100,
+   "verdict": "no difference"
+  },
+  "m_tail_after_jump_s": {
+   "trait": "m_tail_after_jump_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 4.6,
+    "median": 9.9,
+    "p75": 14.8
+   },
+   "low": {
+    "p25": 3.5,
+    "median": 8.5,
+    "p75": 16.1
+   },
+   "lift": 1.169,
+   "range": [
+    0.968,
+    1.412
+   ],
+   "n": 149,
+   "verdict": "lean"
+  },
+  "m_text_0_3": {
+   "trait": "m_text_0_3",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.959,
+   "low_share": 0.878,
+   "lift": 2.232,
+   "range": [
+    1.486,
+    4.174
+   ],
+   "n": 24,
+   "verdict": "lean"
+  },
+  "m_text_0_3_area": {
+   "trait": "m_text_0_3_area",
+   "kind": "number",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 0.0133,
+    "median": 0.0259,
+    "p75": 0.0429
+   },
+   "low": {
+    "p25": 0.0094,
+    "median": 0.0229,
+    "p75": 0.0549
+   },
+   "lift": 1.006,
+   "range": [
+    0.824,
+    1.222
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "m_text_0_3_kind=detail": {
+   "trait": "m_text_0_3_kind=detail",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.196,
+   "low_share": 0.196,
+   "lift": 0.99,
+   "range": [
+    0.745,
+    1.287
+   ],
+   "n": 58,
+   "verdict": "no difference"
+  },
+  "m_text_0_3_kind=label": {
+   "trait": "m_text_0_3_kind=label",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.365,
+   "low_share": 0.27,
+   "lift": 1.312,
+   "range": [
+    1.061,
+    1.591
+   ],
+   "n": 94,
+   "verdict": "clear"
+  },
+  "m_text_0_3_kind=none": {
+   "trait": "m_text_0_3_kind=none",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.041,
+   "low_share": 0.122,
+   "lift": 0.448,
+   "range": [
+    0.233,
+    0.672
+   ],
+   "n": 24,
+   "verdict": "lean"
+  },
+  "m_text_0_3_kind=other": {
+   "trait": "m_text_0_3_kind=other",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.304,
+   "low_share": 0.331,
+   "lift": 0.927,
+   "range": [
+    0.722,
+    1.192
+   ],
+   "n": 94,
+   "verdict": "no difference"
+  },
+  "m_text_0_3_kind=question": {
+   "trait": "m_text_0_3_kind=question",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.074,
+   "low_share": 0.081,
+   "lift": 0.944,
+   "range": [
+    0.572,
+    1.381
+   ],
+   "n": 23,
+   "verdict": "no difference"
+  },
+  "m_text_0_3_kind=reaction": {
+   "trait": "m_text_0_3_kind=reaction",
+   "kind": "binary",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high_share": 0.02,
+   "low_share": 0.0,
+   "lift": 2.129,
+   "range": [
+    2.0,
+    2.2
+   ],
+   "n": 3,
+   "verdict": "lean"
+  },
+  "m_text_0_3_words": {
+   "trait": "m_text_0_3_words",
+   "kind": "number",
+   "source": "video",
+   "n_high": 148,
+   "n_low": 148,
+   "high": {
+    "p25": 1,
+    "median": 3,
+    "p75": 6
+   },
+   "low": {
+    "p25": 1,
+    "median": 2,
+    "p75": 6
+   },
+   "lift": 0.952,
+   "range": [
+    0.829,
+    1.102
+   ],
+   "n": 148,
+   "verdict": "no difference"
+  },
+  "m_words_per_s": {
+   "trait": "m_words_per_s",
+   "kind": "number",
+   "source": "video",
+   "n_high": 149,
+   "n_low": 150,
+   "high": {
+    "p25": 1.53,
+    "median": 2.43,
+    "p75": 3.09
+   },
+   "low": {
+    "p25": 1.86,
+    "median": 2.65,
+    "p75": 3.26
+   },
+   "lift": 0.869,
+   "range": [
+    0.786,
+    0.954
+   ],
+   "n": 149,
+   "verdict": "clear"
+  },
+  "number": {
+   "trait": "number",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.167,
+   "low_share": 0.124,
+   "lift": 1.091,
+   "range": [
+    0.893,
+    1.303
+   ],
+   "n": 271,
+   "verdict": "no difference"
+  },
+  "past_tense": {
+   "trait": "past_tense",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.454,
+   "low_share": 0.405,
+   "lift": 1.125,
+   "range": [
+    1.044,
+    1.22
+   ],
+   "n": 826,
+   "verdict": "clear"
+  },
+  "posted_12_24_utc": {
+   "trait": "posted_12_24_utc",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 239,
+   "n_low": 404,
+   "high_share": 0.703,
+   "low_share": 0.616,
+   "lift": 1.153,
+   "range": [
+    0.927,
+    1.415
+   ],
+   "n": 226,
+   "verdict": "lean"
+  },
+  "posts_per_day": {
+   "trait": "posts_per_day",
+   "kind": "number",
+   "source": "channel",
+   "n_high": 648,
+   "n_low": 1312,
+   "high": {
+    "median": 0.68
+   },
+   "low": {
+    "median": 0.67
+   },
+   "verdict": "channel-level"
+  },
+  "question": {
+   "trait": "question",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.043,
+   "low_share": 0.043,
+   "lift": 0.928,
+   "range": [
+    0.692,
+    1.188
+   ],
+   "n": 85,
+   "verdict": "no difference"
+  },
+  "streamer_first": {
+   "trait": "streamer_first",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.677,
+   "low_share": 0.68,
+   "lift": 1.026,
+   "range": [
+    0.894,
+    1.199
+   ],
+   "n": 629,
+   "verdict": "no difference"
+  },
+  "streamer_named": {
+   "trait": "streamer_named",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.812,
+   "low_share": 0.795,
+   "lift": 1.08,
+   "range": [
+    0.937,
+    1.287
+   ],
+   "n": 391,
+   "verdict": "no difference"
+  },
+  "title_chars": {
+   "trait": "title_chars",
+   "kind": "number",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high": {
+    "p25": 33,
+    "median": 42,
+    "p75": 52
+   },
+   "low": {
+    "p25": 33,
+    "median": 42,
+    "p75": 52
+   },
+   "lift": 1.009,
+   "range": [
+    0.986,
+    1.033
+   ],
+   "n": 648,
+   "verdict": "no difference"
+  },
+  "title_words": {
+   "trait": "title_words",
+   "kind": "number",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high": {
+    "p25": 6,
+    "median": 7,
+    "p75": 9
+   },
+   "low": {
+    "p25": 5,
+    "median": 7,
+    "p75": 9
+   },
+   "lift": 1.022,
+   "range": [
+    0.984,
+    1.062
+   ],
+   "n": 648,
+   "verdict": "no difference"
+  },
+  "two_plus_caps": {
+   "trait": "two_plus_caps",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.062,
+   "low_share": 0.093,
+   "lift": 0.906,
+   "range": [
+    0.576,
+    1.18
+   ],
+   "n": 162,
+   "verdict": "no difference"
+  },
+  "two_streamers": {
+   "trait": "two_streamers",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.182,
+   "low_share": 0.157,
+   "lift": 1.025,
+   "range": [
+    0.896,
+    1.135
+   ],
+   "n": 324,
+   "verdict": "no difference"
+  },
+  "under_30s": {
+   "trait": "under_30s",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 222,
+   "n_low": 332,
+   "high_share": 0.694,
+   "low_share": 0.648,
+   "lift": 1.095,
+   "range": [
+    0.769,
+    1.627
+   ],
+   "n": 185,
+   "verdict": "no difference"
+  },
+  "upload_slot_utc=00-06": {
+   "trait": "upload_slot_utc=00-06",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 239,
+   "n_low": 404,
+   "high_share": 0.238,
+   "low_share": 0.275,
+   "lift": 0.894,
+   "range": [
+    0.748,
+    1.113
+   ],
+   "n": 168,
+   "verdict": "no difference"
+  },
+  "upload_slot_utc=06-12": {
+   "trait": "upload_slot_utc=06-12",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 239,
+   "n_low": 404,
+   "high_share": 0.059,
+   "low_share": 0.109,
+   "lift": 0.88,
+   "range": [
+    0.5,
+    1.222
+   ],
+   "n": 58,
+   "verdict": "no difference"
+  },
+  "upload_slot_utc=12-18": {
+   "trait": "upload_slot_utc=12-18",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 239,
+   "n_low": 404,
+   "high_share": 0.305,
+   "low_share": 0.262,
+   "lift": 1.177,
+   "range": [
+    0.978,
+    1.435
+   ],
+   "n": 179,
+   "verdict": "lean"
+  },
+  "upload_slot_utc=18-24": {
+   "trait": "upload_slot_utc=18-24",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 239,
+   "n_low": 404,
+   "high_share": 0.397,
+   "low_share": 0.354,
+   "lift": 0.978,
+   "range": [
+    0.75,
+    1.221
+   ],
+   "n": 238,
+   "verdict": "no difference"
+  },
+  "weekend": {
+   "trait": "weekend",
+   "kind": "binary",
+   "source": "metadata",
+   "n_high": 358,
+   "n_low": 509,
+   "high_share": 0.285,
+   "low_share": 0.277,
+   "lift": 0.936,
+   "range": [
+    0.743,
+    1.155
+   ],
+   "n": 243,
+   "verdict": "no difference"
+  },
+  "withheld_frame": {
+   "trait": "withheld_frame",
+   "kind": "binary",
+   "source": "title",
+   "n_high": 648,
+   "n_low": 1312,
+   "high_share": 0.133,
+   "low_share": 0.116,
+   "lift": 1.034,
+   "range": [
+    0.891,
+    1.184
+   ],
+   "n": 238,
+   "verdict": "no difference"
+  }
+ }
+}
