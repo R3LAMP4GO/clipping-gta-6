@@ -592,7 +592,9 @@ def principles_fields(pick, cfg, words=None, lufs=None):
     match = profile100k.profile_match(check)
     review = pick.get("review") if isinstance(pick.get("review"), dict) else None
     scores = h.review_scores(review, h.review_weights(cfg)) if review else {"moment": None, "packaging": None}
+    contrast = pick.get("contrast") if isinstance(pick.get("contrast"), dict) else {}
     return {"principles": mode, "category": pick.get("category"), "cause": pick.get("cause"),
+            "contrast_type": contrast.get("type"), "arc": pick.get("arc") if isinstance(pick.get("arc"), dict) else None,
             "why_care": pick.get("why_care"), "review": review, "moment_score": scores["moment"],
             "packaging_score": scores["packaging"], "profile_match": match,
             "decision": h.review_decision(scores, h.review_thresholds(cfg)) if review else None,

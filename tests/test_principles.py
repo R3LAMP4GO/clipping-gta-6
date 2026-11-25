@@ -185,8 +185,8 @@ class ProfileCheckTests(unittest.TestCase):
         self.assertNotIn("profile", off.get("video 1", {}))
 
 
-GOOD_REVIEW = {"moment": {c: 8 for c in ("standalone", "surprise", "payoff", "stakes", "emotion", "demand")},
-               "packaging": {c: 7 for c in ("hook", "opening", "pacing", "ending", "title", "visual")}}
+GOOD_REVIEW = {"moment": {c: 8 for c in ("demand", "entertainment", "specificity", "distinctiveness", "development", "payoff")},
+               "packaging": {c: 7 for c in ("interest", "text_hook", "context", "visual", "anticipation", "alignment")}}
 
 
 def new_pick(**kw):
@@ -196,7 +196,11 @@ def new_pick(**kw):
             "hooks": ["A FAN'S $5,000 GIFT", "WHO GIVES A STRANGER THIS?", "THE GOLD ROLEX IS REAL"],
             "hook_angles": ["detail", "question", "label"],
             "hook_questions": ["what is the gift?", "why would a fan do this?", "is it real?"],
-            "titles": ["Kai Cenat Got A $5,000 Watch From A Fan In GTA 6 😳"], "review": GOOD_REVIEW}
+            "titles": ["Kai Cenat Got A $5,000 Watch From A Fan In GTA 6 😳"], "review": GOOD_REVIEW,
+            "contrast": {"type": "normal_absurd", "what": "a stranger hands over a $5,000 watch"},
+            "novelty": "a stranger giving away a real Rolex on stream",
+            "arc": {"situation": "a fan walks up to Kai", "complication": "he holds out a box",
+                    "revelation": "it's a gold Rolex", "payoff": "Kai can't believe it's real"}}
     return {**base, **kw}
 
 
@@ -227,8 +231,8 @@ class MomentRuleTests(unittest.TestCase):
         self.assertEqual(hooks.review_decision({"moment": 65, "packaging": 95}, th), "test")
         self.assertEqual(hooks.review_decision({"moment": 50, "packaging": 100}, th), "reject")
         self.assertEqual(hooks.review_decision({"moment": 90, "packaging": 40}, th), "reject")
-        w = hooks.review_weights({"review_weights": {"moment": {"surprise": 3}}})
-        self.assertEqual(w["moment"]["surprise"], 3.0)
+        w = hooks.review_weights({"review_weights": {"moment": {"entertainment": 3}}})
+        self.assertEqual(w["moment"]["entertainment"], 3.0)
         self.assertEqual(hooks.review_scores(GOOD_REVIEW, hooks.review_weights(None)), {"moment": 80.0, "packaging": 70.0})
 
     def test_threshold_fails_only_when_on(self):
@@ -346,16 +350,16 @@ class CalibrateTests(unittest.TestCase):
         from clipper import stats
         rows = []
         for i in range(70):
-            rv = {"moment": {c: (i % 10) for c in ("standalone", "surprise", "payoff", "stakes", "emotion", "demand")},
-                  "packaging": {c: 5 for c in ("hook", "opening", "pacing", "ending", "title", "visual")}}
+            rv = {"moment": {c: (i % 10) for c in ("demand", "entertainment", "specificity", "distinctiveness", "development", "payoff")},
+                  "packaging": {c: 5 for c in ("interest", "text_hook", "context", "visual", "anticipation", "alignment")}}
             rows.append({"settled": True, "views": 100 + i * 10 + (i % 10) * 50, "review": rv,
                          "moment_score": (i % 10) * 10, "packaging_score": 50, "profile_match": 0.5})
         c = stats.calibrate(rows)
         self.assertEqual(c["n"], 70)
-        self.assertGreater(c["criteria"]["moment.surprise"], 0.15)
-        self.assertGreater(c["suggested"]["moment"]["surprise"], 1)
+        self.assertGreater(c["criteria"]["moment.entertainment"], 0.15)
+        self.assertGreater(c["suggested"]["moment"]["entertainment"], 25)  # above its 25 weight: it tracks views
         text = stats.format_calibration(c)
-        self.assertIn("packaging.hook: rho None", text)
+        self.assertIn("packaging.interest: rho None", text)
         self.assertIn("nothing was written", text)
         few = stats.format_calibration(stats.calibrate(rows[:10]))
         self.assertIn("too few scored posts", few)
@@ -576,3 +580,81 @@ class SevenPrinciplesTests(unittest.TestCase):
                        "remove empty exaggeration", "GTA 6 Charges Kai $339 for an Uber"):
             self.assertIn(needle, text)
         self.assertNotIn("live_event", text)
+
+
+class ContrastAndArcTests(unittest.TestCase):
+    def test_contrast_needs_one_of_the_seven_types_and_what_clashes(self):
+        from clipper import hooks
+        self.assertEqual(hooks.check_story(new_pick()), ([], []))
+        self.assertEqual(len(hooks.CONTRASTS), 7)
+        for bad in ({"type": "irony", "what": "x"}, {"type": "desire_obstacle", "what": ""}, "normal_absurd"):
+            self.assertTrue(any("`contrast`" in f for f in hooks.check_story(new_pick(contrast=bad))[0]), bad)
+        fails, notes = hooks.check_story(new_pick(contrast=None))  # optional: rewarding moments work without one
+        self.assertEqual(fails, [])
+        self.assertTrue(any("no `contrast`" in n for n in notes))
+
+    def test_novelty_is_required(self):
+        from clipper import hooks
+        self.assertTrue(any("novelty" in f for f in hooks.check_story(new_pick(novelty=""))[0]))
+
+    def test_arc_needs_four_different_beats(self):
+        from clipper import hooks
+        partial = {"situation": "Kai books an Uber", "complication": "who is driving?", "revelation": "", "payoff": "x"}
+        self.assertTrue(any("missing revelation" in f for f in hooks.check_story(new_pick(arc=partial))[0]))
+        flat = {b: "Kai drives around" for b in hooks.ARC_BEATS}
+        self.assertTrue(any("repeat" in f for f in hooks.check_story(new_pick(arc=flat))[0]))
+        self.assertTrue(any("`arc`" in f for f in hooks.check_story(new_pick(arc=None))[0]))
+
+    def test_story_fails_only_when_on_and_reaches_upload_json(self):
+        from unittest import mock
+        from clipper import hooks, render
+        bare = new_pick(contrast=None, arc=None)
+        self.assertTrue(hooks.principle_checks(bare, {"principles": "on"}, "on")["moment"]["fails"])
+        self.assertEqual(hooks.verdict_on(bare, {"principles": "shadow", "research": "gta"}, {"traits": {}})["verdict"],
+                         "reject")
+        variants = [{"file": "x.mp4", "hook": new_pick()["hooks"][0], "check": {"duration": 20}}]
+        with mock.patch.object(render, "footage", return_value=[{"source": "s", "from": 0.0}]), \
+                mock.patch.object(render, "moment_at", return_value=None), \
+                mock.patch.object(render, "predicted", return_value={}), \
+                mock.patch.object(render, "moment_signals", return_value={}), \
+                mock.patch.object(render, "credits", return_value=[("ch", "link")]):
+            m = render.upload_manifest(new_pick(), {}, {"principles": "on", "research": "gta"}, variants, ["t"])
+        self.assertEqual(m[0]["contrast_type"], "normal_absurd")
+        self.assertEqual(m[0]["arc"]["revelation"], "it's a gold Rolex")
+
+
+class HookAndReviewPrinciplesTests(unittest.TestCase):
+    def test_hollow_hooks_fail_substantive_ones_pass(self):
+        from clipper import hooks
+        for h in ("Wait until the end", "You won't believe this", "Watch what happens next", "This NPC is crazy",
+                  "Kai wasn't ready for this", "xQc starts laughing"):
+            self.assertTrue(hooks.hollow_hook(h), h)
+        for h in ("Kai just paid $339 for an Uber", "He thinks he's talking to Ice Spice",
+                  "Kai needs $2 million before the mission", "This NPC refuses to let Kai leave",
+                  "Kai didn't know there was a second $100K vault", "Watch who pulls up in Kai's $339 Uber",
+                  "Who's driving Kai's $339 Uber?", "GTA Uber prices are getting out of hand",
+                  "Watch Kai's face when he walks in..."):
+            self.assertIsNone(hooks.hollow_hook(h), h)
+        pick = new_pick(hooks=["Wait until the end", "A FAN'S $5,000 GIFT", "WHO GIVES A STRANGER THIS?"])
+        self.assertTrue(any("artificial" in f for f in hooks.check_hook_angles(pick)[0]))
+
+    def test_the_six_psychological_angles_are_accepted(self):
+        from clipper import hooks
+        for a in ("shock_fact", "mystery", "relatability", "suspicion", "anticipation", "contrast"):
+            self.assertIn(a, hooks.HOOK_ANGLES)
+        pick = new_pick(hooks=["Kai just paid $339 for an Uber", "Who's driving Kai's $339 Uber?",
+                               "Watch who pulls up in Kai's $339 Uber"],
+                        hook_angles=["shock_fact", "mystery", "anticipation"],
+                        hook_questions=["why is it that expensive?", "who is driving?", "who pulls up?"])
+        self.assertEqual(hooks.check_hook_angles(pick)[0], [])
+
+    def test_two_stage_review_weights(self):
+        from clipper import config, hooks
+        w = hooks.review_weights(None)
+        self.assertEqual(w["moment"], {"demand": 20, "entertainment": 25, "specificity": 10, "distinctiveness": 15,
+                                       "development": 15, "payoff": 15})
+        self.assertEqual(sum(w["packaging"].values()), 100)
+        self.assertEqual(hooks.review_weights(config.load(profile="gta6")), w)  # watchlist.yaml carries the same
+        uneven = {"moment": {**{c: 10 for c in hooks.REVIEW["moment"]}, "specificity": 0},
+                  "packaging": {c: 10 for c in hooks.REVIEW["packaging"]}}
+        self.assertEqual(hooks.review_scores(uneven, w)["moment"], 90.0)

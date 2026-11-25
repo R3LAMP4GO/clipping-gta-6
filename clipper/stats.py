@@ -143,7 +143,7 @@ def join(rows, manifests, now=None):
                                             "loop", "predicted", "angle_arm", "hook_angle", "premise_type",
                                             "selection_score", "kind", "question", "category", "decision",
                                             "moment_score", "packaging_score", "profile_match", "principles",
-                                            "experiment", "experiment_arm", "review", "verdict_on")})
+                                            "experiment", "experiment_arm", "review", "verdict_on", "contrast_type")})
         from .hooks import loop_frame
         r["title_frame"] = loop_frame(r["t"])  # the posted title, matched or not: every upload counts here
     return rows
@@ -163,7 +163,8 @@ def report(rows):
     for key, name in (("profile", "profile"), ("kind", "shape"), ("question", "question type"), ("clip_type", "clip type"), ("arm", "hook arm"), ("hook_type", "hook type"),
                       ("title_frame", "title frame"), ("angle_arm", "hook angle (assigned)"),
                       ("hook_angle", "hook angle (posted)"), ("premise_type", "premise type"),
-                      ("category", "category"), ("decision", "decision"), ("principles", "principles mode")):
+                      ("category", "category"), ("contrast_type", "contrast"), ("decision", "decision"),
+                      ("principles", "principles mode")):
         for v in sorted({r.get(key) for r in ok if r.get(key)}):
             groups[f"{name}: {v}"] = [r for r in ok if r.get(key) == v]
     for r in ok:  # one experiment at a time: group by its arm

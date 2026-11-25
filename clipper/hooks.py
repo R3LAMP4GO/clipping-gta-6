@@ -457,6 +457,16 @@ CATEGORIES = {
     "reward": "a moment of happiness, admiration, justice or generosity (a meaningful surprise, a wholesome moment, a "
               "reunion, standing up for someone, a satisfying resolution)",
 }
+# Principle 3 (user, 2026-11-25): the meaningful contrast inside the moment.
+CONTRASTS = {"expectation_reality": "Rakai wakes up the wrong person",
+             "normal_absurd": "an unusually expensive in-game Uber",
+             "intention_outcome": "someone attempts a prank that backfires",
+             "personality_behaviour": "a competitive streamer acts completely indifferent",
+             "knowledge_ignorance": "the audience knows something the streamer doesn't",
+             "status_situation": "a powerful character is humiliated by an NPC",
+             "desire_obstacle": "Kai needs $2 million but can't sell his supercar"}
+# Principle 5 (user, 2026-11-25): a clip is stronger when something changes during it.
+ARC_BEATS = ("situation", "complication", "revelation", "payoff")
 HYPE_ADJ = re.compile(r"\b(insane|crazy|craziest|wild|wildest|unbelievable|epic|legendary|hilarious|funniest|"
                       r"shocking|amazing|unreal|chaotic|mind[- ]?blowing|incredible|ridiculous|savage|iconic|"
                       r"unhinged|hysterical|perfect|best|worst|biggest|greatest)\b", re.I)
@@ -472,15 +482,47 @@ GENERIC_WORDS = {"crazy", "insane", "wild", "moment", "moments", "believe", "unb
                  "lol", "lmao", "reaction", "reacts", "ready", "expect", "expected", "coming", "see", "look", "guys",
                  "craziest", "wildest", "never", "last", "part", "true", "story", "time", "yes", "out", "got",
                  "goes", "went", "gone", "right", "wrong"}
-HOOK_ANGLES = {"label": "a 2-6 word situation label (THE EASIEST MISSION)",
+# The psychological angles (user, 2026-11-25): different ideas, not different wording. `label` and `detail` stay for
+# the hook-angle test (label vs detail).
+HOOK_ANGLES = {"shock_fact": "the unusual fact, stated (Kai just paid $339 for an Uber)",
+               "mystery": "what the viewer wants answered (Who's driving Kai's $339 Uber?)",
+               "relatability": "what players feel too (GTA Uber prices are getting out of hand)",
+               "suspicion": "distrust the streamer really shows (Kai did NOT trust this Uber driver)",
+               "anticipation": "what's about to arrive (Watch who pulls up in Kai's $339 Uber)",
+               "label": "a 2-6 word situation label (THE EASIEST MISSION)",
                "detail": "the concrete surprising detail (ONE GUN COSTS $590?!)",
                "question": "the question the moment raises (IS HE CHEATING?)",
                "stakes": "what's at stake (HIS WHOLE $500K ON ONE BET)",
                "contrast": "the mismatch (A 13-YEAR-OLD RUNS THE GANG)"}
-REVIEW = {"moment": ("standalone", "surprise", "payoff", "stakes", "emotion", "demand"),
-          "packaging": ("hook", "opening", "pacing", "ending", "title", "visual")}
-REVIEW_DEFAULT_WEIGHTS = {k: {c: 1.0 for c in cs} for k, cs in REVIEW.items()}
+# Two-stage evaluation (user, 2026-11-25): Stage A moment quality, Stage B opening and packaging; proposed weights.
+REVIEW = {"moment": ("demand", "entertainment", "specificity", "distinctiveness", "development", "payoff"),
+          "packaging": ("interest", "text_hook", "context", "visual", "anticipation", "alignment")}
+REVIEW_DEFAULT_WEIGHTS = {"moment": {"demand": 20.0, "entertainment": 25.0, "specificity": 10.0, "distinctiveness": 15.0,
+                                     "development": 15.0, "payoff": 15.0},
+                          "packaging": {"interest": 25.0, "text_hook": 20.0, "context": 15.0, "visual": 10.0,
+                                        "anticipation": 15.0, "alignment": 15.0}}
 REVIEW_DEFAULT_THRESHOLDS = {"moment": 70, "test": 60, "packaging": 60}
+
+
+# Artificial curiosity (user's hook Principle 1): fine only when the hook also names something concrete.
+ARTIFICIAL = re.compile(r"\b(wait (until|till|for)|you won'?t believe|watch (what|till|until)|what happens next|"
+                        r"(was ?n'?t|was not|is ?n'?t|not) ready|is (so )?(crazy|insane|wild))\b", re.I)
+
+
+def hollow_hook(hook):
+    """Why a hook gives the viewer nothing concrete (artificial curiosity, or it only repeats the visible reaction),
+    else None. "Watch who pulls up in Kai's $339 Uber" passes; "Wait until the end" and "xQc starts laughing" don't."""
+    text = plain(hook)
+    concrete = [w for w in content_words(ARTIFICIAL.sub(" ", REACTION_WORDS.sub(" ", text)))
+                if w.lower().strip("'") not in GENERIC_WORDS | TOPIC_WORDS | STREAMERS
+                | {"starts", "start", "started", "face", "his", "her", "him", "kai's", "speed's", "xqc's", "watch"}]
+    if ARTIFICIAL.search(text) and len(concrete) < 2:
+        return ("artificial curiosity: give the viewer something concrete (\"Kai just paid $339 for an Uber\", not "
+                "\"Wait until the end\")")
+    if REACTION_WORDS.search(text) and len(concrete) < 2:
+        return ("repeats the visible reaction: the text should add what the footage can't show (\"He paid $339 for "
+                "this Uber\", not \"xQc starts laughing\")")
+    return None
 
 
 def generic_hook(hook):
@@ -496,6 +538,35 @@ def new_schema(pick):
 def legacy_pick(pick):
     """An old pick (premise_type/selection, no review): it keeps the old selection gate."""
     return not new_schema(pick) and ("premise_type" in pick or "selection" in pick)
+
+
+def check_story(pick):
+    """(fails, notes): an `arc` naming all four beats (initial situation, complication, revelation, payoff), each
+    different, and a `novelty` line are required; a `contrast` ({"type": one of CONTRASTS, "what": the two things
+    that clash}) must be valid when given, and its absence is a note (rewarding moments can work without one)."""
+    fails, notes = [], []
+    c = pick.get("contrast")
+    if c is None:
+        notes.append("no `contrast`: most strong moments clash two things (" + ", ".join(CONTRASTS) + "); fine for a "
+                     "genuine friendship, accomplishment or rewarding moment")
+    elif not isinstance(c, dict) or c.get("type") not in CONTRASTS or not str(c.get("what") or "").strip():
+        got = c.get("type") if isinstance(c, dict) else c
+        fails.append("`contrast` must be {\"type\": one of " + ", ".join(CONTRASTS) + ", \"what\": the two things "
+                     f"that clash}} ({'got ' + repr(got) if got else 'missing'}): e.g. normal_absurd, \"a normal Uber "
+                     "ride costs $339\"")
+    arc = pick.get("arc")
+    beats = {b: str((arc or {}).get(b) or "").strip() for b in ARC_BEATS} if isinstance(arc, dict) else {}
+    missing = [b for b in ARC_BEATS if not beats.get(b)]
+    if missing:
+        fails.append(f"`arc` needs all four beats, missing {', '.join(missing)}: situation (Kai books an unusually "
+                     "expensive Uber) -> complication (who could be driving it?) -> revelation (the driver is "
+                     "revealed) -> payoff (Kai's reaction); a moment where nothing changes isn't clipped")
+    elif len({v.lower() for v in beats.values()}) < len(ARC_BEATS):
+        fails.append("`arc` beats repeat each other: something has to change between the situation and the payoff")
+    if not str(pick.get("novelty") or "").strip():
+        fails.append("no `novelty`: what does this clip offer that GTA viewers haven't already seen hundreds of times? "
+                     "(\"an NPC charges $339 for an Uber\", not \"he fights the police\")")
+    return fails, notes
 
 
 def check_cause(pick):
@@ -536,6 +607,10 @@ def check_hook_angles(pick):
     if generic:
         fails.append(f"generic hooks ({', '.join(repr(h) for h in generic)}): say what's happening with a concrete "
                      "word from the moment")
+    for h in hs:
+        why = None if h in generic else hollow_hook(h)
+        if why:
+            fails.append(f"hook {h!r}: {why}")
     angles, questions = pick.get("hook_angles"), pick.get("hook_questions")
     if not isinstance(angles, list) or len(angles) != len(hs):
         fails.append(f"`hook_angles` must list one angle per hook ({', '.join(HOOK_ANGLES)})")
@@ -1157,9 +1232,11 @@ def principle_checks(pick, cfg, mode, prof_check=None):
             out["selection"] = check_selection(pick)
         return out
     soft = not new_schema(pick) and mode != "on"  # shadow: a pick still written the old way gets notes
-    cause = check_cause(pick)
-    if cause:
-        out["moment"] = {"notes": cause} if soft else {"fails": cause}
+    s_fails, s_notes = check_story(pick)
+    cause = check_cause(pick) + s_fails
+    if cause or s_notes:
+        out["moment"] = {"notes": cause + s_notes} if soft else \
+            {k: v for k, v in (("fails", cause), ("notes", s_notes)) if v}
     a_fails, a_notes = check_hook_angles(pick)
     if soft:
         a_fails, a_notes = [], a_fails + a_notes
