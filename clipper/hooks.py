@@ -1152,6 +1152,25 @@ def principle_checks(pick, cfg, mode, prof_check=None):
     return out
 
 
+def verdict_on(pick, cfg, prof=None, words=None):
+    """What `principles: on` would decide about a pick, whatever mode is running: {'verdict': pass/test/reject,
+    'why': [the fails behind a reject]}, or None when the rules don't apply. Shadow records it so rejects can
+    be compared with real views."""
+    from . import profile100k
+    if pick.get("campaign") or not (cfg or {}).get("selection_gate", is_gta(cfg)):
+        return None  # the 100K+ rules don't judge these (same gate as check_picks)
+    prof = prof if prof is not None else profile100k.load_profile()
+    on = {**(cfg or {}), "principles": "on"}
+    check = profile100k.check_pick(pick, prof, "on", words) if prof else None
+    why = list((check or {}).get("fails") or [])
+    entries = principle_checks(pick, on, "on", check)
+    for k, e in entries.items():
+        why += [f"{k}: {m}" for m in (e if isinstance(e, list) else e.get("fails") or [])]
+    decision = ((entries.get("review") or {}).get("summary") or {}).get("decision")
+    verdict = "reject" if why or decision == "reject" else decision or "pass"
+    return {"verdict": verdict, "why": [str(m)[:160] for m in why]}
+
+
 def has_fails(report):
     return any(v.get("fails") for e in report.values() for k in ("hooks", "titles") for v in e.get(k, {}).values()) \
         or any((e.get("opening") or {}).get("fails") for e in report.values()) \

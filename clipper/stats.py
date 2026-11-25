@@ -143,7 +143,7 @@ def join(rows, manifests, now=None):
                                             "loop", "predicted", "angle_arm", "hook_angle", "premise_type",
                                             "selection_score", "kind", "question", "category", "decision",
                                             "moment_score", "packaging_score", "profile_match", "principles",
-                                            "experiment", "experiment_arm", "review")})
+                                            "experiment", "experiment_arm", "review", "verdict_on")})
         from .hooks import loop_frame
         r["title_frame"] = loop_frame(r["t"])  # the posted title, matched or not: every upload counts here
     return rows

@@ -595,7 +595,9 @@ def principles_fields(pick, cfg, words=None):
     return {"principles": mode, "category": pick.get("category"), "cause": pick.get("cause"),
             "why_care": pick.get("why_care"), "review": review, "moment_score": scores["moment"],
             "packaging_score": scores["packaging"], "profile_match": match,
-            "decision": h.review_decision(scores, h.review_thresholds(cfg)) if review else None}
+            "decision": h.review_decision(scores, h.review_thresholds(cfg)) if review else None,
+            **({"verdict_on": v["verdict"], "verdict_on_why": v["why"]}
+               if mode != "off" and (v := h.verdict_on(pick, cfg, None, None if pick.get("segments") else words)) else {})}
 
 
 def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None,

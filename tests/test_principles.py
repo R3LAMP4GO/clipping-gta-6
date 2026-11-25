@@ -130,6 +130,18 @@ class ProfileCheckTests(unittest.TestCase):
         self.assertEqual(len(got["notes"]), 2)
         self.assertIsNone(p.check_pick(self.pick, fixture_profile(), "off"))
 
+    def test_length_only_notes_even_when_clear(self):
+        prof = fixture_profile()
+        prof["traits"]["m_length_s"] = {"trait": "m_length_s", "kind": "number", "verdict": "clear", "lift": 1.09,
+                                        "high": {"p25": 18.3, "median": 23.5, "p75": 41.4},
+                                        "low": {"p25": 15, "median": 22.7, "p75": 35}}
+        short = {"start": 100, "end": 114, "payoff_at": 108, "hooks": ["THE EASIEST MISSION"]}  # 14 s, payoff fits
+        got = p.check_pick(short, prof, "on")
+        self.assertEqual(got["fails"], [])
+        self.assertEqual(len(got["notes"]), 1)
+        self.assertIn("length", got["notes"][0])
+        self.assertEqual(got["match"], [2, 2])  # length isn't counted toward the match
+
     def test_fitting_pick_passes(self):
         ok = dict(self.pick, end=120, payoff_at=110)
         got = p.check_pick(ok, fixture_profile(), "on")
@@ -203,6 +215,21 @@ class MomentRuleTests(unittest.TestCase):
         self.assertTrue(on["review"]["fails"])
         self.assertNotIn("fails", shadow["review"])
         self.assertEqual(shadow["review"]["summary"]["decision"], "reject")
+
+    def test_verdict_on_judges_as_if_on_whatever_the_mode(self):
+        from clipper import hooks
+        cfg = {"principles": "shadow", "research": "gta"}
+        self.assertEqual(hooks.verdict_on(new_pick(), cfg, {"traits": {}})["verdict"], "pass")
+        weak = new_pick(review={**GOOD_REVIEW, "moment": {k: 4 for k in GOOD_REVIEW["moment"]}})
+        got = hooks.verdict_on(weak, cfg, {"traits": {}})
+        self.assertEqual(got["verdict"], "reject")
+        self.assertTrue(any("review" in w for w in got["why"]))
+        prof = fixture_profile()  # payoff at 15 s of 20 is past the clear 100K+ range: a profile fail under on
+        got = hooks.verdict_on(new_pick(), cfg, prof)
+        self.assertEqual(got["verdict"], "reject")
+        self.assertTrue(any("time to payoff" in w for w in got["why"]))
+        self.assertIsNone(hooks.verdict_on(new_pick(campaign="brand"), cfg, prof))
+        self.assertIsNone(hooks.verdict_on(new_pick(), {"principles": "shadow", "research": "other"}, prof))
 
     def test_legacy_and_campaign_picks_keep_old_rules(self):
         from clipper import hooks
@@ -391,3 +418,4 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(m[0]["hook_angle_declared"], "label")
         self.assertEqual(m[0]["principles"], "off")
         self.assertIsNone(m[0]["decision"])
+        self.assertNotIn("verdict_on", m[0])  # off: no shadow verdict

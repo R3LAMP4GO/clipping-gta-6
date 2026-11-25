@@ -367,6 +367,9 @@ CHECKED = {
     "m_loops_visually": "last frame matches the first (loop)",
     "m_ends_mid_sentence": "ends mid-sentence",
 }
+# Traits that only ever note, whatever their verdict, and don't count toward the profile match.
+# Length: clear but tiny (1.09x), and our own 12-25 s winners contradict its 18.3 s floor.
+NOTE_ONLY = {"m_length_s"}
 CHECKED_PREFIX = {"m_layout=": "facecam layout", "m_text_0_3_kind=": "opening text type",
                   "label_opening=": "opening structure", "label_ending=": "ending"}
 
@@ -480,18 +483,19 @@ def pick_values(pick, words=None):
 
 
 def check_values(values, prof, mode):
-    """{'fails', 'notes', 'match': [met, of], 'checked': [...]}: a clear trait the values miss fails (a note in
-    shadow mode), a lean one notes; `match` counts the clear traits met out of those measurable."""
+    """{'fails', 'notes', 'match': [met, of]}: a clear trait the values miss fails (a note in shadow mode), a lean
+    or NOTE_ONLY one notes; `match` counts the clear, gating traits met out of those measurable."""
     fails, notes, met, of = [], [], 0, 0
     for k, t in checkable(prof).items():
         msg = judge(k, t, values.get(k))
         if values.get(k) is None:
             continue
-        if t["verdict"] == CLEAR:
+        gate = t["verdict"] == CLEAR and k not in NOTE_ONLY
+        if gate:
             of += 1
             met += msg is None
         if msg:
-            (fails if t["verdict"] == CLEAR and mode == "on" else notes).append(msg)
+            (fails if gate and mode == "on" else notes).append(msg)
     return {"fails": fails, "notes": notes, "match": [met, of]}
 
 
