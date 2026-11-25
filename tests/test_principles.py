@@ -124,6 +124,13 @@ class ProfileCheckTests(unittest.TestCase):
         self.assertEqual(got["match"], [1, 2])  # captions met, payoff missed; title traits aren't checked here
         self.assertEqual(p.profile_match(got), 0.5)
 
+    def test_yaml_on_and_off_read_as_modes(self):
+        import yaml
+        self.assertEqual(p.mode_of(yaml.safe_load("principles: on")), "on")
+        self.assertEqual(p.mode_of(yaml.safe_load("principles: off")), "off")
+        self.assertEqual(p.mode_of(yaml.safe_load("principles: shadow")), "shadow")
+        self.assertEqual(p.mode_of({}), "off")
+
     def test_shadow_turns_fails_into_notes_and_off_skips(self):
         got = p.check_pick(self.pick, fixture_profile(), "shadow")
         self.assertEqual(got["fails"], [])

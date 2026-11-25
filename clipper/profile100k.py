@@ -375,7 +375,8 @@ CHECKED_PREFIX = {"m_layout=": "facecam layout", "m_text_0_3_kind=": "opening te
 
 
 def mode_of(cfg):
-    m = str((cfg or {}).get("principles") or "off").lower()
+    m = (cfg or {}).get("principles")
+    m = {True: "on", False: "off"}.get(m, m) if isinstance(m, bool) else str(m or "off").lower()  # YAML reads on/off as booleans
     return m if m in MODES else "off"
 
 

@@ -39,7 +39,7 @@ no_hook_share: 0.5         # this share of clips posts with no on-screen hook (u
 # The 100K+ rules (research/100k-profile-2026-11.md): off = the old checks only; shadow = picks carry a review, scores
 # and a profile match, but thresholds and profile fails are notes and posting order, the no-hook arm and the
 # experiment arms stay as they were; on = they fail, the no-hook arm stops and the autopilot orders posts by score.
-principles: shadow
+principles: on             # switched on 2026-11-25 (user decision)
 review_weights:            # 0-10 criterion scores in a pick's `review`; `clipper calibrate` suggests, never writes
   moment: {standalone: 1, surprise: 1, payoff: 1, stakes: 1, emotion: 1, demand: 1}
   packaging: {hook: 1, opening: 1, pacing: 1, ending: 1, title: 1, visual: 1}
