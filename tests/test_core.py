@@ -774,7 +774,11 @@ class ProfileTests(unittest.TestCase):
         config.load()
 
     def test_default_profile_reproduces_gta6_config(self):
+        import os
+        from unittest import mock
         from clipper import config
+        mock.patch.dict(os.environ, {"CLIPPER_NO_LEARNED": "1"}).start()  # a posting box's learned weights override these
+        self.addCleanup(mock.patch.stopall)
         cfg = config.load()
         self.assertEqual(cfg["profile"], "gta6")
         self.assertEqual(config.load(profile="gta6"), cfg)
