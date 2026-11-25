@@ -505,7 +505,7 @@ class JumpTimingTests(unittest.TestCase):
         self.assertEqual(got["m_tail_after_jump_s"], 7.5)
         self.assertEqual(p.jump_values([]), {})
 
-    def test_early_jump_fails_the_clear_trait_when_on(self):
+    def test_early_jump_only_notes_even_when_clear(self):
         prof = {"traits": {"m_biggest_jump_s": {"trait": "m_biggest_jump_s", "kind": "number", "verdict": "clear",
                                                 "lift": 1.18, "high": {"p25": 9, "median": 14.5, "p75": 22},
                                                 "low": {"p25": 5, "median": 10.5, "p75": 18}}}}
@@ -514,9 +514,12 @@ class JumpTimingTests(unittest.TestCase):
         early[2] = -10.0
         late = [-30.0] * 20
         late[13] = -10.0
-        self.assertTrue(any("loudest jump" in f for f in p.check_pick(pick, prof, "on", None, early)["fails"]))
-        self.assertEqual(p.check_pick(pick, prof, "on", None, late)["fails"], [])
-        self.assertEqual(p.check_pick(pick, prof, "on")["match"], [0, 0])  # no loudness: not judged
+        got = p.check_pick(pick, prof, "on", None, early)
+        self.assertEqual(got["fails"], [])  # note-only: it rejected too many real 100K+ clips as a fail
+        self.assertTrue(any("loudest jump" in n for n in got["notes"]))
+        self.assertEqual(got["match"], [0, 0])  # and it doesn't count toward the profile match
+        self.assertEqual(p.check_pick(pick, prof, "on", None, late)["notes"], [])
+        self.assertIn("m_words_per_s", p.NOTE_ONLY)
 
     def test_clip_loudness_measures_only_the_pick_span(self):
         import tempfile
@@ -545,7 +548,8 @@ class JumpTimingTests(unittest.TestCase):
         with mock.patch.object(p, "load_profile", return_value=prof):
             rep = hooks.check_picks([new_pick(start=0, end=20, payoff_at=15)], {"principles": "on", "research": "gta"},
                                     loudness=lambda pk: early)
-        self.assertTrue(any("loudest jump" in f for f in rep["video 1"]["profile"]["fails"]))
+        self.assertTrue(any("loudest jump" in n for n in rep["video 1"]["profile"]["notes"]))
+        self.assertNotIn("fails", rep["video 1"]["profile"])
 
 
 class SevenPrinciplesTests(unittest.TestCase):

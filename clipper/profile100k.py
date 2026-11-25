@@ -369,8 +369,10 @@ CHECKED = {
     "m_ends_mid_sentence": "ends mid-sentence",
 }
 # Traits that only ever note, whatever their verdict, and don't count toward the profile match.
-# Length: clear but tiny (1.09x), and our own 12-25 s winners contradict its 18.3 s floor.
-NOTE_ONLY = {"m_length_s"}
+# Length: clear but tiny (1.09x), and our own 12-25 s winners contradict its 18.3 s floor. Talking speed (0.87x) and
+# the loudest jump's timing (1.18x): as fails at the 100K+ quartile edge they rejected 38% of the measured 100K+
+# clips against 48% of flops (2026-11-25), too blunt to gate on.
+NOTE_ONLY = {"m_length_s", "m_words_per_s", "m_biggest_jump_s"}
 CHECKED_PREFIX = {"m_layout=": "facecam layout", "m_text_0_3_kind=": "opening text type",
                   "label_opening=": "opening structure", "label_ending=": "ending"}
 
