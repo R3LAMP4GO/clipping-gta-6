@@ -9,9 +9,11 @@ SILENCE = -70.0
 LOUD_EVENTS = ("scream", "yell", "shout", "laugh", "cheer", "gasp", "applause", "explosion", "gunshot")
 
 
-def loudness_per_second(media):
-    """Peak momentary loudness (LUFS) for each second, via FFmpeg's ebur128 filter."""
-    res = subprocess.run(["ffmpeg", "-nostats", "-i", str(media), "-af", "ebur128", "-f", "null", "-"],
+def loudness_per_second(media, start=None, duration=None):
+    """Peak momentary loudness (LUFS) for each second, via FFmpeg's ebur128 filter (of one span when given)."""
+    span = (["-ss", f"{float(start):.2f}"] if start is not None else []) + \
+        (["-t", f"{float(duration):.2f}"] if duration is not None else [])
+    res = subprocess.run(["ffmpeg", "-nostats", *span, "-i", str(media), "-af", "ebur128", "-f", "null", "-"],
                          capture_output=True, text=True, check=True)
     per = {}
     for t, m in M_RE.findall(res.stderr):

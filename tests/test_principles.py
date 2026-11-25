@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from clipper import profile100k as p
 from clipper import viral
@@ -460,3 +461,84 @@ class ManifestTests(unittest.TestCase):
         self.assertTrue(any("hook_angles" in w for w in bad[0]["verdict_on_why"]))
         self.assertFalse(any("hook_angles" in w for w in good[0]["verdict_on_why"]))
         self.assertEqual(good[0]["principles"], "on")
+
+
+DEMAND = {"streamers": {"CaseOh": {"lift": 1.32, "verdict": "clear"}, "xQc": {"lift": 5.6, "verdict": "lean"},
+                        "Jynxzi": {"lift": 1.45, "verdict": "lean"}, "Kai Cenat": {"lift": 1.13, "verdict": "no difference"},
+                        "Lacy": {"lift": 0.73, "verdict": "clear"}, "Rakai": {"lift": 0.8, "verdict": "lean"}}}
+
+
+class DemandOrderTests(unittest.TestCase):
+    def test_source_rank_puts_clear_before_lean_and_worse_last(self):
+        from clipper import demand
+        self.assertEqual(demand.source_rank("CaseOh plays GTA 6", DEMAND), (0, 1.32))
+        self.assertEqual(demand.source_rank("xQc GTA 6", DEMAND), (1, 5.6))
+        self.assertEqual(demand.source_rank("Kai Cenat GTA 6", DEMAND), (2, 1.0))
+        self.assertEqual(demand.source_rank("Rakai GTA 6", DEMAND), (3, 0.8))
+        self.assertEqual(demand.source_rank("Lacy GTA 6", DEMAND), (4, 0.73))
+        self.assertEqual(demand.source_rank("Lacy and CaseOh", DEMAND), (0, 1.32))  # the best-tier streamer counts
+        self.assertEqual(demand.source_rank("nobody", DEMAND), (2, 1.0))
+
+    def test_daily_orders_sources_by_demand_then_favored(self):
+        from clipper import __main__ as cli
+        found = [{"id": "lacy", "channel": "Lacy", "title": "GTA 6", "source": "creator:Lacy"},
+                 {"id": "other", "channel": "Someone", "title": "GTA 6", "source": "creator:Someone"},
+                 {"id": "kai", "channel": "Kai Cenat Live", "title": "GTA 6", "source": "creator:Kai Cenat"},
+                 {"id": "search", "channel": "Hit", "title": "GTA 6", "source": "search:gta 6"},
+                 {"id": "jynxzi", "channel": "Jynxzi", "title": "GTA 6", "source": "creator:Jynxzi"},
+                 {"id": "xqc", "channel": "xQc", "title": "GTA 6", "source": "creator:xQc"},
+                 {"id": "caseoh", "channel": "CaseOh", "title": "GTA 6", "source": "creator:CaseOh"}]
+        got = [v["id"] for v in cli.source_order(found, {"favor_creators": ["Kai Cenat"]}, DEMAND)]
+        self.assertEqual(got, ["caseoh", "xqc", "jynxzi", "kai", "other", "search", "lacy"])
+
+
+class JumpTimingTests(unittest.TestCase):
+    def test_jump_values_match_the_sample_measure(self):
+        lufs = [-30.0] * 20
+        lufs[12:15] = [-12.0, -14.0, -16.0]  # a scream after normal talk at second 12
+        got = p.jump_values(lufs)
+        self.assertEqual(got["m_biggest_jump_s"], 12.5)
+        self.assertEqual(got["m_tail_after_jump_s"], 7.5)
+        self.assertEqual(p.jump_values([]), {})
+
+    def test_early_jump_fails_the_clear_trait_when_on(self):
+        prof = {"traits": {"m_biggest_jump_s": {"trait": "m_biggest_jump_s", "kind": "number", "verdict": "clear",
+                                                "lift": 1.18, "high": {"p25": 9, "median": 14.5, "p75": 22},
+                                                "low": {"p25": 5, "median": 10.5, "p75": 18}}}}
+        pick = {"start": 0, "end": 20, "hooks": ["A LABEL"]}
+        early = [-30.0] * 20
+        early[2] = -10.0
+        late = [-30.0] * 20
+        late[13] = -10.0
+        self.assertTrue(any("loudest jump" in f for f in p.check_pick(pick, prof, "on", None, early)["fails"]))
+        self.assertEqual(p.check_pick(pick, prof, "on", None, late)["fails"], [])
+        self.assertEqual(p.check_pick(pick, prof, "on")["match"], [0, 0])  # no loudness: not judged
+
+    def test_clip_loudness_measures_only_the_pick_span(self):
+        import tempfile
+        from unittest import mock
+        from clipper import signals
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "audio.wav").write_bytes(b"")
+            with mock.patch.object(signals.subprocess, "run") as run:
+                run.return_value.stderr = ""
+                p.clip_loudness({"start": 100, "end": 118.5}, d)
+            cmd = run.call_args[0][0]
+            self.assertEqual(cmd[cmd.index("-ss") + 1], "100.00")
+            self.assertEqual(cmd[cmd.index("-t") + 1], "18.50")
+            self.assertLess(cmd.index("-ss"), cmd.index("-i"))
+            self.assertIsNone(p.clip_loudness({"segments": [{}], "start": 0, "end": 5}, d))
+            self.assertIsNone(p.clip_loudness({"start": 0, "end": 5}, Path(d) / "missing"))
+
+    def test_check_picks_feeds_loudness_into_the_profile_check(self):
+        from unittest import mock
+        from clipper import hooks
+        prof = {"traits": {"m_biggest_jump_s": {"trait": "m_biggest_jump_s", "kind": "number", "verdict": "clear",
+                                                "lift": 1.18, "high": {"p25": 9, "median": 14.5, "p75": 22},
+                                                "low": {"p25": 5, "median": 10.5, "p75": 18}}}}
+        early = [-30.0] * 20
+        early[2] = -10.0
+        with mock.patch.object(p, "load_profile", return_value=prof):
+            rep = hooks.check_picks([new_pick(start=0, end=20, payoff_at=15)], {"principles": "on", "research": "gta"},
+                                    loudness=lambda pk: early)
+        self.assertTrue(any("loudest jump" in f for f in rep["video 1"]["profile"]["fails"]))

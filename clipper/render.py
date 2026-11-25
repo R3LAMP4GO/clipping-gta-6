@@ -581,14 +581,14 @@ def lead_with_angle(full, pick, arm):
     return out
 
 
-def principles_fields(pick, cfg, words=None):
+def principles_fields(pick, cfg, words=None, lufs=None):
     """What the 100K+ rules decided about a pick, for upload.json: category, cause, the review's criterion scores
     and totals, profile_match and the decision, and the principles mode it was made under."""
     from . import hooks as h
     from . import profile100k
     mode = profile100k.mode_of(cfg)
-    check = profile100k.check_pick(pick, profile100k.load_profile(), mode, None if pick.get("segments") else words) \
-        if mode != "off" else None
+    check = profile100k.check_pick(pick, profile100k.load_profile(), mode, None if pick.get("segments") else words,
+                                   lufs) if mode != "off" else None
     match = profile100k.profile_match(check)
     review = pick.get("review") if isinstance(pick.get("review"), dict) else None
     scores = h.review_scores(review, h.review_weights(cfg)) if review else {"moment": None, "packaging": None}
@@ -597,7 +597,8 @@ def principles_fields(pick, cfg, words=None):
             "packaging_score": scores["packaging"], "profile_match": match,
             "decision": h.review_decision(scores, h.review_thresholds(cfg)) if review else None,
             **({"verdict_on": v["verdict"], "verdict_on_why": v["why"]}
-               if mode != "off" and (v := h.verdict_on(pick, cfg, None, None if pick.get("segments") else words)) else {})}
+               if mode != "off" and (v := h.verdict_on(pick, cfg, None, None if pick.get("segments") else words, lufs))
+               else {})}
 
 
 def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None,
@@ -614,7 +615,9 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
     version = code_version()
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
-    rules = principles_fields(judged or pick, cfg, words)  # the pick as written: render may trim or reorder its hooks
+    from .profile100k import clip_loudness, mode_of
+    lufs = clip_loudness(judged or pick, job) if mode_of(cfg) != "off" else None
+    rules = principles_fields(judged or pick, cfg, words, lufs)  # the pick as written: render may trim or reorder its hooks
     if angle_of is None:  # the declared angle per hook text, from the pick as written (render may reorder hooks)
         hs, declared = pick.get("hooks") or [], pick.get("hook_angles")
         angle_of = dict(zip(hs, declared)) if isinstance(declared, list) and len(declared) == len(hs) else {}

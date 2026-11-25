@@ -925,7 +925,7 @@ def check_music(pick, words):
             f"in the moment's mood if it adds, or set \"music\": [] to skip on purpose")
 
 
-def check_picks(picks, cfg=None, words=None, load=None):
+def check_picks(picks, cfg=None, words=None, load=None, loudness=None):
     """{'video N': {...}} with 'fails' (fix these) and 'notes' (judgment calls) per hook/title; `edit` notes need the
     job's transcript `words` (source seconds; `load(job)` for other jobs' segments)."""
     from .playbook import for_profile
@@ -938,8 +938,9 @@ def check_picks(picks, cfg=None, words=None, load=None):
     report = {}
     for n, pick in enumerate(picks, 1):
         entry = {}
+        lufs = loudness(pick) if loudness and prof and not pick.get("campaign") else None
         prof_check = None if pick.get("campaign") else profile100k.check_pick(
-            pick, prof, mode, None if pick.get("segments") else words)
+            pick, prof, mode, None if pick.get("segments") else words, lufs)
         if prof_check and (prof_check["fails"] or prof_check["notes"]):
             entry["profile"] = {k: v for k, v in prof_check.items() if v or k == "match"}
         for h in pick.get("hooks") or [pick.get("hook", "")]:
@@ -1152,7 +1153,7 @@ def principle_checks(pick, cfg, mode, prof_check=None):
     return out
 
 
-def verdict_on(pick, cfg, prof=None, words=None):
+def verdict_on(pick, cfg, prof=None, words=None, lufs=None):
     """What `principles: on` would decide about a pick, whatever mode is running: {'verdict': pass/test/reject,
     'why': [the fails behind a reject]}, or None when the rules don't apply. Shadow records it so rejects can
     be compared with real views."""
@@ -1161,7 +1162,7 @@ def verdict_on(pick, cfg, prof=None, words=None):
         return None  # the 100K+ rules don't judge these (same gate as check_picks)
     prof = prof if prof is not None else profile100k.load_profile()
     on = {**(cfg or {}), "principles": "on"}
-    check = profile100k.check_pick(pick, prof, "on", words) if prof else None
+    check = profile100k.check_pick(pick, prof, "on", words, lufs) if prof else None
     why = list((check or {}).get("fails") or [])
     entries = principle_checks(pick, on, "on", check)
     for k, e in entries.items():

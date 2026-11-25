@@ -75,6 +75,22 @@ def score_for(text, demand=None):
     return best
 
 
+def source_rank(text, demand=None):
+    """(tier, lift) for ordering sources: 0 = a streamer named in `text` clearly does better on the watched clip
+    channels, 1 = leans better, 2 = no difference or unknown, 3 = leans worse, 4 = clearly worse. The best-tier
+    streamer counts; lift breaks ties inside the better tiers."""
+    d = demand if demand is not None else load()
+    ranks = []
+    for name in p.streamers_in(text or ""):
+        row = (d.get("streamers") or {}).get(name) or {}
+        lift, verdict = row.get("lift"), row.get("verdict")
+        if lift is None or verdict not in ("clear", "lean"):
+            ranks.append((2, 1.0))
+        else:
+            ranks.append(((0 if verdict == "clear" else 1) if lift > 1 else (4 if verdict == "clear" else 3), lift))
+    return min(ranks, key=lambda r: (r[0], -r[1]), default=(2, 1.0))
+
+
 def line_for(text, demand=None):
     """One line for candidates.md: each named streamer's and subject's 100K+ rate and in-channel lift."""
     d = demand if demand is not None else load()

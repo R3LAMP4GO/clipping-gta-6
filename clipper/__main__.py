@@ -61,6 +61,18 @@ def favored_first(found, cfg):
     return sorted(found, key=lambda v: (not is_favored(v.get("channel"), cfg), v["source"].startswith("search:")))
 
 
+def source_order(found, cfg, demand=None):
+    """Sources whose streamers measured best on the 100K+ clip channels first (clear, then lean, by lift), then the
+    profile's favored creators, then the rest; searches last within each tier, newest order kept otherwise."""
+    from . import demand as demand_mod
+    d = demand if demand is not None else demand_mod.load()
+
+    def key(v):
+        tier, lift = demand_mod.source_rank(f"{v.get('channel') or ''} {v.get('title') or ''}", d)
+        return (tier, -lift if tier < 2 else 0, not is_favored(v.get("channel"), cfg), v["source"].startswith("search:"))
+    return sorted(found, key=key)
+
+
 def cleaned_total(c):
     """Files and GB a cleanup run freed: sources plus the long-form purge."""
     lf = c.get("longform") or {}
@@ -73,7 +85,9 @@ def daily(cfg, limit=None):
     cleaned = cleanup_mod.run(cfg)  # old downloads go before new ones arrive
     limit = limit or int(prefs.get("sources_per_day", 2))
     found, errors, skipped = sources.watch(cfg, per_channel=6)
-    fresh = favored_first([v for v in found if not v["processed"]], cfg)
+    from . import demand as demand_mod
+    dem = demand_mod.load()
+    fresh = source_order([v for v in found if not v["processed"]], cfg, dem)
     max_s = int(prefs.get("daily_max_minutes", 90)) * 60
     jobs = []
     for v in fresh[:limit]:
@@ -90,6 +104,7 @@ def daily(cfg, limit=None):
             continue
         jobs.append({"job": v["id"], "title": v["title"], "channel": v["channel"], "section": section,
                      "favored": is_favored(v["channel"], cfg),
+                     "demand": demand_mod.line_for(f"{v['channel']} {v['title']}", dem),
                      "minutes": round(v["duration"] / 60), "candidates_md": str(job / "candidates.md"),
                      "candidates": len(res["candidates"]), "recommended": res["recommended"]})
     want = prefs.get("videos_per_run", "auto")
@@ -300,7 +315,10 @@ def main(argv=None):
         print(json.dumps(render_mod.render(job, picks, cfg, args.first_hook_only, args.out, top), indent=2))
     elif args.cmd == "check":
         picks = json.loads(open(args.picks, encoding="utf-8").read())
-        report = hooks.check_picks(picks, cfg, job_words(args.job) if args.job else None, job_words)
+        from .profile100k import clip_loudness
+        jd_ = config.job_dir(args.job) if args.job else None
+        report = hooks.check_picks(picks, cfg, job_words(args.job) if args.job else None, job_words,
+                                   lambda pk: clip_loudness(pk, config.job_dir(pk["job"]) if pk.get("job") else jd_))
         for n, reused in reused_footage(picks, args.job, cfg).items():
             report.setdefault(f"video {n}", {})["footage"] = reused
         if args.job:

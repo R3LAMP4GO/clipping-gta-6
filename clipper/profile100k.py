@@ -9,6 +9,7 @@ import math
 import random
 import re
 import statistics as st
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -432,8 +433,35 @@ def _clip_words(pick, words):
     return [dict(w, s=w["s"] - s, e=min(w["e"], e) - s) for w in words if s <= w["s"] < e]
 
 
-def pick_values(pick, words=None):
-    """{trait: value} the pick (plus its clip-second transcript `words`, when known) shows before it renders."""
+def jump_values(lufs):
+    """When the clip's biggest loudness jump lands, measured as on the 100K+ sample (`viral.measure_sample_one`)."""
+    from . import signals
+    if not lufs:
+        return {}
+    length = float(len(lufs))
+    peak = max(range(len(lufs)), key=lambda i: lufs[i]) + 0.5
+    jumps = signals.jump_per_second(lufs)[1]
+    at = (max(range(len(jumps)), key=lambda i: jumps[i]) + 0.5) if len(jumps) and max(jumps) > 0 else peak
+    return {"m_biggest_jump_s": at, "m_tail_after_jump_s": round(length - at, 1), "m_jump_share": round(at / length, 2)}
+
+
+def clip_loudness(pick, job):
+    """Per-second loudness of a single-span pick's footage in the job's audio, or None (segments, no audio, ffmpeg
+    error): one short ffmpeg pass over the pick only."""
+    from . import signals
+    if pick.get("segments") or not job:
+        return None
+    media = next((Path(job) / n for n in ("audio.wav", "source.mp4") if (Path(job) / n).exists()), None)
+    try:
+        s, e = float(pick["start"]), float(pick["end"])
+        return signals.loudness_per_second(media, s, e - s) if media and e > s else None
+    except (KeyError, TypeError, ValueError, subprocess.CalledProcessError, OSError):
+        return None
+
+
+def pick_values(pick, words=None, lufs=None):
+    """{trait: value} the pick (plus its clip-second transcript `words` and per-second loudness `lufs`, when known)
+    shows before it renders."""
     from . import hooks, viral
     out = {}
     try:
@@ -480,6 +508,7 @@ def pick_values(pick, words=None):
         out["m_words_per_s"] = round(len(cw) / dur, 2) if dur else None
     if pick.get("segments"):
         out["m_cuts_per_min"] = round((len(pick["segments"]) - 1) / dur * 60, 1) if dur else None
+    out.update(jump_values(lufs))
     return out
 
 
@@ -500,10 +529,10 @@ def check_values(values, prof, mode):
     return {"fails": fails, "notes": notes, "match": [met, of]}
 
 
-def check_pick(pick, prof, mode, words=None):
+def check_pick(pick, prof, mode, words=None, lufs=None):
     if mode == "off" or not prof:
         return None
-    return check_values(pick_values(pick, words), prof, mode)
+    return check_values(pick_values(pick, words, lufs), prof, mode)
 
 
 def profile_match(result):
@@ -515,7 +544,6 @@ def profile_match(result):
 def rendered_values(mp4):
     """{trait: value} measured on a rendered MP4 with code (length, cuts, flashes, loop; opening text via Apple
     Vision on macOS)."""
-    import subprocess
     import sys
     from . import viral
     mp4 = Path(mp4)
