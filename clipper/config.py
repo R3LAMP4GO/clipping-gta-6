@@ -103,6 +103,8 @@ def load(path=None, profile=None):
             if k in base and isinstance(v, (int, float)):  # bounded: a bad file can't silence or swamp a signal
                 cfg["weights"][k] = round(min(max(float(v), 0.5 * base[k]), 1.5 * base[k]), 4)
     cfg["profile"] = profile
+    if isinstance(cfg.get("principles"), bool):  # YAML reads a bare on/off as true/false
+        cfg["principles"] = "on" if cfg["principles"] else "off"
     check_experiments(cfg)
     creators = profile_file("creators.yaml")
     if "channels" not in cfg and creators.exists():

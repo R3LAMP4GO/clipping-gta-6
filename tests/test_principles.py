@@ -131,6 +131,22 @@ class ProfileCheckTests(unittest.TestCase):
         self.assertEqual(p.mode_of(yaml.safe_load("principles: shadow")), "shadow")
         self.assertEqual(p.mode_of({}), "off")
 
+    def test_watchlist_with_bare_on_loads_as_the_string_on(self):
+        import os
+        import tempfile
+        from unittest import mock
+        from clipper import config
+        mock.patch.dict(os.environ, {"CLIPPER_NO_LEARNED": "1"}).start()
+        self.addCleanup(mock.patch.stopall)
+        for raw, want in (("on", "on"), ("off", "off"), ("shadow", "shadow")):
+            with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+                f.write(f"principles: {raw}\n")
+            self.addCleanup(os.unlink, f.name)
+            cfg = config.load(f.name, profile="gta6")
+            self.assertEqual(cfg["principles"], want)
+            self.assertIsInstance(cfg["principles"], str)
+            self.assertEqual(p.mode_of(cfg), want)
+
     def test_shadow_turns_fails_into_notes_and_off_skips(self):
         got = p.check_pick(self.pick, fixture_profile(), "shadow")
         self.assertEqual(got["fails"], [])
