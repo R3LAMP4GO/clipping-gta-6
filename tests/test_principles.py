@@ -442,3 +442,21 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(m[0]["principles"], "off")
         self.assertIsNone(m[0]["decision"])
         self.assertNotIn("verdict_on", m[0])  # off: no shadow verdict
+
+    def test_verdict_judges_the_pick_as_written_not_the_trimmed_render_copy(self):
+        from unittest import mock
+        from clipper import render
+        full = new_pick()
+        trimmed = dict(full, hooks=full["hooks"][:1])  # --top-hooks 1 keeps one hook; hook_angles still lists three
+        variants = [{"file": "x.mp4", "hook": trimmed["hooks"][0], "check": {"duration": 20}}]
+        cfg = {"principles": "on", "research": "gta"}
+        with mock.patch.object(render, "footage", return_value=[{"source": "s", "from": 0.0}]), \
+                mock.patch.object(render, "moment_at", return_value=None), \
+                mock.patch.object(render, "predicted", return_value={}), \
+                mock.patch.object(render, "moment_signals", return_value={}), \
+                mock.patch.object(render, "credits", return_value=[("ch", "link")]):
+            bad = render.upload_manifest(trimmed, {}, cfg, variants, full["titles"])
+            good = render.upload_manifest(trimmed, {}, cfg, variants, full["titles"], judged=full)
+        self.assertTrue(any("hook_angles" in w for w in bad[0]["verdict_on_why"]))
+        self.assertFalse(any("hook_angles" in w for w in good[0]["verdict_on_why"]))
+        self.assertEqual(good[0]["principles"], "on")

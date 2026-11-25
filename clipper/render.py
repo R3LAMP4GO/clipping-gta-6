@@ -601,7 +601,7 @@ def principles_fields(pick, cfg, words=None):
 
 
 def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, music_used=None, arm=None,
-                    experiment=None, experiment_arm_=None, words=None, angle_of=None):
+                    experiment=None, experiment_arm_=None, words=None, angle_of=None, judged=None):
     """What a poster needs per MP4: its hook, hook type, paired title and the caption, plus the footage it uses
     (so it's never posted twice), its predicted multiplier and when the moment happened (best-first queue)."""
     from .hooks import hook_angle, loop_frame, structures
@@ -614,7 +614,7 @@ def upload_manifest(pick, meta, cfg, variants, titles, creds=None, job=None, mus
     version = code_version()
     tags = pick.get("hashtags") or cfg.get("hashtags", [])
     desc = pick.get("description") or titles[0]
-    rules = principles_fields(pick, cfg, words)
+    rules = principles_fields(judged or pick, cfg, words)  # the pick as written: render may trim or reorder its hooks
     if angle_of is None:  # the declared angle per hook text, from the pick as written (render may reorder hooks)
         hs, declared = pick.get("hooks") or [], pick.get("hook_angles")
         angle_of = dict(zip(hs, declared)) if isinstance(declared, list) and len(declared) == len(hs) else {}
@@ -726,7 +726,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                 variants.append({"file": str(mp4), "hook": hook, "check": probe(mp4)})
         (folder / "upload.json").write_text(json.dumps(upload_manifest(pick, meta, cfg, variants, titles, creds, job,
                                                                        prep.get("music"), arm, experiment, exp_arm,
-                                                                       fallback, angle_of),
+                                                                       fallback, angle_of, judged=full),
                                                        indent=2, ensure_ascii=False), encoding="utf-8")
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),
