@@ -5,9 +5,10 @@ download can be fetched again.
 
 Long-form (purge): a clip bank cut once every long video that used it is posted and keep_after_post_days passed; an
 unused one bank_expire_days after tagging (listed one run first); a posted long's thumbnail files after the same
-grace; Codex's leftover session folders; and, only when keep_posted_short_exports_days is set, posted Shorts' MP4s.
+grace; Codex's leftover session folders; cached exemplar thumbnails (jobs/_thumbstyle/, YouTube data) after 30
+days; and, only when keep_posted_short_exports_days is set, posted Shorts' MP4s.
 A path is deleted only inside what owns it (a bank clip folder, a posted `long N`, the recorded Codex session, a
-posted `video N`), and every deletion is appended to jobs/_longbank/ledger.jsonl. The finished long MP4 and
+posted `video N`, jobs/_thumbstyle/), and every deletion is appended to jobs/_longbank/ledger.jsonl. The finished long MP4 and
 long.json are never deleted."""
 import json
 import time
@@ -89,7 +90,7 @@ def _longs(exports):
 
 
 def owned(path, kind, owner, bank, codex_gen):
-    """Whether `path` is a file inside `owner`, and `owner` is one of the four things the purge may delete from."""
+    """Whether `path` is a file inside `owner`, and `owner` is one of the five things the purge may delete from."""
     path, owner = Path(path), Path(owner)
     try:
         p, o = path.resolve(), owner.resolve()
@@ -103,6 +104,8 @@ def owned(path, kind, owner, bank, codex_gen):
         return bool((_json(o / "long.json") or {}).get("posted_at"))
     if kind == "codex":
         return o.parent == Path(codex_gen).resolve()
+    if kind == "thumbstyle":
+        return o.name == "_thumbstyle" and p.parent == o
     if kind == "short":
         data = _json(o / "upload.json")
         return isinstance(data, list) and any(isinstance(e, dict) and e.get("youtube_id") for e in data)
@@ -112,7 +115,7 @@ def owned(path, kind, owner, bank, codex_gen):
 def purge_plan(cfg, jobs_dir=None, exports=None, now=None, codex=None):
     """What the long-form rules delete now: {"delete": [{path, bytes, reason, kind, owner}], "expiring": [ids that go
     next run], "warn": [bank dirs to mark]}."""
-    from .longform import THUMB_FILES, codex_home
+    from .longform import STYLE_CACHE_DAYS, THUMB_FILES, codex_home
     jobs_dir, now = Path(jobs_dir or JOBS), now or time.time()
     bank = jobs_dir / "_longbank"
     grace, expire = _grace(cfg), cfg.get("bank_expire_days", 30)
@@ -153,6 +156,10 @@ def purge_plan(cfg, jobs_dir=None, exports=None, now=None, codex=None):
             for pat in THUMB_FILES:
                 for f in sorted(folder.glob(pat)):
                     add(f, "long", folder, f"thumbnail of posted {folder.name}, {grace / 86400:g} days grace over")
+    style = jobs_dir / "_thumbstyle"
+    for f in sorted(style.glob("*")) if style.is_dir() else []:
+        if f.is_file() and now - f.stat().st_mtime > STYLE_CACHE_DAYS * 86400:
+            add(f, "thumbstyle", style, f"cached exemplar thumbnail older than {STYLE_CACHE_DAYS} days (YouTube data)")
     days = cfg.get("keep_posted_short_exports_days")
     if days is not None and exports and Path(exports).is_dir():
         wanted = {str(Path(x["short"]).resolve()) for d, x in longbank.entries(bank)

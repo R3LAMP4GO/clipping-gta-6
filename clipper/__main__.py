@@ -250,12 +250,19 @@ def main(argv=None):
                                                          "them into new video N folders (default: dry run, writes nothing)")
     lg = sub.add_parser("long", help="long-form 16:9: a running-bit supercut (8-10 min), a \"what happens\" video "
                         "(kind mid, 30s-3 min), a narrated story (kind story, 4-10 min) or a streamer's funniest "
-                        "moments (kind compilation, 8-12 min): check or render a spec")
-    lg.add_argument("action", choices=["check", "render"])
-    lg.add_argument("spec", help="JSON spec (see /clip-long)")
+                        "moments (kind compilation, 8-12 min): check or render a spec, remake a `long N` "
+                        "thumbnail, list channels ready for a compilation, or build the thumbnail exemplars")
+    lg.add_argument("action", choices=["check", "render", "thumb", "ready", "exemplars"])
+    lg.add_argument("spec", nargs="?", help="check/render: JSON spec (see /clip-long); thumb: a `long N` folder; "
+                                            "exemplars: build")
     lg.add_argument("--out", help="output folder (default exports/<profile>/<today>; `long N` numbering continues)")
-    lg.add_argument("--no-ai-thumb", action="store_true", help="render: use the raw source frame as the thumbnail "
-                                                               "instead of a Codex $imagegen one")
+    lg.add_argument("--no-ai-thumb", action="store_true", help="render/thumb: use the raw source frame as the "
+                                                               "thumbnail instead of a Codex $imagegen one")
+    lg.add_argument("--min-minutes", type=float, default=9.0, help="ready: unused bank footage a channel needs "
+                                                                   "(default 9)")
+    lg.add_argument("--json", action="store_true", help="ready: print JSON")
+    lg.add_argument("--spec", dest="thumb_spec", help="thumb: the spec the folder was rendered from (default: the "
+                                                      "jobs/long-*.json with the same spec_sha256)")
     bk = sub.add_parser("bank", help="clip bank for long-form: keep tagged moments as small clips so their sources "
                                      "can be deleted; a moment goes once a long video that used it is posted")
     bks = bk.add_subparsers(dest="bank_cmd", required=True)
@@ -503,7 +510,30 @@ def main(argv=None):
         else:
             print(json.dumps(cleanup_mod.purge(cfg, args.dry_run, exports=render_mod.EXPORTS), indent=2,
                              ensure_ascii=False))
+    elif args.cmd == "long" and args.action == "exemplars":
+        if args.spec != "build":
+            raise SystemExit("usage: clipper long exemplars build")
+        res = longform.build_exemplars()
+        print(json.dumps({n: [f"{e['id']} {e['x_normal']}x {e['channel']} ({e['source']})" for e in v]
+                          for n, v in res["niches"].items()}, indent=2, ensure_ascii=False))
+    elif args.cmd == "long" and args.action == "ready":
+        rows = longbank.ready(args.min_minutes)
+        if args.json:
+            print(json.dumps({"min_minutes": args.min_minutes, "ready": rows}, indent=2, ensure_ascii=False))
+        else:
+            for r in rows:
+                print(f"{r['channel']}: {r['minutes']} min in {r['clips']} unused bank clips ({r['niche'] or 'no niche'})")
+            if not rows:
+                print(f"no channel has {args.min_minutes:g} min of unused bank footage yet")
+    elif args.cmd == "long" and args.action == "thumb":
+        if not args.spec:
+            raise SystemExit("usage: clipper long thumb \"<long N folder>\" [--spec jobs/long-x.json]")
+        spec = json.loads(open(args.thumb_spec, encoding="utf-8").read()) if args.thumb_spec else None
+        print(json.dumps(longform.remake_thumbnail(args.spec, cfg, spec, ai=not args.no_ai_thumb), indent=2,
+                         ensure_ascii=False))
     elif args.cmd == "long":
+        if not args.spec:
+            raise SystemExit(f"clipper long {args.action} needs a spec")
         spec = json.loads(open(args.spec, encoding="utf-8").read())
         if args.action == "check":
             report = longform.check_long(spec, job_words, hooks.known_facecams(config.JOBS))

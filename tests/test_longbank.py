@@ -85,6 +85,37 @@ class BankTagTest(unittest.TestCase):
             longbank.tag("src1", 10, 18, {})
         self.assertIn("already deleted", str(e.exception))
 
+    def test_render_banks_the_shorts_moment_when_longbank_auto(self):
+        import contextlib
+        import io
+        from clipper import render
+        short = self.root / "exports" / "streamers" / "2026-11-26" / "video 1"
+        short.mkdir(parents=True)
+        (short / "upload.json").write_text(json.dumps([{"footage": [{"source": "src1", "from": 12, "to": 20}]}]))
+        self.assertEqual(render.bank_short(short, {"cause": "x"}, {}), [])          # off unless longbank_auto
+        got = render.bank_short(short, {"cause": "he drops the cake"},
+                                {"longbank_auto": True, "longbank_niche": "irl", "longbank_pad_s": 1})
+        self.assertEqual([(x["job"], x["from"], x["to"], x["note"], x["niche"], x["short"]) for x in got],
+                         [("src1", 11.0, 21.0, "he drops the cake", "irl", str(short.resolve()))])
+        (short / "upload.json").write_text(json.dumps([{"title": "rendered before footage was recorded"}]))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(render.bank_short(short, {}, {"longbank_auto": True}), [])  # never fails the render
+        self.assertIn("video 1: not banked for long-form", out.getvalue())
+
+    def test_ready_lists_channels_with_enough_unused_footage(self):
+        from clipper import longbank
+        a = longbank.tag("src1", 0, 10, {"longbank_pad_s": 0})
+        b = longbank.tag("src1", 12, 20, {"longbank_pad_s": 0}, niche="irl")
+        make_job(self.root, "kai1", 20, {"channel": "Kai Cenat Live"})
+        longbank.tag("kai1", 1, 5, {"longbank_pad_s": 0})
+        rows = longbank.ready(0.25)
+        self.assertEqual([(r["channel"], r["minutes"], r["clips"], r["niche"], sorted(r["ids"])) for r in rows],
+                         [("Speed", 0.3, 2, "irl", sorted([a["id"], b["id"]]))])
+        self.assertEqual([r["channel"] for r in longbank.ready(0.05)], ["Speed", "Kai Cenat Live"])
+        longbank.mark_used([a["id"]], self.root / "long 1")
+        self.assertEqual(longbank.ready(0.25), [])                                  # used clips don't count
+
     def test_short_moments_reads_the_shorts_footage(self):
         from clipper import longbank
         short = self.root / "exports" / "streamers" / "2026-11-23" / "video 1"

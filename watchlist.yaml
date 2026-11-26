@@ -69,6 +69,8 @@ keep_live_sources_hours: 3  # a clipped live chunk's video stays this long (mult
 keep_sources_days: 2        # any other job's video/audio go once the job is untouched this long (null = keep forever)
 # Long-form clip bank (`clipper bank`): tagged moments are cut into jobs/_longbank/ so sources can still go on time.
 longbank_pad_s: 3           # seconds kept before and after a tagged moment
+longbank_auto: true         # every rendered Short's moment is banked too (~30 MB each), so long videos can reuse it
+longbank_niche: null        # niche recorded on banked moments (irl | gaming | rp); profiles set their own
 keep_after_post_days: 2     # after `clipper bank done`: a posted long's bank clips and thumbnail files go this long after (0 = next cleanup)
 bank_expire_days: 30        # an unused bank clip goes this long after tagging, listed one cleanup first (null = keep)
 keep_posted_short_exports_days: null  # delete a posted Short's MP4 (upload.json has a youtube_id) after N days; null = never

@@ -132,7 +132,10 @@ python3 -m clipper schedule install --time 09:00   # CLI-only fallback scheduler
 python3 -m clipper --profile streamers schedule install --agent codex   # same with Codex (`codex exec`, project-only writes, network on; or prefs agent=codex)
 python3 -m clipper render <id> --picks picks.json   # exports/<profile>/<date>/video N/<hook>.mp4
 python3 -m clipper long check jobs/long-x.json  # long-form 16:9 spec: "kind" supercut (8-10 min), mid ("what happens", 30s-3 min), story (narrated, 4-10 min) or compilation (a streamer's funniest moments, 8-12 min); see /clip-long
-python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg by Codex $imagegen, checked, else the raw frame; --no-ai-thumb; never auto-posted)
+python3 -m clipper long render jobs/long-x.json # exports/<profile>/<date>/long N/ (16:9 MP4 + thumbnail.jpg by Codex $imagegen with a style board of outlier thumbnails, the face cropped in when under 3%, checked, else the raw frame; --no-ai-thumb)
+python3 -m clipper long thumb "<long N folder>" [--spec jobs/long-x.json]  # make only the thumbnail again; updates long.json and the sheet
+python3 -m clipper long ready [--min-minutes 9] [--json]  # channels with enough unused bank footage for a compilation
+python3 -m clipper long exemplars build          # research/long-form-thumb-exemplars.json: the outlier thumbnails the style board uses (IDs only)
 python3 -m clipper bank tag <job> <start> <end> [--note] [--niche irl|gaming|rp]  # keep a moment for long-form as a small clip in jobs/_longbank/ (or --short "<video N folder>")
 python3 -m clipper bank list                     # banked moments, status, size, and what's due for deletion
 python3 -m clipper bank done "<long N folder>" [--youtube-id X]  # mark a long video posted: its bank clips and thumbnail files go after keep_after_post_days
@@ -163,12 +166,13 @@ python3 -m unittest discover -s tests
 ```
 
 Creators live in `profiles/<name>/creators.yaml`, saved choices in `prefs.yaml`, topic filters in `profiles/<name>/profile.yaml`, and signal weights, clip length and disk settings in `watchlist.yaml` (`keep_live_sources_hours: 3` and `keep_sources_days: 2` for when old video and audio are deleted, `null` keeps them; `min_free_gb` for the health check). Transcripts, picks and exports are never deleted, apart from these long-form rules:
-- Tagged moments (`clipper bank tag`) are kept as padded clips (`longbank_pad_s: 3`) so their source can still go on time.
+- Tagged moments (`clipper bank tag`) are kept as padded clips (`longbank_pad_s: 3`) so their source can still go on time. With `longbank_auto: true` every rendered Short's moment is banked too (about 30 MB each), so compilations build up on their own.
+- Cached exemplar thumbnails for the style board (`jobs/_thumbstyle/`, YouTube images) go after 30 days.
 - A banked moment is single use. It's deleted `keep_after_post_days: 2` after `clipper bank done` marks every long video that used it posted; that video's thumbnail files go then too.
 - An unused one goes `bank_expire_days: 30` after tagging (listed one run first).
 - Posted Shorts' MP4s go only if you set `keep_posted_short_exports_days` (default `null`).
 
-Deletions only touch files inside the clip's bank folder, a posted `long N`, a posted `video N` or Codex's own session folder. Each is logged to `jobs/_longbank/ledger.jsonl`; `--dry-run` shows them first. The long MP4 and `long.json` always stay. AI thumbnails run `codex exec` with `$imagegen` on your ChatGPT login (`thumbnail_codex_model`, default `gpt-6.1-terra`): one image per video, one retry if the Apple Vision check fails. Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
+Deletions only touch files inside the clip's bank folder, a posted `long N`, a posted `video N`, `jobs/_thumbstyle/` or Codex's own session folder. Each is logged to `jobs/_longbank/ledger.jsonl`; `--dry-run` shows them first. The long MP4 and `long.json` always stay. AI thumbnails run `codex exec` with `$imagegen` on your ChatGPT login (`thumbnail_codex_model`, default `gpt-6.1-terra`): one image per video, one retry if the Apple Vision check fails (on Linux, without Vision, only size and bytes are checked: the private autopilot upload is the review). Output: `exports/<profile>/<date>/video N/<hook>.mp4` + `titles and description.md`, with `exports/<profile>/<date>/index.md` listing everything.
 
 A pick is one moment (`start`/`end`) or several joined into one Short with `"segments": [{"start", "end", "job"?, "layout"?}]`: a story cut (beats of one stream) or a multi-streamer edit (the same moment from other jobs, found with `clipper find`). Every source is credited, and `upload.json` records the footage used (`footage`), the hook's simulated multiplier (`predicted`) and when the moment happened (`moment_at`), so nothing is posted twice and the best, freshest clip goes first. A moment may go out once per shape: as a Short and as a `mid` long video, never twice as either.
 

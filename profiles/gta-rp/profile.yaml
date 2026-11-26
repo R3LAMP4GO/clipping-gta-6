@@ -47,3 +47,6 @@ caption_fixes: {trever: Trevor, travor: Trevor, michel: Michael, franklyn: Frank
   lestor: Lester, chopp: Chop}
 # Names passed to whisper.cpp as its prompt so it spells them right (asr: whisper).
 vocabulary: [Trevor, Michael, Franklin, Lester, Lamar, Chop, Los Santos, NoPixel]
+
+# Banked moments (longbank_auto) are GTA RP footage.
+longbank_niche: rp

@@ -28,3 +28,6 @@ caption_fixes: {trever: Trevor, travor: Trevor, michel: Michael, franklyn: Frank
   lestor: Lester, luchia: Lucia, lusia: Lucia, leonidas: Leonida}
 # Names passed to whisper.cpp as its prompt so it spells them right (asr: whisper).
 vocabulary: [Lucia, Jason, Leonida, Vice City, Trevor, Michael, Franklin, Lester, Lamar]
+
+# Banked moments (longbank_auto) are GTA 6 gameplay.
+longbank_niche: gaming

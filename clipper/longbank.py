@@ -155,6 +155,24 @@ def short_moments(folder, jobs_dir=None):
     return out
 
 
+def ready(min_minutes=9.0, bank=None):
+    """Channels whose unused (status "tagged"), still-alive bank clips add up to `min_minutes` of tagged moments,
+    most footage first: [{channel, minutes, clips, niche, ids}]. What a compilation can be built from now."""
+    by = {}
+    for d, x in entries(bank):
+        if x.get("status") == "tagged" and alive(d, x) and x.get("channel"):
+            by.setdefault(x["channel"], []).append(x)
+    out = []
+    for ch, xs in by.items():
+        mins = sum(float(x["end"]) - float(x["start"]) for x in xs) / 60
+        if mins >= float(min_minutes):
+            niches = [x.get("niche") for x in xs if x.get("niche")]
+            out.append({"channel": ch, "minutes": round(mins, 1), "clips": len(xs),
+                        "niche": max(set(niches), key=niches.count) if niches else None,
+                        "ids": [x["id"] for x in xs]})
+    return sorted(out, key=lambda r: -r["minutes"])
+
+
 def ids_for(items, bank=None):
     """Ids of the live bank clips that the spec items ({job, start, end}) use."""
     out = []

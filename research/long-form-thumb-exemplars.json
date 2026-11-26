@@ -1,0 +1,214 @@
+{
+  "built_from": "research/long-form-streamers-2026-11.json",
+  "rule": "outliers (>=3x the median views of the 30 long videos around them) whose thumbnail is a raw frame or a real place, 1-2 people, biggest face 3-8%, 0-3 words, no arrows, cut-outs or split panels",
+  "images": "not stored: viral/longform/thumbs/<id>.jpg or https://i.ytimg.com/vi/<id>/hqdefault.jpg",
+  "checked": [
+    "-pHoSfBmIP0",
+    "62BL3Uj3Ww0",
+    "7pgOFxeXj9s",
+    "Fcuqo1rNPlE",
+    "HUCPUiCC-UU",
+    "KifiL8pctc8",
+    "L9DJk_mt9-Q",
+    "Tc1x15WaZv4",
+    "XF54z7o-WjY",
+    "irBmodDIw3g"
+  ],
+  "exclude": [
+    "0YibLtXCeuM",
+    "BhiCvWgeFQ8",
+    "Gz6jhDXI34E",
+    "LWnDmq_8Lv8",
+    "PHzzdFyj8W4",
+    "RErgqihJUKo",
+    "_LqrynmrGQ4",
+    "dE7WQFrYBM4",
+    "hdRC3OnPfD8",
+    "mQW0cov9p4g",
+    "o143S2jXLeY",
+    "qr80Qsc48Ag",
+    "rTKsJBup2EY"
+  ],
+  "niches": {
+    "gaming": [
+      {
+        "id": "L9DJk_mt9-Q",
+        "channel": "Moonbruh",
+        "x_normal": 10.7,
+        "niche": "gaming",
+        "source": "coded",
+        "face_max": 0.0498,
+        "words": 0,
+        "checked": true,
+        "title": "CaseOh Clips That Make Me Laugh Uncontrollably"
+      },
+      {
+        "id": "62BL3Uj3Ww0",
+        "channel": "Clipped Vidz",
+        "x_normal": 99.18,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.054,
+        "words": 0,
+        "checked": true,
+        "title": "CaseOh Moments That Will Cure Your Depression"
+      },
+      {
+        "id": "KifiL8pctc8",
+        "channel": "xQc Clips",
+        "x_normal": 77.12,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0559,
+        "words": 0,
+        "checked": true,
+        "title": "xQc reacts to MoistCr1tikal COOKING OF Model! | xQc Reacts"
+      },
+      {
+        "id": "-pHoSfBmIP0",
+        "channel": "Clipped Vidz",
+        "x_normal": 27.69,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0791,
+        "words": 0,
+        "checked": true,
+        "title": "CaseOh Gets a NEW CAT! 🐈"
+      },
+      {
+        "id": "3iHRoP0EPQY",
+        "channel": "Moonbruh",
+        "x_normal": 5.47,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0399,
+        "words": 0,
+        "checked": false,
+        "title": "CaseOh Clips That Broke Me Laughing"
+      },
+      {
+        "id": "-yeefsQInbY",
+        "channel": "CaseOhs Orbit",
+        "x_normal": 5.14,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0665,
+        "words": 3,
+        "checked": false,
+        "title": "\"KISS ME, CHRIS!\" | CaseOh obsessing over Chris Redfield for over another 6 minutes (PART 3)"
+      },
+      {
+        "id": "VTJNtUGw2-U",
+        "channel": "Canooon",
+        "x_normal": 4.82,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0301,
+        "words": 0,
+        "checked": false,
+        "title": "Clips That Made CaseOh Famous"
+      },
+      {
+        "id": "Q9VR51G1JT8",
+        "channel": "xQc",
+        "x_normal": 4.71,
+        "niche": "gaming",
+        "source": "vision",
+        "face_max": 0.0582,
+        "words": 3,
+        "checked": false,
+        "title": "AI Just Crossed the Terrifying Line - Now What? | xQc Reacts"
+      }
+    ],
+    "irl": [
+      {
+        "id": "irBmodDIw3g",
+        "channel": "The Compilation Guy",
+        "x_normal": 31.51,
+        "niche": "irl",
+        "source": "coded",
+        "face_max": 0.0509,
+        "words": 0,
+        "checked": true,
+        "title": "Cuffem Funny Moments(compilation)"
+      },
+      {
+        "id": "XF54z7o-WjY",
+        "channel": "SpeedEditsHD",
+        "x_normal": 7.71,
+        "niche": "irl",
+        "source": "coded",
+        "face_max": 0.0608,
+        "words": 0,
+        "checked": true,
+        "title": "IShowSpeed's Most UNHINGED Moments"
+      },
+      {
+        "id": "Tc1x15WaZv4",
+        "channel": "SpeedUniverse",
+        "x_normal": 4.76,
+        "niche": "irl",
+        "source": "coded",
+        "face_max": 0.0787,
+        "words": 0,
+        "checked": true,
+        "title": "ISHOWSPEED Vs. ANGRIEST MAN in AFRICA.."
+      },
+      {
+        "id": "7pgOFxeXj9s",
+        "channel": "ClipNeverStop",
+        "x_normal": 6.36,
+        "niche": "irl",
+        "source": "vision",
+        "face_max": 0.0543,
+        "words": 0,
+        "checked": true,
+        "title": "Dub & Woo Wop Laughing For 12 Minutes Straight.."
+      },
+      {
+        "id": "Fcuqo1rNPlE",
+        "channel": "DukeDennis LIVE",
+        "x_normal": 6.08,
+        "niche": "irl",
+        "source": "vision",
+        "face_max": 0.0318,
+        "words": 0,
+        "checked": true,
+        "title": "Duke Dennis & AMP Goes To Six Flags"
+      },
+      {
+        "id": "HUCPUiCC-UU",
+        "channel": "DukeDennis LIVE",
+        "x_normal": 5.35,
+        "niche": "irl",
+        "source": "vision",
+        "face_max": 0.0761,
+        "words": 0,
+        "checked": true,
+        "title": "Duke Dennis Confronts BabyChiefDoit For Dissing Him & AMP…"
+      },
+      {
+        "id": "2nGzH9i2P1M",
+        "channel": "Clipper",
+        "x_normal": 5.11,
+        "niche": "irl",
+        "source": "vision",
+        "face_max": 0.064,
+        "words": 1,
+        "checked": false,
+        "title": "Valkyrae Vs Ludwig Match During PointCrow's Pokemon Nuzlocke Tournament"
+      },
+      {
+        "id": "SQHGVJq0i0Q",
+        "channel": "Cinna LIVE",
+        "x_normal": 4.88,
+        "niche": "irl",
+        "source": "vision",
+        "face_max": 0.0663,
+        "words": 3,
+        "checked": false,
+        "title": "The Cinnathon is Cooked.."
+      }
+    ]
+  }
+}

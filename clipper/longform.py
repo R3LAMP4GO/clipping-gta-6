@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
@@ -652,10 +653,139 @@ THUMB_WORD_H = 0.08                     # a text box at least this tall (of the 
 THUMB_MAIN_FACE = 0.5                   # faces under half the biggest one's area (posters, paintings) aren't counted
 THUMB_REFS = 3                          # images Codex gets: the scene, face references, a style exemplar
 CODEX_TIMEOUT_S = 120
-THUMB_FILES = ("thumbnail.jpg", "thumbnail_source.jpg", "thumbnail_ai.png", "thumbnail_try.jpg",
+THUMB_FILES = ("thumbnail.jpg", "thumbnail_source.jpg", "thumbnail_frame.jpg", "thumbnail_ai.png", "thumbnail_try.jpg",
                "thumbnail_ref*.jpg", "thumbnail_style.jpg")
+CROP_BELOW = 0.03                       # a biggest face under this share of the frame gets cropped in on before Codex
+CROP_AIM = 0.05                         # ... to about this share
+CROP_MIN_W = 640                        # never crop to a window narrower than this many source pixels
 VISION_SRC = Path(__file__).with_name("apple_vision.swift")
 EXEMPLARS = config.ROOT / "viral" / "longform"
+
+
+STUDY = config.ROOT / "research" / "long-form-streamers-2026-11.json"
+EXEMPLAR_FILE = config.ROOT / "research" / "long-form-thumb-exemplars.json"
+EXEMPLAR_FACE = (0.03, 0.08)            # the principles' face band: the board shows only thumbnails inside it
+EXEMPLARS_PER_NICHE = 8
+
+
+def _fits_principles(t):
+    """A coded outlier thumbnail that looks the way the principles say: a raw frame or a real place, 1-2 people,
+    biggest face 3-8%, 0-3 words, no arrows, cut-outs or split panels."""
+    place = t.get("raw_frame") or t.get("background") == "real_world" or t.get("setting") in ("irl", "just_chatting")
+    return bool(place and 1 <= int(t.get("people") or 0) <= 2
+                and EXEMPLAR_FACE[0] <= float(t.get("vision_face_max") or 0) <= EXEMPLAR_FACE[1]
+                and int(t.get("words") or 0) <= THUMB_MAX_WORDS
+                and not (t.get("arrow_circle") or t.get("cutout") or t.get("split")))
+
+
+def build_exemplars(study=None, out=None, per_niche=EXEMPLARS_PER_NICHE):
+    """research/long-form-thumb-exemplars.json: per niche, the outliers (3x+ their channel's normal) whose thumbnail
+    fits the principles, best first. Hand-coded ones (coded_thumbs) first; then Apple Vision-only ones (1-2 faces,
+    biggest 3-8%, 0-3 overlay words; not coded for arrows or cut-outs). IDs and numbers only, no images. The existing
+    file's "checked" IDs (looked at, they fit) rank first; its "exclude" IDs (looked at, they don't) stay out."""
+    study, out = Path(study or STUDY), Path(out or EXEMPLAR_FILE)
+    data = json.loads(study.read_text(encoding="utf-8"))
+    old = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
+    exclude, checked = set(old.get("exclude") or []), set(old.get("checked") or [])
+    rows = {r["id"]: r for r in data["rows"]}
+    coded = {t["id"]: t for t in data.get("coded_thumbs") or []}
+    picks = {}
+
+    def add(r, src, t=None):
+        if r["id"] in exclude or not r.get("outlier"):
+            return
+        picks.setdefault(r.get("lean") or "irl", []).append(
+            {"id": r["id"], "channel": r["channel"], "x_normal": r["x"], "niche": r.get("lean"), "source": src,
+             "face_max": (t or {}).get("vision_face_max", r.get("face_max")),
+             "words": (t or {}).get("words", r.get("overlay_words")), "checked": r["id"] in checked,
+             "title": r["title"]})
+    for i, t in coded.items():
+        if i in rows and _fits_principles(t):
+            add(rows[i], "coded", t)
+    for r in data["rows"]:
+        if (r["id"] not in coded and 1 <= int(r.get("faces") or 0) <= 2
+                and EXEMPLAR_FACE[0] <= float(r.get("face_max") or 0) <= EXEMPLAR_FACE[1]
+                and int(r.get("overlay_words") or 0) <= THUMB_MAX_WORDS):
+            add(r, "vision")
+    niches = {n: sorted(v, key=lambda e: (not e["checked"], e["source"] != "coded", -e["x_normal"]))[:per_niche]
+              for n, v in sorted(picks.items())}
+    res = {"built_from": str(study.relative_to(config.ROOT)) if study.is_relative_to(config.ROOT) else str(study),
+           "rule": "outliers (>=3x the median views of the 30 long videos around them) whose thumbnail is a raw frame "
+                   "or a real place, 1-2 people, biggest face 3-8%, 0-3 words, no arrows, cut-outs or split panels",
+           "images": "not stored: viral/longform/thumbs/<id>.jpg or https://i.ytimg.com/vi/<id>/hqdefault.jpg",
+           "checked": sorted(checked), "exclude": sorted(exclude), "niches": niches}
+    out.write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return res
+
+
+STYLE_CACHE_DAYS = 30                   # YouTube data: cached exemplar thumbnails go after 30 days (cleanup)
+YTIMG = "https://i.ytimg.com/vi/{}/hqdefault.jpg"
+
+
+def style_cache():
+    return config.JOBS / "_thumbstyle"
+
+
+def exemplar_image(vid, fetch=None):
+    """An exemplar thumbnail: viral/longform/thumbs/<id>.jpg while the study data is on disk, else YouTube's public
+    image, cached in jobs/_thumbstyle/<id>.jpg. None when neither works."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", str(vid)):
+        return None
+    local = EXEMPLARS / "thumbs" / f"{vid}.jpg"
+    if local.is_file():
+        return local
+    cached = style_cache() / f"{vid}.jpg"
+    if cached.is_file():
+        return cached
+    try:
+        data = (fetch or _fetch)(YTIMG.format(vid))
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        part = cached.with_suffix(".part")
+        part.write_bytes(data)
+        with Image.open(part) as im:
+            im.verify()
+        part.replace(cached)
+        return cached
+    except Exception:  # offline, removed video, not an image: the board just has one fewer tile
+        cached.with_suffix(".part").unlink(missing_ok=True)
+        return None
+
+
+def _fetch(url):
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=20) as r:
+        return r.read()
+
+
+def style_board(niche, folder, fetch=None, exemplars=None, n=4):
+    """thumbnail_style.jpg: a 2x2 grid (THUMB_GEN) of the niche's top exemplars from
+    research/long-form-thumb-exemplars.json (GTA RP borrows IRL's: IRL / just-chatting moments do best there).
+    Returns (path or None, [ids used])."""
+    f = Path(exemplars or EXEMPLAR_FILE)
+    if not f.is_file():
+        return None, []
+    niches = json.loads(f.read_text(encoding="utf-8")).get("niches") or {}
+    pool = list(niches.get(niche or "irl") or [])
+    for other in ("irl", "gaming"):
+        pool += [e for e in niches.get(other) or [] if e not in pool]
+    tiles, used = [], []
+    for e in pool:
+        img = exemplar_image(e["id"], fetch)
+        if img:
+            with Image.open(img) as im:
+                tiles.append(im.convert("RGB"))
+            used.append(e["id"])
+        if len(tiles) == n:
+            break
+    if not tiles:
+        return None, []
+    gw, gh = THUMB_GEN
+    board = Image.new("RGB", (gw, gh), (0, 0, 0))
+    for k, t in enumerate(tiles):
+        board.paste(_cover(t, gw // 2, gh // 2), ((k % 2) * (gw // 2), (k // 2) * (gh // 2)))
+    out = Path(folder) / "thumbnail_style.jpg"
+    board.save(out, quality=90)
+    return out, used
 
 
 def _save_frame(img, path):
@@ -663,15 +793,66 @@ def _save_frame(img, path):
     return path
 
 
-def thumbnail_source(spec, folder):
-    """thumbnail_source.jpg: the spec's frame, a plain 1280x720 cover-crop. Codex's scene and the raw fallback."""
+def _cover_16x9(img):
+    """The centred 16:9 part of a frame at its own resolution (no resize)."""
+    w, h = img.size
+    cw, ch = min(w, round(h * 16 / 9)), min(h, round(w * 9 / 16))
+    return img.crop(((w - cw) // 2, (h - ch) // 2, (w - cw) // 2 + cw, (h - ch) // 2 + ch))
+
+
+def face_crop(faces, size, below=CROP_BELOW, aim=CROP_AIM, min_w=CROP_MIN_W):
+    """A 16:9 window (left, top, right, bottom in pixels of a 16:9 frame of `size`) that makes the biggest main face
+    about `aim` of the frame when it's under `below`: at least `min_w` wide, inside the frame, with every main face
+    clear of the THUMB_EDGE margins. None when no crop is needed or none fits."""
+    faces = [f for f in main_faces(faces) if "x" in f]
+    if not faces:
+        return None
+    big = max(f["area"] for f in faces)
+    if big >= below or big <= 0:
+        return None
+    W, H = size
+    fx0, fy0 = min(f["x"] for f in faces) * W, min(f["top"] for f in faces) * H
+    fx1, fy1 = max(f["x"] + f["w"] for f in faces) * W, max(f["top"] + f["h"] for f in faces) * H
+    w = min(W, max(min_w, (big / aim) ** 0.5 * W))
+    while True:
+        h = w * 9 / 16
+        left = min(max(0.0, (fx0 + fx1) / 2 - w / 2), W - w)
+        top = min(max(0.0, (fy0 + fy1) / 2 - h / 2), H - h)
+        mx, my = THUMB_EDGE * w, THUMB_EDGE * h
+        if fx0 >= left + mx and fx1 <= left + w - mx and fy0 >= top + my and fy1 <= top + h - my:
+            return (round(left), round(top), round(left + w), round(top + h)) if w < W else None
+        if w >= W:
+            return None
+        w = min(W, w * 1.1)
+
+
+def thumbnail_source(spec, folder, measure=None, frame=None):
+    """thumbnail_source.jpg (1280x720): Codex's scene and the raw fallback. The spec's frame (or `frame`, an image),
+    cover-cropped to 16:9. With `measure` (Apple Vision), the full frame is kept as thumbnail_frame.jpg and, when its
+    biggest face is under CROP_BELOW, the source is a face_crop window of it. Returns (path, crop record or None)."""
     th = spec["thumbnail"]
-    return _save_frame(grab_frame(th, th["t"]), Path(folder) / "thumbnail_source.jpg")
+    folder = Path(folder)
+    frame = _cover_16x9(frame if frame is not None else grab_frame(th, th["t"]))
+    if measure is None:
+        return _save_frame(frame, folder / "thumbnail_source.jpg"), None
+    full = _save_frame(frame, folder / "thumbnail_frame.jpg")
+    m = measure([full])
+    faces = (m[0].get("faces") or []) if m else []
+    box = face_crop(faces, frame.size)
+    if not box:
+        return _save_frame(frame, folder / "thumbnail_source.jpg"), None
+    big = max(f["area"] for f in main_faces(faces))
+    share = (box[2] - box[0]) / frame.width
+    crop = {"box": list(box), "frame": list(frame.size), "face_before": round(big, 4),
+            "face_after": round(big / share ** 2, 4)}
+    print(f"[long] thumbnail: face is {big:.1%} of the frame; cropped in to about {crop['face_after']:.1%}", flush=True)
+    return _save_frame(frame.crop(box), folder / "thumbnail_source.jpg"), crop
 
 
-def thumbnail_refs(spec, folder):
-    """Face references (`thumbnail.refs`: [{job, t}], from the job's source only) and an optional style exemplar
-    (`thumbnail.exemplar`: a file in viral/longform/): ([paths], [notes]). At most THUMB_REFS - 1 images."""
+def thumbnail_refs(spec, folder, board=None):
+    """Face references (`thumbnail.refs`: [{job, t}], from the job's source only) and a style image: the spec's
+    `thumbnail.exemplar` (a file in viral/longform/) or else `board` (style_board): ([paths], [notes]). At most
+    THUMB_REFS - 1 images."""
     th, out, notes = spec.get("thumbnail") or {}, [], []
     for i, r in enumerate(th.get("refs") or [], 1):
         try:
@@ -690,6 +871,8 @@ def thumbnail_refs(spec, folder):
                 out.append(_save_frame(im.convert("RGB"), Path(folder) / "thumbnail_style.jpg"))
         else:
             notes.append(f"style exemplar skipped: {ex} is missing (viral/ is deleted after 30 days)")
+    elif board:
+        out.append(Path(board))
     if len(out) > THUMB_REFS - 1:
         notes.append(f"only {THUMB_REFS - 1} references are sent; dropped {', '.join(p.name for p in out[THUMB_REFS - 1:])}")
         out = out[:THUMB_REFS - 1]
@@ -700,7 +883,7 @@ def thumb_words(text):
     return re.findall(r"[a-z0-9$%']+", str(text or "").lower())
 
 
-def build_thumbnail_prompt(text="", names=(), refs=(), retry=None):
+def build_thumbnail_prompt(text="", names=(), refs=(), retry=None, board=False):
     """The $imagegen prompt: the principles, the words, the size and safe zones, and what each image is for."""
     words = " ".join(str(text or "").split()[:THUMB_MAX_WORDS]).upper()
     lines = ["$imagegen Make one YouTube long-form thumbnail from the attached images.",
@@ -708,7 +891,11 @@ def build_thumbnail_prompt(text="", names=(), refs=(), retry=None):
              f"{THUMB_FEED[0]}x{THUMB_FEED[1]} in the feed, so it must read at that size. Never vertical.",
              "Image 1 is the scene: keep its place, people, pose and expression."]
     for i, r in enumerate(refs, 2):
-        if Path(r).name.startswith("thumbnail_style"):
+        if Path(r).name.startswith("thumbnail_style") and board:
+            lines.append(f"Image {i} is a board of four thumbnails that got 3x or more their channel's normal views. "
+                         "Match their look: a plain stream frame, lightly cleaned up; a small face in a real place; "
+                         "0-3 words. Never copy their people, text or content.")
+        elif Path(r).name.startswith("thumbnail_style"):
             lines.append(f"Image {i} is only a layout and lighting example from another channel: never copy its "
                          "people, text or content.")
         else:
@@ -794,18 +981,32 @@ def finalize_thumbnail(png, out):
 
 
 def vision_measure(paths):
-    """Apple Vision faces and text per image, or None where it can't run (not a Mac, no swiftc)."""
+    """Apple Vision faces and text per image, or None where it can't run (not a Mac, no swiftc, or an image it
+    failed on: the helper then lists it with no faces and no text, which would read as "no face")."""
     from . import transcribe
     try:
         exe = transcribe.apple_binary(VISION_SRC, "apple-vision")
         res = subprocess.run([str(exe), *map(str, paths)], capture_output=True, text=True, timeout=120)
+        if "apple-vision:" in (res.stderr or ""):
+            print(f"[long] Apple Vision failed: {res.stderr.strip().splitlines()[-1][:200]}", flush=True)
+            return None
         return json.loads(res.stdout) if res.returncode == 0 and res.stdout else None
     except (SystemExit, OSError, ValueError, subprocess.TimeoutExpired):
         return None
 
 
-def _read_words(texts):
-    return [w for t in texts if float(t.get("h", 0)) >= THUMB_WORD_H for w in thumb_words(t.get("s"))]
+def _read_words(texts, want=()):
+    """Thumbnail-size words. In a box that holds the spec's words, a lone extra character is OCR noise (Vision
+    reads a mark beside big text as "I" or "l"), not an added word."""
+    out = []
+    for t in texts:
+        if float(t.get("h", 0)) < THUMB_WORD_H:
+            continue
+        ws = thumb_words(t.get("s"))
+        if set(ws) & set(want):
+            ws = [w for w in ws if w in want or len(w) > 1]
+        out += ws
+    return out
 
 
 def main_faces(faces):
@@ -821,11 +1022,13 @@ def _inter(a, b):
     return max(0.0, w) * max(0.0, h)
 
 
-def _scene_text(t, scene):
-    """Big text the source frame already had in that place (sharing at least half the smaller box): a shirt print
-    or a sign. Small source text (chat lines) never hides the spec's words."""
-    return any(_inter(t, b) >= min(t["w"] * t["h"], b["w"] * b["h"]) / 2 > 0 for b in scene
-               if float(b.get("h", 0)) >= THUMB_WORD_H / 2)
+def _scene_text(t, scene, want=()):
+    """Text the source frame already had in that place (sharing at least half the smaller box), at any size: a
+    shirt print or a sign Codex sharpened. Text holding any of the spec's words is never the scene, so a chat line
+    under them can't hide them."""
+    if set(thumb_words(t.get("s"))) & set(want):
+        return False
+    return any(_inter(t, b) >= min(t["w"] * t["h"], b["w"] * b["h"]) / 2 > 0 for b in scene)
 
 
 def _in_badge(b):
@@ -836,11 +1039,12 @@ def _near_edge(b):
     return b["x"] < THUMB_EDGE or b["top"] < THUMB_EDGE or b["x"] + b["w"] > 1 - THUMB_EDGE or b["top"] + b["h"] > 1 - THUMB_EDGE
 
 
-def check_thumbnail(path, text="", source_faces=None, measure=None, source_text=()):
+def check_thumbnail(path, text="", source_faces=None, measure=None, source_text=(), basic=False):
     """(ok, [reasons], measured) for a finished thumbnail: exactly TW x TH, <= 2 MB, the source frame's count of
-    main faces (main_faces), biggest face 2-10%, the spec's words and no others (big text where the source frame
+    main faces (main_faces), biggest face 2-10%, the spec's words and no others (text where the source frame
     already has text, `source_text`, is the scene: a shirt, a sign), main faces and words clear of the bottom-right
-    badge and the edges, and face and words still found at feed size (168x94, scaled back up for Vision)."""
+    badge and the edges, and face and words still found at feed size (168x94, scaled back up for Vision). Where
+    Vision can't run, `basic` passes on size and bytes alone (measured "check": "basic"), else it fails."""
     measure = measure or vision_measure
     path = Path(path)
     reasons = []
@@ -857,13 +1061,15 @@ def check_thumbnail(path, text="", source_faces=None, measure=None, source_text=
         small.resize((THUMB_FEED[0] * 4, THUMB_FEED[1] * 4), Image.BICUBIC).save(feed)
         frames = measure([path, feed])
     if not frames or len(frames) < 2:
+        if basic:
+            return not reasons, reasons, {"size": f"{dims[0]}x{dims[1]}", "bytes": size, "check": "basic"}
         return False, reasons + ["Apple Vision couldn't run, so faces and words can't be checked"], {}
     full, tiny = frames[0], frames[1]
     faces = main_faces(full.get("faces") or [])
     big = max((f["area"] for f in faces), default=0.0)
-    scene = [t for t in source_text or () if "x" in t]
-    texts = [t for t in full.get("text") or [] if not ("x" in t and _scene_text(t, scene))]
-    words, want = _read_words(texts), thumb_words(text)
+    scene, want = [t for t in source_text or () if "x" in t], thumb_words(text)
+    texts = [t for t in full.get("text") or [] if not ("x" in t and _scene_text(t, scene, want))]
+    words = _read_words(texts, want)
     if len(want) > THUMB_MAX_WORDS:
         reasons.append(f"{len(want)} words asked for: keep it to {THUMB_MAX_WORDS}")
     if source_faces is not None and len(faces) != source_faces:
@@ -890,7 +1096,7 @@ def check_thumbnail(path, text="", source_faces=None, measure=None, source_text=
     if want and not set(want) & set(tiny_words):
         reasons.append(f"the words can't be read at feed size ({THUMB_FEED[0]}x{THUMB_FEED[1]})")
     measured = {"size": f"{dims[0]}x{dims[1]}", "bytes": size, "faces": len(faces), "face_area": round(big, 4),
-                "words": words, "feed_faces": len(tiny.get("faces") or []), "feed_words": tiny_words}
+                "words": words, "feed_faces": len(tiny.get("faces") or []), "feed_words": tiny_words, "check": "vision"}
     return not reasons, reasons, measured
 
 
@@ -898,7 +1104,7 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def make_thumbnail(spec, folder, known, cfg, ai=True, run=subprocess.run, measure=None):
+def make_thumbnail(spec, folder, known, cfg, ai=True, run=subprocess.run, measure=None, frame=None):
     """thumbnail.jpg for a long video, by `thumbnail.style`: "ai" (Codex $imagegen from the source frame and face
     references, checked; one retry; else the raw frame), "raw" (the source frame) or "face" (the old enlarged-face
     look). Never raises for the AI step: the reason lands in the returned record (for long.json)."""
@@ -910,21 +1116,29 @@ def make_thumbnail(spec, folder, known, cfg, ai=True, run=subprocess.run, measur
     if style == "face":
         thumbnail(spec, out, known)
         return {"style": "face", "path": str(out), "sha256": _sha256(out)}
-    src = thumbnail_source(spec, folder)
-    info = {"style": "raw", "source": src.name}
+    if style == "ai" and ai:
+        measure = measure or vision_measure
+        src, crop = thumbnail_source(spec, folder, measure, frame)
+    else:
+        src, crop = thumbnail_source(spec, folder, frame=frame)
+    info = {"style": "raw", "source": src.name, **({"crop": crop} if crop else {})}
     if style == "ai" and not ai:
         info["reason"] = "AI thumbnails are off (--no-ai-thumb)"
     elif style == "ai":
-        measure = measure or vision_measure
-        refs, notes = thumbnail_refs(spec, folder)
+        board, board_ids = (None, []) if th.get("exemplar") else style_board(spec.get("niche"), folder)
+        refs, notes = thumbnail_refs(spec, folder, board)
         names = spec_names(spec)
-        src_m = measure([src])
+        on_board = bool(board) and Path(board) in refs
+        if board and not on_board:
+            Path(board).unlink(missing_ok=True)
+        src_m = measure([src])  # after any crop: the faces and text Codex actually sees
         src_faces = len(main_faces(src_m[0].get("faces") or [])) if src_m else None
         src_text = (src_m[0].get("text") or []) if src_m else []
-        info.update(refs=[p.name for p in refs], notes=notes, source_faces=src_faces)
+        info.update(refs=[p.name for p in refs], notes=notes, source_faces=src_faces,
+                    **({"style_board": board_ids} if on_board else {}))
         retry = None
         for attempt in (1, 2):
-            prompt = build_thumbnail_prompt(text, names, refs, retry)
+            prompt = build_thumbnail_prompt(text, names, refs, retry, board=on_board)
             print(f"[long] thumbnail: Codex $imagegen, attempt {attempt}", flush=True)
             png, err, leftover = generate_thumbnail([src, *refs], prompt, folder, cfg, run)
             if leftover:
@@ -933,8 +1147,9 @@ def make_thumbnail(spec, folder, known, cfg, ai=True, run=subprocess.run, measur
                 info["reason"] = err
                 break
             trial = finalize_thumbnail(png, folder / "thumbnail_try.jpg")
-            ok, reasons, measured = check_thumbnail(trial, text, src_faces, measure, src_text)
-            info.update(attempts=attempt, measured=measured, prompt=prompt)
+            # no Vision (Linux): size and bytes only; the upload is private and a person reviews it
+            ok, reasons, measured = check_thumbnail(trial, text, src_faces, measure, src_text, basic=src_m is None)
+            info.update(attempts=attempt, measured=measured, prompt=prompt, check=measured.get("check"))
             if ok:
                 trial.replace(out)
                 info.update(style="ai", reason=None)
@@ -948,6 +1163,81 @@ def make_thumbnail(spec, folder, known, cfg, ai=True, run=subprocess.run, measur
             info["note"] = f"the raw frame has no words; add \"{text}\" by hand if you want them"
     info.update(path=str(out), sha256=_sha256(out))
     return info
+
+
+THUMB_INFO_KEYS = ("measured", "source_faces", "refs", "notes", "note", "attempts", "prompt", "style_board", "crop",
+                   "check")
+
+
+def thumb_fields(th_info):
+    """long.json's thumbnail_* fields (and Codex's leftover folder) from a make_thumbnail record."""
+    return {"thumbnail": th_info["path"], "thumbnail_style": th_info["style"], "thumbnail_reason": th_info.get("reason"),
+            "thumbnail_sha256": th_info["sha256"],
+            **{f"thumbnail_{k}": th_info[k] for k in THUMB_INFO_KEYS if th_info.get(k) is not None},
+            **({"codex_session_dir": th_info["codex_session_dir"]} if th_info.get("codex_session_dir") else {})}
+
+
+def sheet_text(m):
+    """`titles and description.md` for a long video, from its long.json."""
+    return (f"# {m['title']}\n\n**Length:** {m['duration'] / 60:.1f} min · {m['clips']} clips · "
+            f"thumbnail text: {m.get('thumbnail_text') or '(none)'} · thumbnail: {m['thumbnail_style']}"
+            + (f" ({m['thumbnail_reason']})" if m.get("thumbnail_reason") else "")
+            + f"\n\n## Description\n\n{m['description']}\n")
+
+
+def find_spec(manifest, jobs_dir=None):
+    """The jobs/long-*.json spec a long video was rendered from (same spec_sha256), else None."""
+    for f in sorted(Path(jobs_dir or config.JOBS).glob("long-*.json")):
+        try:
+            spec = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(spec, dict) and spec_sha256(spec) == manifest.get("spec_sha256"):
+            return spec
+    return None
+
+
+def remake_thumbnail(folder, cfg, spec=None, ai=True, run=subprocess.run, measure=None):
+    """`clipper long thumb`: make a `long N` folder's thumbnail again (make_thumbnail) and update its long.json and
+    markdown sheet. The frame comes from the job's source or a bank clip, else the folder's thumbnail_frame.jpg /
+    thumbnail_source.jpg (the full frame an earlier run kept)."""
+    folder = Path(folder).resolve()
+    f = folder / "long.json"
+    if not f.exists():
+        raise SystemExit(f"no long.json in {folder}")
+    m = json.loads(f.read_text(encoding="utf-8"))
+    spec = spec or find_spec(m)
+    if not spec:
+        raise SystemExit(f"no jobs/long-*.json matches {folder.name}'s spec_sha256: pass --spec")
+    th = spec.get("thumbnail") or {}
+    if not (th.get("job") and th.get("t") is not None):
+        raise SystemExit("the spec has no thumbnail {job, t}")
+    frame, frame_from = None, "source"
+    try:
+        frame = grab_frame(th, th["t"])
+    except SystemExit:
+        saved = next((p for p in (folder / "thumbnail_frame.jpg", folder / "thumbnail_source.jpg") if p.is_file()), None)
+        if not saved:
+            raise SystemExit(f"{th['job']} {th['t']}s: the source and its bank clip are gone and {folder.name} kept no "
+                             "thumbnail_frame.jpg or thumbnail_source.jpg")
+        with Image.open(saved) as im:
+            frame, frame_from = im.convert("RGB"), saved.name
+    for name in ("thumbnail_ai.png", "thumbnail_try.jpg", "thumbnail_style.jpg"):
+        (folder / name).unlink(missing_ok=True)
+    th_info = make_thumbnail(spec, folder, hooks.known_facecams(config.JOBS), cfg, ai=ai, run=run, measure=measure,
+                             frame=frame)
+    m = {k: v for k, v in m.items() if not (k.startswith("thumbnail_") and k != "thumbnail_text")}
+    m.update(thumb_fields(th_info), thumbnail_text=th.get("text"), thumbnail_frame_from=frame_from,
+             thumbnail_remade_at=time.time())
+    tmp = folder / "long.json.tmp"
+    tmp.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(f)
+    (folder / "titles and description.md").write_text(sheet_text(m), encoding="utf-8")
+    return {"folder": str(folder), "thumbnail": th_info["path"], "style": th_info["style"],
+            "reason": th_info.get("reason"), "check": th_info.get("check"), "crop": th_info.get("crop"),
+            "style_board": th_info.get("style_board"), "frame_from": frame_from,
+            **({"youtube_id": m["youtube_id"], "note": "already uploaded: set the new thumbnail on YouTube"}
+               if m.get("youtube_id") else {})}
 
 
 def next_long_number(out_dir):
@@ -1034,12 +1324,7 @@ def render_long(spec, cfg, out_dir=None, check=True, words_for=None, ai_thumb=Fa
     info = render.probe(mp4)
     manifest = {"kind": "long" if kind == "supercut" else kind, "niche": spec.get("niche"), "title": spec["title"],
                 "premise_type": spec.get("premise_type"), "question": spec.get("question"), "description": desc, "hashtags": spec.get("hashtags") or [],
-                "file": str(mp4), "thumbnail": str(thumb), "thumbnail_text": th.get("text"),
-                "thumbnail_style": th_info["style"], "thumbnail_reason": th_info.get("reason"),
-                "thumbnail_sha256": th_info["sha256"],
-                **{f"thumbnail_{k}": th_info[k] for k in ("measured", "source_faces", "refs", "notes", "note", "attempts",
-                                                          "prompt") if th_info.get(k) is not None},
-                **({"codex_session_dir": th_info["codex_session_dir"]} if th_info.get("codex_session_dir") else {}),
+                "file": str(mp4), "thumbnail_text": th.get("text"), **thumb_fields(th_info),
                 "bank_ids": bank_ids, "spec_sha256": spec_sha256(spec), "notes": shared_notes(spec),
                 "duration": info["duration"], "width": info["width"], "height": info["height"],
                 "clips": len(clips), "flash_forward_s": round(sum(_span(f) for f in flash), 2),
@@ -1049,11 +1334,7 @@ def render_long(spec, cfg, out_dir=None, check=True, words_for=None, ai_thumb=Fa
                                   for e in timeline], "voice": voices} if kind == "story" else {}),
                 "clipper_version": config.code_version()}
     (folder / "long.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
-    (folder / "titles and description.md").write_text(
-        f"# {spec['title']}\n\n**Length:** {info['duration'] / 60:.1f} min · {len(clips)} clips · "
-        f"thumbnail text: {manifest['thumbnail_text'] or '(none)'} · thumbnail: {th_info['style']}"
-        + (f" ({th_info['reason']})" if th_info.get("reason") else "")
-        + f"\n\n## Description\n\n{desc}\n", encoding="utf-8")
+    (folder / "titles and description.md").write_text(sheet_text(manifest), encoding="utf-8")
     longbank.mark_used(bank_ids, folder)
     return {"folder": str(folder), "file": str(mp4), "thumbnail": str(thumb), "thumbnail_style": th_info["style"],
             "thumbnail_reason": th_info.get("reason"), "bank_ids": bank_ids, "duration": info["duration"],

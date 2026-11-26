@@ -352,12 +352,13 @@ class FakeCodex:
 
 class ThumbnailTest(unittest.TestCase):
     def setUp(self):
-        from clipper import config, schedule
+        from clipper import config, longform, schedule
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         self.patches = [mock.patch.object(config, "JOBS", self.root / "jobs"),
                         mock.patch.object(schedule, "find_agent", lambda a: "/fake/codex"),
-                        mock.patch.dict("os.environ", {"CODEX_HOME": str(self.root / "codex")})]
+                        mock.patch.dict("os.environ", {"CODEX_HOME": str(self.root / "codex")}),
+                        mock.patch.object(longform, "EXEMPLAR_FILE", self.root / "no-exemplars.json")]
         for p in self.patches:
             p.start()
         self.job = make_job(self.root, "kai1", secs=12)
@@ -511,6 +512,162 @@ class ThumbnailTest(unittest.TestCase):
         self.assertEqual([p.name for p in refs], ["thumbnail_ref2.jpg"])
         self.assertIn("kai2's source was deleted", notes[0])
         self.assertIn("nope.jpg is missing", notes[1])
+
+    def test_a_small_face_is_cropped_in_before_codex_and_the_full_frame_kept(self):
+        from clipper import longform
+        from PIL import Image
+        tiny, seen = face(0.015, x=0.62, top=0.40), []
+
+        def m(paths):
+            seen.extend(Path(p).name for p in paths)
+            return [{"faces": [tiny], "text": []} if Path(p).name == "thumbnail_frame.jpg"
+                    else {"faces": [face(0.05)], "text": []} if Path(p).name == "thumbnail_source.jpg"
+                    else self.GOOD[0] if Path(p).suffix == ".jpg" else self.GOOD[1] for p in paths]
+        info = longform.make_thumbnail(self.spec, self.folder, {}, {}, run=FakeCodex(self.root / "codex"), measure=m)
+        self.assertEqual(info["style"], "ai")
+        self.assertEqual(seen[:2], ["thumbnail_frame.jpg", "thumbnail_source.jpg"])  # re-measured after the crop
+        l, t, r, b = info["crop"]["box"]
+        self.assertAlmostEqual(info["crop"]["face_after"], 0.05, delta=0.005)
+        self.assertGreaterEqual(r - l, 640)
+        self.assertAlmostEqual((b - t) / (r - l), 9 / 16, delta=0.01)
+        self.assertTrue(0 <= l and r <= 1280 and 0 <= t and b <= 720)
+        self.assertGreaterEqual(tiny["x"] * 1280, l + 0.04 * (r - l))
+        self.assertLessEqual((tiny["top"] + tiny["h"]) * 720, b - 0.04 * (b - t))
+        with Image.open(self.folder / "thumbnail_frame.jpg") as im:
+            self.assertEqual(im.size, (1280, 720))
+        self.assertIn("thumbnail_frame.jpg", longform.THUMB_FILES)
+
+    def test_face_crop_bounds(self):
+        from clipper import longform
+        self.assertIsNone(longform.face_crop([face(0.04)], (1920, 1080)))            # big enough already
+        self.assertIsNone(longform.face_crop([face(0.015, x=0.005)], (1920, 1080)))  # can't clear the edge margin
+        l, t, r, b = longform.face_crop([face(0.001, x=0.5, top=0.5)], (1280, 720))
+        self.assertEqual(r - l, 640)                                                 # never narrower than 640 px
+        pair = [face(0.012, x=0.2, top=0.3), face(0.01, x=0.7, top=0.35)]
+        l, t, r, b = longform.face_crop(pair, (1920, 1080))
+        for f in pair:                                                               # both people stay in
+            self.assertTrue(l < f["x"] * 1920 and (f["x"] + f["w"]) * 1920 < r)
+
+    def test_scene_text_of_any_size_is_the_scene_but_never_hides_the_specs_words(self):
+        from clipper import longform
+        from PIL import Image
+        jpg = self.folder / "t.jpg"
+        Image.new("RGB", (1280, 720), (20, 20, 20)).save(jpg)
+        shirt = {"faces": [face()], "text": [word_box("NO WAY"), word_box("A CD 15 BIGGER", x=0.4, top=0.65, h=0.15)]}
+        check = lambda full, src: longform.check_thumbnail(jpg, "NO WAY", 1, lambda ps: [full, full], src)[1]
+        self.assertIn("words on it: no way a cd 15 bigger", " | ".join(check(shirt, [])))
+        self.assertEqual(check(shirt, [word_box("is bigger", x=0.42, top=0.68, h=0.02)]), [])  # tiny source print
+        good = {"faces": [face()], "text": [word_box("NO WAY")]}
+        self.assertEqual(check(good, [word_box("no", x=0.1, top=0.1, h=0.12)]), [])  # still counted as the words
+        self.assertEqual(check({**good, "text": [word_box("I NO WAY")]}, []), [])  # a mark beside them read as "I"
+        self.assertIn("words on it: no way i;", " | ".join(check({**good, "text": [word_box("NO WAY"), word_box("I", top=0.5)]}, [])))  # a real separate word
+        self.assertIn("words on it: wow no way;", " | ".join(check({**good, "text": [word_box("WOW NO WAY")]}, [])))
+
+    def test_without_vision_the_ai_thumbnail_passes_a_basic_check(self):
+        from clipper import longform
+        from PIL import Image
+        codex = FakeCodex(self.root / "codex")
+        info = longform.make_thumbnail(self.spec, self.folder, {}, {}, run=codex, measure=lambda ps: None)
+        self.assertEqual((info["style"], info["check"], info["reason"], len(codex.calls)), ("ai", "basic", None, 1))
+        self.assertNotIn("crop", info)
+        small = self.folder / "small.jpg"
+        Image.new("RGB", (1000, 600)).save(small)
+        ok, reasons, m = longform.check_thumbnail(small, "NO WAY", None, lambda ps: None, basic=True)
+        self.assertFalse(ok)
+        self.assertEqual((reasons, m["check"]), (["1000x600, not 1280x720"], "basic"))
+
+    def test_style_board_from_cached_exemplars_goes_third_and_ages_out(self):
+        import io
+        import os
+        import time
+        from clipper import cleanup, longform
+        from PIL import Image
+        ids = ["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc", "ddddddddddd", "eeeeeeeeeee"]
+        ex = self.root / "ex.json"
+        ex.write_text(json.dumps({"niches": {"irl": [{"id": i} for i in ids[:3]],
+                                             "gaming": [{"id": i} for i in ids[3:]]}}))
+        cache = self.root / "jobs" / "_thumbstyle"
+        cache.mkdir(parents=True)
+        for i in ids[:2]:
+            Image.new("RGB", (480, 360), (200, 0, 0)).save(cache / f"{i}.jpg")
+        fetched = []
+
+        def fetch(url):
+            fetched.append(url)
+            if "ccccccccccc" in url:
+                raise OSError("gone")
+            buf = io.BytesIO()
+            Image.new("RGB", (480, 360), (0, 200, 0)).save(buf, "JPEG")
+            return buf.getvalue()
+        with mock.patch.object(longform, "EXEMPLARS", self.root / "no-viral"):
+            out, used = longform.style_board("irl", self.folder, fetch, ex)
+            self.assertEqual(used, ids[:2] + ids[3:])                    # a failed download: gaming fills the gap
+            self.assertEqual(fetched, [longform.YTIMG.format(i) for i in ids[2:]])
+            self.assertTrue((cache / "ddddddddddd.jpg").is_file())
+            with Image.open(out) as im:
+                self.assertEqual(im.size, (1536, 864))
+                self.assertGreater(im.getpixel((10, 10))[0], 150)
+                self.assertGreater(im.getpixel((1500, 850))[1], 150)
+
+            def offline(url):
+                raise OSError("offline")
+            with mock.patch.object(longform, "EXEMPLAR_FILE", ex), mock.patch.object(longform, "_fetch", offline):
+                codex = FakeCodex(self.root / "codex")
+                info = longform.make_thumbnail(self.spec, self.folder, {}, {}, run=codex, measure=self.measure(self.GOOD))
+        cmd = codex.calls[0][0]
+        self.assertEqual([cmd[i + 1].split("/")[-1] for i, x in enumerate(cmd) if x == "-i"],
+                         ["thumbnail_source.jpg", "thumbnail_ref1.jpg", "thumbnail_style.jpg"])
+        self.assertIn("Image 3 is a board of four thumbnails", cmd[-1])
+        self.assertIn("Never copy their people, text or content", cmd[-1])
+        self.assertEqual(info["style_board"], ids[:2] + ids[3:])
+        old = cache / "aaaaaaaaaaa.jpg"
+        os.utime(old, (time.time() - 31 * 86400,) * 2)
+        res = cleanup.purge({}, jobs_dir=self.root / "jobs", exports=self.root / "no-exports", codex=self.root / "codex")
+        self.assertEqual([d["path"] for d in res["deleted"]], [str(old)])
+        self.assertFalse(old.exists())
+        self.assertTrue((cache / "bbbbbbbbbbb.jpg").exists())
+
+    def test_long_thumb_remakes_from_the_kept_frame_and_updates_the_manifest(self):
+        from clipper import longform
+        from PIL import Image
+        spec = {**self.spec, "thumbnail": {**self.spec["thumbnail"], "refs": []}}
+        (self.root / "jobs" / "long-kai.json").write_text(json.dumps(spec))
+        old = {"kind": "compilation", "title": spec["title"], "description": "desc", "duration": 420.0, "clips": 1,
+               "thumbnail_text": "NO WAY", "thumbnail_style": "raw", "thumbnail_reason": "failed the check: 2 faces",
+               "thumbnail_measured": {"faces": 2}, "spec_sha256": longform.spec_sha256(spec)}
+        (self.folder / "long.json").write_text(json.dumps(old))
+        Image.new("RGB", (1280, 720), (10, 120, 10)).save(self.folder / "thumbnail_source.jpg")  # an earlier run's frame
+        (self.job / "source.mp4").unlink()
+        res = longform.remake_thumbnail(self.folder, {}, run=FakeCodex(self.root / "codex"),
+                                        measure=self.measure(self.GOOD))
+        self.assertEqual((res["style"], res["frame_from"], res["reason"]), ("ai", "thumbnail_source.jpg", None))
+        m = json.loads((self.folder / "long.json").read_text())
+        self.assertEqual((m["thumbnail_style"], m["thumbnail_reason"], m["thumbnail_measured"]["faces"]), ("ai", None, 1))
+        self.assertEqual((m["title"], m["thumbnail_text"], m["kind"]), (spec["title"], "NO WAY", "compilation"))
+        self.assertEqual(m["thumbnail_sha256"], longform._sha256(self.folder / "thumbnail.jpg"))
+        sheet = (self.folder / "titles and description.md").read_text()
+        self.assertIn("thumbnail: ai", sheet)
+        self.assertNotIn("failed the check", sheet)
+        (self.root / "jobs" / "long-kai.json").unlink()
+        with self.assertRaises(SystemExit) as e:
+            longform.remake_thumbnail(self.folder, {})
+        self.assertIn("pass --spec", str(e.exception))
+
+    def test_an_image_vision_failed_on_is_unmeasured_not_faceless(self):
+        from clipper import longform, transcribe
+        out = '[{"path": "a.jpg", "faces": [], "text": []}]'
+        err = 'apple-vision: a.jpg: e5rtError("e5rt_execution_stream_operation_create ... failed", 13)\n'
+        for stderr, want in ((err, None), ("", [{"path": "a.jpg", "faces": [], "text": []}])):
+            with mock.patch.object(transcribe, "apple_binary", lambda *a: "/fake/apple-vision"), \
+                    mock.patch.object(longform.subprocess, "run",
+                                      lambda *a, **k: subprocess.CompletedProcess(a[0], 0, out, stderr)):
+                self.assertEqual(longform.vision_measure(["a.jpg"]), want)
+
+    def test_prompt_describes_the_board(self):
+        from clipper import longform
+        p = longform.build_thumbnail_prompt("", [], ["thumbnail_ref1.jpg", "thumbnail_style.jpg"], board=True)
+        self.assertIn("Image 3 is a board of four thumbnails that got 3x or more their channel's normal views", p)
+        self.assertNotIn("layout and lighting example", p)
 
 
 class CompilationRenderTest(unittest.TestCase):

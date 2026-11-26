@@ -684,6 +684,20 @@ def claim_video_folder(out_dir, n):
             n = max(n + 1, next_video_number(out_dir))
 
 
+def bank_short(folder, pick, cfg):
+    """`longbank_auto`: keep a rendered Short's moment for long-form (clip bank) while its source is on disk. A failure
+    is only printed: the Short itself is done."""
+    if not cfg.get("longbank_auto"):
+        return []
+    from . import longbank
+    try:
+        return [longbank.tag(j, s, e, cfg, note=pick.get("cause") or None, niche=cfg.get("longbank_niche"),
+                             short=Path(folder).resolve()) for j, s, e in longbank.short_moments(folder)]
+    except (SystemExit, Exception) as e:  # never fail a finished render over the bank
+        print(f"[render] {Path(folder).name}: not banked for long-form ({e})", flush=True)
+        return []
+
+
 def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
     meta = json.loads((job / "job.json").read_text(encoding="utf-8"))
     fallback = transcribe.drop_repeats(json.loads((job / "transcript.json").read_text(encoding="utf-8"))["words"])
@@ -733,6 +747,7 @@ def render(job, picks, cfg, first_hook_only=False, out_dir=None, top=0):
                                                                        prep.get("music"), arm, experiment, exp_arm,
                                                                        fallback, angle_of, judged=full),
                                                        indent=2, ensure_ascii=False), encoding="utf-8")
+        bank_short(folder, pick, cfg)
         md = folder / "titles and description.md"
         md.write_text(clip_markdown(n, pick, meta, cfg, variants, prep, creds, float(flat["end"]) - float(flat["start"])),
                       encoding="utf-8")
